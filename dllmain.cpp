@@ -10,11 +10,32 @@
 #include <psapi.h>
 #include <string>
 #include <cstdlib> // For strtoul
+#include <dwmapi.h>
+#pragma comment(lib, "dwmapi.lib")
 
 #pragma comment(lib, "Xinput9_1_0.lib")
 
+POINT fakecursor;
+bool loop = true;
+HWND hwnd = 0;
+
+int width1 = 0;
+int width2 = 0;
+int height1 = 0;
+int height2 = 0;
+
+int numphotoA = -1;
+int numphotoB = -1;
+int numphotoX = -1;
+int numphotoY = -1;
+
+int x = 0;
+
+HBITMAP hbm;
+//HBITMAP hbm24;
+
 std::string GetExecutableFolder() {
-    char path[MAX_PATH];
+    TCHAR path[MAX_PATH];
     GetModuleFileName(NULL, path, MAX_PATH);
     std::string exePath(path);
 
@@ -85,6 +106,7 @@ bool FindSubImage24(
                     match = false;
                 }
             }
+            // DeleteObject(largeData);
             if (match) {
                 foundAt.x = x;
                 foundAt.y = y;
@@ -120,7 +142,7 @@ int CalculateStride(int width) {
     return ((width * 3 + 3) & ~3);
 }
 
-bool Save24BitBMP(const wchar_t* filename, const BYTE* pixels, int width, int height) {
+bool Save24BitBMP(const wchar_t* filename, const BYTE* pixels, int width, int height) { //for testing purposes
     int stride = ((width * 3 + 3) & ~3);
     int imageSize = stride * height;
 
@@ -152,13 +174,13 @@ bool Save24BitBMP(const wchar_t* filename, const BYTE* pixels, int width, int he
 
 
 bool LoadBMP24Bit(const wchar_t* filename, std::vector<BYTE>& pixels, int& width, int& height, int& stride) {
-    HBITMAP hbm = (HBITMAP)LoadImageW(NULL, filename, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+    hbm = (HBITMAP)LoadImageW(NULL, filename, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
     if (!hbm) return false;
 
     BITMAP bmp;
     GetObject(hbm, sizeof(BITMAP), &bmp);
-    width = bmp.bmWidth -1;
-    height = bmp.bmHeight -1;
+    width = bmp.bmWidth - 1;
+    height = bmp.bmHeight - 1;
     stride = CalculateStride(width);
 
     pixels.resize(stride * height);
@@ -177,6 +199,13 @@ bool LoadBMP24Bit(const wchar_t* filename, std::vector<BYTE>& pixels, int& width
     DeleteObject(hbm);
     return true;
 }
+
+std::string getIniString(const std::string& section, const std::string& key, const std::string& defaultValue, const std::string& iniPath) {
+    char buffer[256]; // Buffer to hold the retrieved string
+    GetPrivateProfileString(section.c_str(), key.c_str(), defaultValue.c_str(), buffer, sizeof(buffer), iniPath.c_str());
+    return std::string(buffer);
+}
+
 HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& pixels, int& strideOut) {
     RECT rcClient;
     GetClientRect(hwnd, &rcClient);
@@ -203,58 +232,54 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
 
     BYTE* pBits = nullptr;
     HBITMAP hbm24 = CreateDIBSection(hdcWindow, &bmi, DIB_RGB_COLORS, (void**)&pBits, NULL, 0);
+    HGDIOBJ oldBmp = nullptr;
     if (hbm24 != NULL)
     {
-        SelectObject(hdcMem, hbm24);
+        oldBmp = SelectObject(hdcMem, hbm24);
 
-        // Copy client area of window into memory DC
         BitBlt(hdcMem, 0, 0, width, height, hdcWindow, 0, 0, SRCCOPY);
 
-        // Extract pixels
-        GetDIBits(hdcWindow, hbm24, 0, height, pixels.data(), &bmi, DIB_RGB_COLORS);
-        // Clean up
-        DeleteDC(hdcMem);
-        ReleaseDC(hwnd, hdcWindow);
+        GetDIBits(hdcMem, hbm24, 0, height, pixels.data(), &bmi, DIB_RGB_COLORS);
 
-        return hbm24;
+        // Always restore old object before deleting the DC!
+        SelectObject(hdcMem, oldBmp);
     }
-    else return NULL;
+
+    DeleteDC(hdcMem);
+    ReleaseDC(hwnd, hdcWindow);
+
+    DeleteObject(hbm24); //delete before return? strange
+    return hbm24; // insane 
+}
+DWORD WINAPI CursorDrawThread(LPVOID lpParam)
+{
+
+    return 1;
 }
 
-std::string getIniString(const std::string& section, const std::string& key, const std::string& defaultValue, const std::string& iniPath) {
-    char buffer[256]; // Buffer to hold the retrieved string
-    GetPrivateProfileString(section.c_str(), key.c_str(), defaultValue.c_str(), buffer, sizeof(buffer), iniPath.c_str());
-    return std::string(buffer);
-}
 DWORD WINAPI ThreadFunction(LPVOID lpParam)
 {
+
     //std::string iniPath = GetExecutableFolder() + "\\click.ini";
     std::string path = GetExecutableFolder() + "\\image.bmp";
     std::wstring wpath(path.begin(), path.end());
 
-   // std::string windowtitle;
-    //windowtitle = getIniString("Settings", "Window", "NOP", iniPath);
+    // std::string windowtitle;
+     //windowtitle = getIniString("Settings", "Window", "NOP", iniPath);
     Sleep(2000);
-    HWND hwnd = GetMainWindowHandle(GetCurrentProcessId());
-    bool loop = true;
-    int width1 = 0;
-    int width2 = 0;
-    int height1 = 0;
-    int height2 = 0;
+    hwnd = GetMainWindowHandle(GetCurrentProcessId());
 
-    int numphotoA = -1;
-    int numphotoB = -1;
-    int numphotoX = -1;
-    int numphotoY = -1;
 
-    int x = 0;
+
+    //image numeration
     while (numphotoA == -1 && x < 10)
     {
         std::string path = GetExecutableFolder() + "\\A" + std::to_string(x) + ".bmp";
         std::wstring wpath(path.begin(), path.end());
-        if (HBITMAP hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
-        { 
+        if (hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
+        {
             x++;
+            DeleteObject(hbm);
         }
         else
             numphotoA = x;
@@ -268,6 +293,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
         if (HBITMAP hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
         {
             x++;
+            DeleteObject(hbm);
         }
         else
             numphotoB = x;
@@ -281,6 +307,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
         if (HBITMAP hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
         {
             x++;
+            DeleteObject(hbm);
         }
         else
             numphotoY = x;
@@ -294,20 +321,24 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
         if (HBITMAP hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
         {
             x++;
+            DeleteObject(hbm);
         }
+
+
         else
             numphotoX = x;
+
         Sleep(2);
     }
-
+    //////////////////////////////////////
     while (loop == true)
     {
         if (hwnd == NULL)
         {
-            HWND hwnd = GetMainWindowHandle(GetCurrentProcessId());
+            hwnd = GetMainWindowHandle(GetCurrentProcessId());
         }
         else
-        { 
+        {
             XINPUT_STATE state;
             ZeroMemory(&state, sizeof(XINPUT_STATE));
             // Check controller 0
@@ -320,7 +351,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
                 if (buttons & XINPUT_GAMEPAD_A)
                 {
-                    for (int i = 0; i < numphotoA; i++)
+                    for (int i = 0; i < numphotoA; i++) //memory problem here somewhere
                     {
                         std::string path = GetExecutableFolder() + "\\A" + std::to_string(i) + ".bmp";
                         std::wstring wpath(path.begin(), path.end());
@@ -330,22 +361,25 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         int strideLarge, strideSmall;
                         int smallW, smallH;
 
-                        // Load the subimage
-                        if (!LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall)) {
-                            MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
-                            return 1;
-                        }
+                        // Load the subimage 
+                        if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
+                        {
+                            // Capture screen
+                            if (CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge))
+                            {
 
-                        // Capture screen
-                        CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge);
+                                POINT pt;
+                                if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt))
+                                {
+                                    ClientToScreen(hwnd, &pt);
+                                    SendMouseClick(pt.x, pt.y, 1);
 
-                        POINT pt;
-                        if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge,
-                            smallPixels.data(), smallW, smallH, strideSmall, pt)) {
-                            std::wcout << L"Match found at (" << pt.x << L"," << pt.y << L")\n";
-                            ClientToScreen(hwnd, &pt);
-                            SendMouseClick(pt.x, pt.y, 1);
+                                }
+                            }
+
                         }
+                        else MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
+
                     }
                 }
                 if (buttons & XINPUT_GAMEPAD_B)
@@ -354,30 +388,34 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     {
                         std::string path = GetExecutableFolder() + "\\B" + std::to_string(i) + ".bmp";
                         std::wstring wpath(path.begin(), path.end());
-                       // std::string iniPath = GetExecutableFolder() + "\\click.ini";
+                        // std::string iniPath = GetExecutableFolder() + "\\click.ini";
                         std::vector<BYTE> largePixels, smallPixels;
                         SIZE screenSize;
                         int strideLarge, strideSmall;
                         int smallW, smallH;
 
                         // Load the subimage
-                        if (!LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall)) {
-                            MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
-                            return 1;
-                        }
+                        if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
+                        {
+                            // Capture screen
+                            if (CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge))
+                            {
 
-                        // Capture screen
-                        CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge);
+                                POINT pt;
+                                if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt))
+                                {
+                                    ClientToScreen(hwnd, &pt);
+                                    SendMouseClick(pt.x, pt.y, 1);
 
-                        POINT pt;
-                        if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge,
-                            smallPixels.data(), smallW, smallH, strideSmall, pt)) {
-                            std::wcout << L"Match found at (" << pt.x << L"," << pt.y << L")\n";
-                            ClientToScreen(hwnd, &pt);
-                            SendMouseClick(pt.x, pt.y, 1);
+                                }
+                            }
+
                         }
+                        else MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
+
+
+
                     }
-
                 }
                 if (buttons & XINPUT_GAMEPAD_DPAD_UP)
                 {
@@ -404,21 +442,23 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         int smallW, smallH;
 
                         // Load the subimage
-                        if (!LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall)) {
-                            MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
-                            return 1;
-                        }
+                        if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
+                        {
+                            // Capture screen
+                            if (CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge))
+                            {
 
-                        // Capture screen
-                        CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge);
+                                POINT pt;
+                                if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt))
+                                {
+                                    ClientToScreen(hwnd, &pt);
+                                    SendMouseClick(pt.x, pt.y, 1);
 
-                        POINT pt;
-                        if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge,
-                            smallPixels.data(), smallW, smallH, strideSmall, pt)) {
-                            std::wcout << L"Match found at (" << pt.x << L"," << pt.y << L")\n";
-                            ClientToScreen(hwnd, &pt);
-                            SendMouseClick(pt.x, pt.y, 1);
+                                }
+                            }
+
                         }
+                        else MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
                     }
                 }
                 if (buttons & XINPUT_GAMEPAD_Y)
@@ -434,40 +474,44 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         int smallW, smallH;
 
                         // Load the subimage
-                        if (!LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall)) {
-                            MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
-                            return 1;
-                        }
+                        if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
+                        {
+                            // Capture screen
+                            if (CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge))
+                            {
 
-                        // Capture screen
-                        CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge);
+                                POINT pt;
+                                if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt))
+                                {
+                                    ClientToScreen(hwnd, &pt);
+                                    SendMouseClick(pt.x, pt.y, 1);
 
-                        POINT pt;
-                        if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge,
-                            smallPixels.data(), smallW, smallH, strideSmall, pt)) {
-                            std::wcout << L"Match found at (" << pt.x << L"," << pt.y << L")\n";
-                            ClientToScreen(hwnd, &pt);
-                            SendMouseClick(pt.x, pt.y, 1);
+                                }
+                            }
+
                         }
+                        else MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
+
                     }
                 }
                 if (buttons & XINPUT_GAMEPAD_START) {
                 }
             } //no controller
-          Sleep(100);
+
         } // no hwnd
+        Sleep(5);
     } //loop end
     return 0;
 }
 
-    BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)        
-    {
-        switch (ul_reason_for_call) {
-        case DLL_PROCESS_ATTACH:
-            CreateThread(nullptr, 0, ThreadFunction, nullptr, 0, nullptr);
-            break;
-        }
-        return TRUE;
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
+{
+    switch (ul_reason_for_call) {
+    case DLL_PROCESS_ATTACH:
+        //may slow down parent process if it continues on this thread
+        CreateThread(nullptr, 0, ThreadFunction, nullptr, 0, nullptr); //not recommended? but seem to work well
+        CreateThread(nullptr, 0, CursorDrawThread, nullptr, 0, nullptr); //not recommended? but seem to work well
+        break;
     }
-
-
+    return TRUE;
+}
