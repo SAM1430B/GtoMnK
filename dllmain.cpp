@@ -29,10 +29,12 @@ int numphotoB = -1;
 int numphotoX = -1;
 int numphotoY = -1;
 
+bool pausedraw = false;
+
 int x = 0;
 
 HBITMAP hbm;
-//HBITMAP hbm24;
+
 
 std::string GetExecutableFolder() {
     TCHAR path[MAX_PATH];
@@ -205,7 +207,10 @@ std::string getIniString(const std::string& section, const std::string& key, con
     GetPrivateProfileString(section.c_str(), key.c_str(), defaultValue.c_str(), buffer, sizeof(buffer), iniPath.c_str());
     return std::string(buffer);
 }
+HBITMAP Draw(HWND hwnd, int X, int Y, bool screenshot) 
+{
 
+}
 HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& pixels, int& strideOut) {
     RECT rcClient;
     GetClientRect(hwnd, &rcClient);
@@ -227,6 +232,7 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
     bmi.bmiHeader.biBitCount = 24;
     bmi.bmiHeader.biCompression = BI_RGB;
 
+   // HBITMAP hbm24 = Draw(hwnd, 0, 0, true);
     HDC hdcWindow = GetDC(hwnd);
     HDC hdcMem = CreateCompatibleDC(hdcWindow);
 
@@ -248,12 +254,17 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
     DeleteDC(hdcMem);
     ReleaseDC(hwnd, hdcWindow);
 
-    DeleteObject(hbm24); //delete before return? strange
-    return hbm24; // insane 
+
+     
+    return hbm24;  //always delete after use, alright. also remember to assign to variable then
 }
 DWORD WINAPI CursorDrawThread(LPVOID lpParam)
 {
+    if (pausedraw == false)
+    {
 
+
+    }
     return 1;
 }
 
@@ -270,7 +281,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
 
 
-
+    HBITMAP hbmdsktop;
     //image numeration
     while (numphotoA == -1 && x < 10)
     {
@@ -365,7 +376,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
                         {
                             // Capture screen
-                            if (CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge))
+                            if (hbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge))
                             {
 
                                 POINT pt;
@@ -375,6 +386,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                     SendMouseClick(pt.x, pt.y, 1);
 
                                 }
+                                DeleteObject(hbmdsktop);
                             }
 
                         }
@@ -393,12 +405,13 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         SIZE screenSize;
                         int strideLarge, strideSmall;
                         int smallW, smallH;
+                        
 
                         // Load the subimage
                         if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
                         {
                             // Capture screen
-                            if (CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge))
+                            if (hbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge))
                             {
 
                                 POINT pt;
@@ -408,6 +421,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                     SendMouseClick(pt.x, pt.y, 1);
 
                                 }
+                                DeleteObject(hbmdsktop);
                             }
 
                         }
@@ -445,7 +459,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
                         {
                             // Capture screen
-                            if (CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge))
+                            if (hbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge))
                             {
 
                                 POINT pt;
@@ -455,6 +469,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                     SendMouseClick(pt.x, pt.y, 1);
 
                                 }
+                               DeleteObject(hbmdsktop);
                             }
 
                         }
@@ -487,6 +502,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                     SendMouseClick(pt.x, pt.y, 1);
 
                                 }
+                               // DeleteObject(hbmdsktop);
                             }
 
                         }
@@ -499,7 +515,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
             } //no controller
 
         } // no hwnd
-        Sleep(5);
+        Sleep(75);
     } //loop end
     return 0;
 }
