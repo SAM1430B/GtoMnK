@@ -29,8 +29,8 @@ int height2 = 0;
 
 
 //fake cursor
-int X = 100;
-int Y = 100;
+int X = 20;
+int Y = 20;
 int OldX = 0;
 int OldY = 0;
 int ydrag;
@@ -79,168 +79,15 @@ void sendKey(char key) {
     ip.ki.dwFlags = KEYEVENTF_KEYUP;
     SendInput(1, &ip, sizeof(INPUT));
 }
-bool SendMouseClick(int x, int y, int z) {
-    // Create a named mutex
-    HANDLE hMutex = CreateMutexA(
-        NULL,      // Default security
-        FALSE,     // Initially not owned
-        "Global\\PuttingInputByMessenils" // Name of mutex
-    );
-    if (hMutex == NULL) {
-        std::cerr << "CreateMutex failed: " << GetLastError() << std::endl;
-        return 1;
-    }
-    // Check if mutex already exists
-    if (GetLastError() == ERROR_ALREADY_EXISTS) 
-    {
-        std::cout << "Mutex exists, waiting for it to be released...\n";
-        // Wait for mutex to be released by other process (INFINITE = wait forever)
-        DWORD waitResult = WaitForSingleObject(hMutex, INFINITE);
-        if (waitResult == WAIT_OBJECT_0) 
-        {
-            std::cout << "Acquired mutex after waiting!\n";
 
-            // Convert screen coordinates to absolute values
-            double screenWidth = GetSystemMetrics(SM_CXSCREEN) - 1;
-            double screenHeight = GetSystemMetrics(SM_CYSCREEN) - 1;
-
-            double fx = x * (65535.0f / screenWidth);
-            double fy = y * (65535.0f / screenHeight);
-
-            INPUT input[3] = {};
-
-            // Move the mouse to the specified position
-            input[0].type = INPUT_MOUSE;
-            input[0].mi.dx = static_cast<LONG>(fx);
-            input[0].mi.dy = static_cast<LONG>(fy);
-            input[0].mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
-            if (z == 1) 
-            { //left button press
-                // Simulate mouse left button down
-                input[1].type = INPUT_MOUSE;
-                input[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-
-                // Simulate mouse left button up
-                input[2].type = INPUT_MOUSE;
-                input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
-            }
-            else if (z == 2) 
-            { //right button press
-                // Simulate mouse left button down
-                input[1].type = INPUT_MOUSE;
-                input[1].mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
-
-                // Simulate mouse left button up
-                input[2].type = INPUT_MOUSE;
-                input[2].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-            }
-            else if (z == 3)
-            { //right button press, drag and release
-                // Simulate mouse left button down
-                input[1].type = INPUT_MOUSE;
-                input[1].mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
-
-                input[2].type = INPUT_MOUSE;
-                input[2].mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
-            }
-            else if (z == 5)
-            { //right button press, drag and release
-                // Simulate mouse left button up
-                input[1].type = INPUT_MOUSE;
-                input[1].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-
-                input[2].type = INPUT_MOUSE;
-                input[2].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-            }
-            else if (z == 4)
-            { //right button press, drag and release
-                // Simulate mouse left button up
-
-            }
-
-
-            SendInput(1, input, sizeof(INPUT));
-            Sleep(40);
-            SendInput(3, input, sizeof(INPUT));
-        
-            ReleaseMutex(hMutex);
-            return true;
-        }
-        else {
-            std::cerr << "WaitForSingleObject failed: " << GetLastError() << std::endl;
-        }
-    }
-    else {
-        std::cout << "Created mutex successfully, continuing...\n";
-        // ... your critical section here ...
-        // Release mutex when done
-        
-    
-        // Convert screen coordinates to absolute values
-        double screenWidth = GetSystemMetrics(SM_CXSCREEN) - 1;
-        double screenHeight = GetSystemMetrics(SM_CYSCREEN) - 1;
-        double fx = x * (65535.0f / screenWidth);
-        double fy = y * (65535.0f / screenHeight);
-
-        INPUT input[3] = {};
-
-        // Move the mouse to the specified position
-        input[0].type = INPUT_MOUSE;
-        input[0].mi.dx = static_cast<LONG>(fx);
-        input[0].mi.dy = static_cast<LONG>(fy);
-        input[0].mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
-        if (z == 1) { //left button press
-            // Simulate mouse left button down
-            input[1].type = INPUT_MOUSE;
-            input[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-
-            // Simulate mouse left button up
-            input[2].type = INPUT_MOUSE;
-            input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
-        }
-        else if (z == 2) { //right button press
-            // Simulate mouse left button down
-            input[1].type = INPUT_MOUSE;
-            input[1].mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
-
-            // Simulate mouse left button up
-            input[2].type = INPUT_MOUSE;
-            input[2].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-        }
-        else if (z == 3)
-        { //right button press, drag and release
-            // Simulate mouse left button down
-            input[1].type = INPUT_MOUSE;
-            input[1].mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
-        }
-        else if (z == 5)
-        { //right button press, drag and release
-            // Simulate mouse left button up
-            input[2].type = INPUT_MOUSE;
-            input[2].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-        }
-        else if (z == 4)
-        { //right button press, drag and release
-            // Simulate mouse left button up
-            input[2].type = INPUT_MOUSE;
-            input[2].mi.dwFlags = 0;
-        }
-        //z is 3 or anything just move mouse
-        SendInput(1, input, sizeof(INPUT));
-        Sleep(40);
-        SendInput(3, input, sizeof(INPUT));
-        }
-    ReleaseMutex(hMutex);
-    return true;
-}
 
 bool FindSubImage24(
     const BYTE* largeData, int largeW, int largeH, int strideLarge,
     const BYTE* smallData, int smallW, int smallH, int strideSmall,
-    POINT& foundAt
+    POINT& foundAt, int Xstart, int Ystart
 ) {
-    for (int y = 0; y <= largeH - smallH; ++y) {
-        for (int x = 0; x <= largeW - smallW; ++x) {
+    for (int y = Ystart; y <= largeH - smallH; ++y) {
+        for (int x = Xstart; x <= largeW - smallW; ++x) {
             bool match = true;
             for (int j = 0; j < smallH && match; ++j) {
                 const BYTE* pLarge = largeData + (y + j) * strideLarge + x * 3;
@@ -368,7 +215,11 @@ bool SaveWindow10x10BMP(HWND hwnd, const wchar_t* filename, int x, int y) {
     bmi.bmiHeader.biPlanes = 1;
     bmi.bmiHeader.biBitCount = 24;
     bmi.bmiHeader.biCompression = BI_RGB;
-    HBITMAP hbm24 = CreateDIBSection(hdcWindow, &bmi, DIB_RGB_COLORS, nullptr, 0, 0);
+
+
+    BYTE* pBits = nullptr;
+
+    HBITMAP hbm24 = CreateDIBSection(hdcWindow, &bmi, DIB_RGB_COLORS, (void**)&pBits, 0, 0);
     if (!hbm24) {
         DeleteDC(hdcMem);
         ReleaseDC(hwnd, hdcWindow);
@@ -405,6 +256,7 @@ HBITMAP Draw(HWND hwnd, int X, int Y, bool screenshot)
 {
 
 }
+
 HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& pixels, int& strideOut, bool draw) {
     HDC hdcWindow = GetDC(hwnd);
     HDC hdcMem = CreateCompatibleDC(hdcWindow);
@@ -498,8 +350,186 @@ float Clamp(float v) {
 #define MAX_SPEED 30.0f        // Maximum pixels per poll
 #define ACCELERATION 2.0f      // Controls non-linear ramp (higher = more acceleration)
 
+
+bool SendMouseClick(int x, int y, int z) {
+    // Create a named mutex
+    HANDLE hMutex = CreateMutexA(
+        NULL,      // Default security
+        FALSE,     // Initially not owned
+        "Global\\PuttingInputByMessenils" // Name of mutex
+    );
+    if (hMutex == NULL) {
+        std::cerr << "CreateMutex failed: " << GetLastError() << std::endl;
+        MessageBox(NULL, "Error!", "Failed to create mutex", MB_OK | MB_ICONINFORMATION);
+        return false;
+    }
+    // Check if mutex already exists
+    if (GetLastError() == ERROR_ALREADY_EXISTS)
+    {
+        std::cout << "Mutex exists, waiting for it to be released...\n";
+        // Wait for mutex to be released by other process (INFINITE = wait forever)
+        DWORD waitResult = WaitForSingleObject(hMutex, INFINITE);
+        if (waitResult == WAIT_OBJECT_0)
+        {
+            std::cout << "Acquired mutex after waiting!\n";
+        }
+        else {
+
+            MessageBox(NULL, "Error!", "Wait for mutex failed", MB_OK | MB_ICONINFORMATION);
+            return false;
+
+        }
+    }
+    // Convert screen coordinates to absolute values
+    double screenWidth = GetSystemMetrics(SM_CXSCREEN) - 1;
+    double screenHeight = GetSystemMetrics(SM_CYSCREEN) - 1;
+    double fx = x * (65535.0f / screenWidth);
+    double fy = y * (65535.0f / screenHeight);
+
+    INPUT input[3] = {};
+
+    // Move the mouse to the specified position
+    input[0].type = INPUT_MOUSE;
+    input[0].mi.dx = static_cast<LONG>(fx);
+    input[0].mi.dy = static_cast<LONG>(fy);
+    input[0].mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+    if (z == 1) { //left button press
+        // Simulate mouse left button down
+        input[1].type = INPUT_MOUSE;
+        input[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+
+        // Simulate mouse left button up
+        input[2].type = INPUT_MOUSE;
+        input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+    }
+    else if (z == 2) { //right button press
+        // Simulate mouse left button down
+        input[1].type = INPUT_MOUSE;
+        input[1].mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
+
+        // Simulate mouse left button up
+        input[2].type = INPUT_MOUSE;
+        input[2].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+    }
+    else if (z == 3)
+    { //right button press, drag and release
+        // Simulate mouse left button down
+        input[1].type = INPUT_MOUSE;
+        input[1].mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
+    }
+    else if (z == 5)
+    { //right button press, drag and release
+        // Simulate mouse left button up
+        input[2].type = INPUT_MOUSE;
+        input[2].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+    }
+    else if (z == 4)
+    { //right button press, drag and release
+        // Simulate mouse left button up
+        input[2].type = INPUT_MOUSE;
+        input[2].mi.dwFlags = 0;
+    }
+    //z is 3 or anything just move mouse
+    SendInput(3, input, sizeof(INPUT));
+    ReleaseMutex(hMutex);
+    CloseHandle(hMutex);
+    return true;
+}
+bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop)
+{
+    if (mode != 2)
+    {
+        pausedraw = true;
+        Sleep(25);
+        bool foundit = false;
+        int i = 0;
+        while (!foundit && i < serchnum)
+        {
+            i++;
+            std::string path = GetExecutableFolder() + key + std::to_string(i) + ".bmp";
+            std::wstring wpath(path.begin(), path.end());
+            // std::string iniPath = GetExecutableFolder() + "\\click.ini";
+            
+
+            // Load the subimage 
+            if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
+            {
+                // Capture screen
+                if (hbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false))
+                {
+
+                    POINT pt;
+                    if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt, X + 2, Y))
+                    {
+                        X = pt.x;
+                        Y = pt.y;
+                        ClientToScreen(hwnd, &pt);
+                        SendMouseClick(pt.x, pt.y, 1);
+                        foundit = true;
+
+                    }
+                    DeleteObject(hbmdsktop);
+                    Sleep(20); //to avoid double press
+                }
+
+            }
+        }
+        i = 0;
+        while (!foundit && i < serchnum)
+        {
+                 i++;
+                std::string path = GetExecutableFolder() + key + std::to_string(i) + ".bmp";
+                std::wstring wpath(path.begin(), path.end());
+                // std::string iniPath = GetExecutableFolder() + "\\click.ini";
+
+
+                // Load the subimage 
+                if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
+                {
+                    // Capture screen
+                    if (hbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false))
+                    {
+
+                        POINT pt;
+
+                        if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt, 0, 0))
+                        {
+                           ;
+                            X = pt.x;
+                            Y = pt.y;
+                            ClientToScreen(hwnd, &pt);
+                            SendMouseClick(pt.x, pt.y, 1);
+                            foundit = true;
+
+                        }
+                        DeleteObject(hbmdsktop);
+                        Sleep(20); //to avoid double press
+                    }
+
+                }
+
+                else return false;
+        }
+
+
+        return true;
+
+    }
+    else //mode 2 button mapping
+    {
+
+        Sleep(500); //to make sure red flicker expired
+        std::string path = GetExecutableFolder() + key + std::to_string(serchnum) + ".bmp";
+        std::wstring wpath(path.begin(), path.end());
+        SaveWindow10x10BMP(hwnd, wpath.c_str(), X, Y);
+        MessageBox(NULL, "Mapped spot!", "A button is now mapped to red spot", MB_OK | MB_ICONINFORMATION);
+        //numphotoA++;
+
+    }
+}
 DWORD WINAPI ThreadFunction(LPVOID lpParam)
 {
+    Sleep(2000);
    // CreateThread(nullptr, 0, CursorDrawThread, nullptr, 0, nullptr); //not recommended? but seem to work well
     //std::string iniPath = GetExecutableFolder() + "\\click.ini";
     std::string path = GetExecutableFolder() + "\\image.bmp";
@@ -507,7 +537,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
     // std::string windowtitle;
      //windowtitle = getIniString("Settings", "Window", "NOP", iniPath);
-    Sleep(2000);
+    
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
 
     int mode = 0;
@@ -515,7 +545,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     int numphotoB = -1;
     int numphotoX = -1;
     int numphotoY = -1;
-    HBITMAP hbmdsktop;
+    HBITMAP hbmdsktop = NULL;
+
     //image numeration
     while (numphotoA == -1 && x < 50)
     {
@@ -577,6 +608,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     }
 
     //////////////////////////////////////
+    bool Aprev = false;
+        
     while (loop == true)
     {
         if (hwnd == NULL)
@@ -591,113 +624,39 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
             DWORD dwResult = XInputGetState(0, &state);
             bool leftPressed = IsTriggerPressed(state.Gamepad.bLeftTrigger);
             bool rightPressed = IsTriggerPressed(state.Gamepad.bRightTrigger);
+            
+
 
 
             if (dwResult == ERROR_SUCCESS)
             {
                 // Controller is connected
                 WORD buttons = state.Gamepad.wButtons;
+                bool currA = (buttons & XINPUT_GAMEPAD_A) != 0;
+                bool Apressed = (buttons & XINPUT_GAMEPAD_A);
 
-                if (buttons & XINPUT_GAMEPAD_A)
+                if (Apressed)
                 {
-                    if ( mode != 2)
+                    if (Aprev == false)
                     { 
-                    pausedraw = true;
-                    Sleep(25);
-                    for (int i = 0; i < numphotoA; i++) //memory problem here somewhere
-                    {
-                        std::string path = GetExecutableFolder() + "\\A" + std::to_string(i) + ".bmp";
-                        std::wstring wpath(path.begin(), path.end());
-                        // std::string iniPath = GetExecutableFolder() + "\\click.ini";
-
-
-                        // Load the subimage 
-                        if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
-                        {
-                            // Capture screen
-                            if (hbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false))
-                            {
-
-                                POINT pt;
-                                if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt))
-                                {
-                                    ClientToScreen(hwnd, &pt);
-                                    SendMouseClick(pt.x, pt.y, 1);
-
-                                }
-                                DeleteObject(hbmdsktop);
-                            }
-
+                        Buttonaction("\\A", mode, numphotoA, hbmdsktop);
+                        if ( mode == 2)
+                        { 
+                            numphotoA++;
                         }
-                        else MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
-
+                        Aprev = true;
                     }
-                    pausedraw = false;
-                    }
-                    else //mode 2 button mapping
-                    {
-
-                        Sleep(500); //to make sure red flicker expired
-                        std::string path = GetExecutableFolder() + "\\A" + std::to_string(numphotoA) + ".bmp";
-                        std::wstring wpath(path.begin(), path.end());
-                        SaveWindow10x10BMP(hwnd, wpath.c_str(), X, Y);
-                        MessageBox(NULL, "Mapped spot!", "A button is now mapped to red spot", MB_OK | MB_ICONINFORMATION);
-                        ThreadFunction(NULL); //back to init, recount bitmaps as one more should be added
-
-                    }
+                }
+                if (Apressed == false)
+                {
+                    Aprev = false;
                 }
                 if (buttons & XINPUT_GAMEPAD_B)
                 {
-                    if (mode != 2)
+                    Buttonaction("\\B", mode, numphotoB, hbmdsktop);
+                    if (mode == 2)
                     {
-                    pausedraw = true;
-
-                    for (int i = 0; i < numphotoB; i++)
-                    {
-                        std::string path = GetExecutableFolder() + "\\B" + std::to_string(i) + ".bmp";
-                        std::wstring wpath(path.begin(), path.end());
-                        // std::string iniPath = GetExecutableFolder() + "\\click.ini";
-                        std::vector<BYTE> largePixels, smallPixels;
-                        SIZE screenSize;
-                        int strideLarge, strideSmall;
-                        int smallW, smallH;
-
-
-                        // Load the subimage
-                        if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
-                        {
-                            // Capture screen
-                            if (hbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false))
-                            {
-
-                                POINT pt;
-                                if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt))
-                                {
-                                    ClientToScreen(hwnd, &pt);
-                                    SendMouseClick(pt.x, pt.y, 1);
-
-                                }
-                                DeleteObject(hbmdsktop);
-                            }
-
-                        }
-                        else MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
-
-
-
-                    }
-                    pausedraw = false;
-                    }
-                    else //mode 2 button mapping
-                    {
-
-                        Sleep(500); //to make sure red flicker expired
-                        std::string path = GetExecutableFolder() + "\\B" + std::to_string(numphotoB) + ".bmp";
-                        std::wstring wpath(path.begin(), path.end());
-                        SaveWindow10x10BMP(hwnd, wpath.c_str(), X, Y);
-                        MessageBox(NULL, "Mapped spot!", "B button is now mapped to red spot", MB_OK | MB_ICONINFORMATION);
-                        ThreadFunction(NULL); //back to init, recount bitmaps as one more should be added
-
+                        numphotoB++;
                     }
                 }
                 if (buttons & XINPUT_GAMEPAD_DPAD_UP)
@@ -720,105 +679,19 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 }
                 if (buttons & XINPUT_GAMEPAD_X)
                 {
-                    if (mode != 2)
+                    Buttonaction("\\X", mode, numphotoX, hbmdsktop);
+                    if (mode == 2)
                     {
-                    pausedraw = true;
-                    Sleep(25);
-                    for (int i = 0; i < numphotoX; i++)
-                    {
-                        std::string path = GetExecutableFolder() + "\\X" + std::to_string(i) + ".bmp";
-                        std::wstring wpath(path.begin(), path.end());
-                        // std::string iniPath = GetExecutableFolder() + "\\click.ini";
-                        std::vector<BYTE> largePixels, smallPixels;
-                        SIZE screenSize;
-                        int strideLarge, strideSmall;
-                        int smallW, smallH;
-
-                        // Load the subimage
-                        if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
-                        {
-                            // Capture screen
-                            if (hbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false))
-                            {
-
-                                POINT pt;
-                                if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt))
-                                {
-                                    ClientToScreen(hwnd, &pt);
-                                    SendMouseClick(pt.x, pt.y, 1);
-
-                                }
-                               DeleteObject(hbmdsktop);
-                            }
-
-                        }
-                        else MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
-                    }
-                    pausedraw = false;
-                    }
-                    else //mode 2 button mapping
-                    {
-
-                        Sleep(500); //to make sure red flicker expired
-                        std::string path = GetExecutableFolder() + "\\X" + std::to_string(numphotoX) + ".bmp";
-                        std::wstring wpath(path.begin(), path.end());
-                        SaveWindow10x10BMP(hwnd, wpath.c_str(), X, Y);
-                        MessageBox(NULL, "Mapped spot!", "X button is now mapped to red spot", MB_OK | MB_ICONINFORMATION);
-                        ThreadFunction(NULL); //back to init, recount bitmaps as one more should be added
-                        
-
+                        numphotoX++;
                     }
                 }
                 if (buttons & XINPUT_GAMEPAD_Y)
                 {
-                    if (mode != 2)
+                    Buttonaction("\\Y", mode, numphotoY, hbmdsktop);
+                    if (mode == 2)
                     {
-                    pausedraw = true;
-                    Sleep(25);
-                    for (int i = 0; i < numphotoY; i++)
-                    {
-                        std::string path = GetExecutableFolder() + "\\Y" + std::to_string(i) + ".bmp";
-                        std::wstring wpath(path.begin(), path.end());
-                        // std::string iniPath = GetExecutableFolder() + "\\click.ini";
-                        std::vector<BYTE> largePixels, smallPixels;
-                        SIZE screenSize;
-                        int strideLarge, strideSmall;
-                        int smallW, smallH;
-
-                        // Load the subimage
-                        if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
-                        {
-                            // Capture screen
-                            if (hbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false))
-                            {
-
-                                POINT pt;
-                                if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt))
-                                {
-                                    ClientToScreen(hwnd, &pt);
-                                    SendMouseClick(pt.x, pt.y, 1);
-
-                                }
-                                DeleteObject(hbmdsktop);
-                            }
-
-                        }
-                        else MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
-
+                        numphotoY++;
                     }
-                    pausedraw = false;
-                }
-                else //mode 2 button mapping
-                {
-
-                    Sleep(500); //to make sure red flicker expired
-                    std::string path = GetExecutableFolder() + "\\Y" + std::to_string(numphotoY) + ".bmp";
-                    std::wstring wpath(path.begin(), path.end());
-                    SaveWindow10x10BMP(hwnd, wpath.c_str(), X, Y);
-                    MessageBox(NULL, "Mapped spot!", "Y button is now mapped to red spot", MB_OK | MB_ICONINFORMATION);
-                    ThreadFunction(NULL); //back to init, recount bitmaps as one more should be added
-
-                }
                 }
 
                 if (mode > 0 )
@@ -834,7 +707,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     
 
                     OldX = X;
-                    if (Xaxis < 0)
+                    if (Xaxis < -7849) //strange values. but tested many before choosing this
                     { 
                         if (X > 0)
                         { 
@@ -842,7 +715,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         X = X - 2;
                         }
                     }
-                    else if (Xaxis > 16000)
+                    else if (Xaxis > 12000) //strange values. but tested many before choosing this
                     {
                         if (X < width)
                         {
@@ -852,7 +725,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
 
                     /////////////////////
-                    if (Yaxis > 7849)
+                    if (Yaxis > 0) //strange values. but tested many before choosing this
                     {
                         if (Y > 0)
                         {
@@ -860,11 +733,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             Y = Y - 2;
                         }
                     }
-                    else  if (Yaxis < -16000)
-                    {
+                    else  if (Yaxis < -16049) //strange values. but tested many before choosing this
+                    { //my controller is not calibrated maybe
                         if (Y < height)
                         {
-                            sovetid = 75 - (std::abs(Yaxis) / 450);
+                            sovetid = 75 - (std::abs(Yaxis) / 450); //a litt
                             Y = Y + 2;
                         }
                     }
