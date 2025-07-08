@@ -632,13 +632,25 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, 
 DWORD WINAPI ThreadFunction(LPVOID lpParam)
 {
     Sleep(2000);
-   // CreateThread(nullptr, 0, CursorDrawThread, nullptr, 0, nullptr); //not recommended? but seem to work well
-    //std::string iniPath = GetExecutableFolder() + "\\click.ini";
-    std::string path = GetExecutableFolder() + "\\image.bmp";
-    std::wstring wpath(path.begin(), path.end());
 
-    // std::string windowtitle;
-     //windowtitle = getIniString("Settings", "Window", "NOP", iniPath);
+    // settings reporting
+    std::string iniPath = GetExecutableFolder() + "\\screenshotinput.ini";
+    std::string iniSettings = "Settings";
+   // std::string controllerID = getIniString(iniSettings.c_str(), "Controller ID", "0", iniPath);
+
+    int controllerID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", 0, iniPath.c_str());
+    int AxisLeftsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisLeftsens", -7849, iniPath.c_str());
+    int AxisRightsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisRightsens", 12000, iniPath.c_str());
+    int AxisUpsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisUpsens", 0, iniPath.c_str());
+    int AxisDownsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisDownsens", -16049, iniPath.c_str());
+
+    int sens = GetPrivateProfileInt(iniSettings.c_str(), "Dot Speed", 75, iniPath.c_str());
+    int sens2 = GetPrivateProfileInt(iniSettings.c_str(), "CA Dot Speed", 100, iniPath.c_str());
+
+   // std::string path = GetExecutableFolder() + "\\image.bmp";
+   // std::wstring wpath(path.begin(), path.end());
+
+    Sleep(1000);
     
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
 
@@ -724,7 +736,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
             XINPUT_STATE state;
             ZeroMemory(&state, sizeof(XINPUT_STATE));
             // Check controller 0
-            DWORD dwResult = XInputGetState(0, &state);
+            DWORD dwResult = XInputGetState(controllerID, &state);
             bool leftPressed = IsTriggerPressed(state.Gamepad.bLeftTrigger);
             bool rightPressed = IsTriggerPressed(state.Gamepad.bRightTrigger);
             
@@ -855,45 +867,46 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     
 
                     OldX = X;
-                    if (Xaxis < -7849) //strange values. but tested many before choosing this
+                    if (Xaxis < AxisLeftsens) //strange values. but tested many before choosing this
                     { 
                         if (X > 0)
                         { 
-                            sovetid = 75 - (std::abs(Xaxis) / 450);
+                            sovetid = sens - (std::abs(Xaxis) / 450);
                         X = X - 2;
                         }
                     }
-                    else if (Xaxis > 12000) //strange values. but tested many before choosing this
+                    else if (Xaxis > AxisRightsens) //strange values. but tested many before choosing this
                     {
                         if (X < width - 1)
                         {
-                            sovetid = 75 - (Xaxis / 450);
+                            sovetid = sens - (Xaxis / 450);
                             X = X + 2;
                         }
                     }
                     int accumulater = std::abs(Xaxis) + std::abs(Yaxis);
                      
                     /////////////////////
-                    if (Yaxis > 0) //strange values. but tested many before choosing this
+                    if (Yaxis > AxisUpsens) //strange values. but tested many before choosing this
                     {
                         if (Y > 0)
                         {
-                            sovetid = 75 - (std::abs(Yaxis) / 450);
+                            sovetid = sens - (std::abs(Yaxis) / 450);
                             Y = Y - 2;
                         }
                     }
-                    else  if (Yaxis < -16049) //strange values. but tested many before choosing this
+                    else  if (Yaxis < AxisDownsens) //strange values. but tested many before choosing this
                     { //my controller is not calibrated maybe
                         if (Y < height - 1)
                         {
-                            sovetid = 75 - (std::abs(Yaxis) / 450); //a litt
+                            sovetid = sens - (std::abs(Yaxis) / 450); //a litt
                             Y = Y + 2;
                         }
                     }
-                    int nysovetid = 100 - (accumulater / 700);
+                    int nysovetid = sens2 - (accumulater / 700);
                     if (nysovetid < sovetid)
                         sovetid = nysovetid;
-
+                    if (sovetid < 3) //speedlimit
+                        sovetid = 3;
                     CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw
                     //MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
 
