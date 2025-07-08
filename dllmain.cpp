@@ -491,7 +491,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, 
                         else if (strcmp(key, "\\Y") == 0) {
                             startsearchY = i;
                         }
-                        else return false;
+                       // else return false;
                         SendMouseClick(pt.x, pt.y, 1);
                        // startsearchA = i;
                         foundit = true;
@@ -506,7 +506,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, 
                // else  return false; 
 
             }
-           // else  return false; 
+          //  else  return false; 
         }
         i = 0;
         while (!foundit && i <= serchnum)
@@ -532,16 +532,16 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, 
                             X = pt.x;
                             Y = pt.y;
                             if (strcmp(key, "\\A") == 0) {
-                                startsearchA = 0;
+                                startsearchA = 1;
                             }
                             else if (strcmp(key, "\\B") == 0) {
-                                startsearchB = 0;
+                                startsearchB = 1;
                             }
                             else if (strcmp(key, "\\X") == 0) {
-                                startsearchX = 0;
+                                startsearchX = 1;
                             }
                             else if (strcmp(key, "\\Y") == 0) {
-                                startsearchY = 0;
+                                startsearchY = 1;
                             }
                             else return false;
                             ClientToScreen(hwnd, &pt);
@@ -557,7 +557,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, 
 
                 }
 
-             //   else return false; //not load bmp
+               // else return false; //not load bmp
         }
 
 
@@ -577,6 +577,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, 
 
     }
 }
+
 DWORD WINAPI ThreadFunction(LPVOID lpParam)
 {
     Sleep(2000);
@@ -689,7 +690,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 if (buttons & XINPUT_GAMEPAD_A)
                 {
                     startsearch = startsearchA;
-                    Buttonaction("\\A", mode, numphotoB, hbmdsktop, startsearch);
+                    if (Buttonaction("\\A", mode, numphotoB, hbmdsktop, startsearch))
+                    {
+                    }
+                    else
+                    { //error handling
+                    }
                     if (mode == 2)
                     {
                         numphotoA++;
@@ -698,7 +704,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 if (buttons & XINPUT_GAMEPAD_B)
                 {
                     startsearch = startsearchB;
-                    Buttonaction("\\B", mode, numphotoB, hbmdsktop, startsearch);
+                    if (Buttonaction("\\B", mode, numphotoB, hbmdsktop, startsearch))
+                    { 
+                    }
+                    else 
+                    { //error handling
+                    }
                     if (mode == 2)
                     {
                         numphotoB++;
