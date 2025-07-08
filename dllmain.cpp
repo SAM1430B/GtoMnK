@@ -125,6 +125,8 @@ bool sendKey(char key, int typeofkey) { //VK_LEFT VK_RIGHT VK_DOWN VK_UP
     // Key up event
     ip.ki.dwFlags = KEYEVENTF_KEYUP;
     SendInput(1, &ip, sizeof(INPUT));
+    ReleaseMutex(hMutex);
+    CloseHandle(hMutex);
     return true;
 }
 
