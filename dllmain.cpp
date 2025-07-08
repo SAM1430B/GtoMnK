@@ -17,6 +17,7 @@
 
 POINT fakecursor;
 POINT startdrag;
+POINT activatewindow;
 bool loop = true;
 HWND hwnd = 0;
 HWND pointerwindow = 0;
@@ -74,16 +75,57 @@ std::string GetExecutableFolder() {
     return exePath.substr(0, lastSlash);
 }
 
-void sendKey(char key) {
+bool sendKey(char key, int typeofkey) { //VK_LEFT VK_RIGHT VK_DOWN VK_UP
+    // Create a named mutex
+    HANDLE hMutex = CreateMutexA(
+        NULL,      // Default security
+        FALSE,     // Initially not owned
+        "Global\\PuttingInput_KB_ByMessenils" // Name of mutex
+    );
+    if (hMutex == NULL) {
+        std::cerr << "CreateMutex failed: " << GetLastError() << std::endl;
+        MessageBox(NULL, "Error!", "Failed to create mutex", MB_OK | MB_ICONINFORMATION);
+        return false;
+    }
+    // Check if mutex already exists
+    if (GetLastError() == ERROR_ALREADY_EXISTS)
+    {
+        std::cout << "Mutex exists, waiting for it to be released...\n";
+        // Wait for mutex to be released by other process (INFINITE = wait forever)
+        DWORD waitResult = WaitForSingleObject(hMutex, INFINITE);
+        if (waitResult == WAIT_OBJECT_0)
+        {
+            std::cout << "Acquired mutex after waiting!\n";
+        }
+        else {
+
+            MessageBox(NULL, "Error!", "Wait for mutex failed", MB_OK | MB_ICONINFORMATION);
+            return false;
+
+        }
+    }
     INPUT ip = {};
     ip.type = INPUT_KEYBOARD;
-    ip.ki.wVk = VkKeyScan(key); // Converts character to virtual key code
+    if (typeofkey == 0)
+        ip.ki.wVk = VkKeyScan(key); // Converts character to virtual key code
+    else if (typeofkey == 1)
+        ip.ki.wVk = VK_LEFT; // Converts character to virtual key code
+    else if (typeofkey == 2)
+        ip.ki.wVk = VK_RIGHT; // Converts character to virtual key code
+    else if (typeofkey == 3) 
+        ip.ki.wVk = VK_UP; // Converts character to virtual key code
+    
+    else if (typeofkey == 4) 
+        ip.ki.wVk = VK_DOWN; // Converts character to virtual key code
+    
+    else if (typeofkey == 5) 
+        ip.ki.wVk = VK_ESCAPE; // Converts character to virtual key code
     ip.ki.dwFlags = 0; // Key down
     SendInput(1, &ip, sizeof(INPUT));
-
     // Key up event
     ip.ki.dwFlags = KEYEVENTF_KEYUP;
     SendInput(1, &ip, sizeof(INPUT));
+    return true;
 }
 
 
@@ -357,7 +399,7 @@ float Clamp(float v) {
 #define ACCELERATION 2.0f      // Controls non-linear ramp (higher = more acceleration)
 
 
-bool SendMouseClick(int x, int y, int z) {
+bool SendMouseClick(int x, int y, int z, int many) {
     // Create a named mutex
     HANDLE hMutex = CreateMutexA(
         NULL,      // Default security
@@ -422,9 +464,6 @@ bool SendMouseClick(int x, int y, int z) {
         // Simulate mouse left button down
         input[1].type = INPUT_MOUSE;
         input[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-
-        input[2].type = INPUT_MOUSE;
-        input[2].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
     }
     else if (z == 5)
     { //right button press, drag and release
@@ -435,17 +474,25 @@ bool SendMouseClick(int x, int y, int z) {
         input[2].type = INPUT_MOUSE;
         input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
     }
-    else if (z == 4)
+    else if (z == 6)
+    { //right button press, drag and release
+        // Simulate mouse left button down
+    }
+    else if (z == 7)
     { //right button press, drag and release
         // Simulate mouse left button up
         input[1].type = INPUT_MOUSE;
-        input[1].mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+        input[1].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
 
         input[2].type = INPUT_MOUSE;
-        input[2].mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+        input[2].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+    }
+    else if (z == 4)
+    { //right button press, drag and release
+        // Simulate mouse left button up
     }
     //z is 3 or anything just move mouse
-    SendInput(3, input, sizeof(INPUT));
+    SendInput(many, input, sizeof(INPUT));
     ReleaseMutex(hMutex);
     CloseHandle(hMutex);
     return true;
@@ -492,7 +539,8 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, 
                             startsearchY = i;
                         }
                        // else return false;
-                        SendMouseClick(pt.x, pt.y, 1);
+                        SendMouseClick(pt.x, pt.y, 1, 3);
+                        ScreenToClient(hwnd, &pt);
                        // startsearchA = i;
                         foundit = true;
 
@@ -545,7 +593,8 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, 
                             }
                             else return false;
                             ClientToScreen(hwnd, &pt);
-                            SendMouseClick(pt.x, pt.y, 1);
+                            SendMouseClick(pt.x, pt.y, 1, 3);
+                            ScreenToClient(hwnd, &fakecursor);
                             foundit = true;
 
                         }
@@ -717,21 +766,39 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 }
                 if (buttons & XINPUT_GAMEPAD_DPAD_UP)
                 {
-                    fakecursor.x = X;
-                    fakecursor.y = Y;
-
-                    ClientToScreen(hwnd, &fakecursor);
-                    SendMouseClick(fakecursor.x, fakecursor.y, 1);
+                    activatewindow.x = 1;
+                    activatewindow.y = 1;
+                    ClientToScreen(hwnd, &activatewindow);
+                    SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
+                    ScreenToClient(hwnd, &activatewindow);
+                    sendKey(NULL, 3);
                 }
                 if (buttons & XINPUT_GAMEPAD_DPAD_DOWN)
                 {
-                    
+                    activatewindow.x = 1;
+                    activatewindow.y = 1;
+                    ClientToScreen(hwnd, &activatewindow);
+                    SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
+                    ScreenToClient(hwnd, &activatewindow);
+                    sendKey(NULL, 4);
                 }
                 if (buttons & XINPUT_GAMEPAD_DPAD_LEFT)
                 {
+                    activatewindow.x = 1;
+                    activatewindow.y = 1;
+                    ClientToScreen(hwnd, &activatewindow);
+                    SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
+                    ScreenToClient(hwnd, &activatewindow);
+                    sendKey(NULL, 1);
                 }
                 if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT)
                 {
+                    activatewindow.x = 1;
+                    activatewindow.y = 1;
+                    ClientToScreen(hwnd, &activatewindow);
+                    SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
+                    ScreenToClient(hwnd, &activatewindow);
+                    sendKey(NULL, 2);
                 }
                 if (buttons & XINPUT_GAMEPAD_X)
                 {
@@ -751,7 +818,28 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         numphotoY++;
                     }
                 }
+                if (buttons & XINPUT_GAMEPAD_START)
+                {
 
+                    if (mode == 0)
+                    {
+                        mode = 1;
+
+                        MessageBox(NULL, "Bmp + Emulated cursor mode", "Move the flickering red dot and use right trigger for left click. left trigger for right click", MB_OK | MB_ICONINFORMATION);
+                    }
+                    else if (mode == 1)
+                    {
+                        mode = 2;
+                        MessageBox(NULL, "Edit Mode", "Button mapping. will map buttons you click with the flickering red dot as an input coordinate", MB_OK | MB_ICONINFORMATION);
+
+                    }
+                    else if (mode == 2)
+                    {
+                        mode = 0;
+                        MessageBox(NULL, "Bmp mode", "only send input on bmp match", MB_OK | MB_ICONINFORMATION);
+                    }
+                    Sleep(1000); //have time to release button. this is no hurry anyway
+                }
                 if (mode > 0 )
                 { 
                     //fake cursor poll
@@ -775,13 +863,14 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
                     else if (Xaxis > 12000) //strange values. but tested many before choosing this
                     {
-                        if (X < width)
+                        if (X < width - 1)
                         {
                             sovetid = 75 - (Xaxis / 450);
                             X = X + 2;
                         }
                     }
-
+                    int accumulater = std::abs(Xaxis) + std::abs(Yaxis);
+                     
                     /////////////////////
                     if (Yaxis > 0) //strange values. but tested many before choosing this
                     {
@@ -793,41 +882,24 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
                     else  if (Yaxis < -16049) //strange values. but tested many before choosing this
                     { //my controller is not calibrated maybe
-                        if (Y < height)
+                        if (Y < height - 1)
                         {
                             sovetid = 75 - (std::abs(Yaxis) / 450); //a litt
                             Y = Y + 2;
                         }
                     }
+                    int nysovetid = 100 - (accumulater / 700);
+                    if (nysovetid < sovetid)
+                        sovetid = nysovetid;
+
                     CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw
                     //MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
 
-                }
+                
 
 
                 
-                if (buttons & XINPUT_GAMEPAD_START) 
-                {
-                    
-                    if (mode == 0)
-                    { 
-                        mode = 1;
-          
-                        MessageBox(NULL, "Bmp + Emulated cursor mode", "Move the flickering red dot and use right trigger for left click. left trigger for right click", MB_OK | MB_ICONINFORMATION);
-                    }
-                    else if (mode == 1)
-                    { 
-                        mode = 2;
-                        MessageBox(NULL, "Edit Mode", "Button mapping. will map buttons you click with the flickering red dot as an input coordinate", MB_OK | MB_ICONINFORMATION);
 
-                    }
-                    else if (mode == 2)
-                    {
-                        mode = 0;
-                        MessageBox(NULL, "Bmp mode", "only send input on bmp match", MB_OK | MB_ICONINFORMATION);
-                    }
-                    Sleep(1000); //have time to release button. this is no hurry anyway
-                }
 
                 if (leftPressed)
                 { 
@@ -846,16 +918,28 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         fakecursor.x = X;
                         fakecursor.y = Y;
 
-
+                        if (abs(startdrag.x - fakecursor.x) <= 5)
+                        { 
+                            ClientToScreen(hwnd, &startdrag);
+                            SendMouseClick(startdrag.x, startdrag.y, 2, 3); //4 4 move //5 release
+                            ScreenToClient(hwnd, &startdrag);
+                            leftPressedold = false;
+                        }
+                        else
+                        { 
                         ClientToScreen(hwnd, &startdrag);
 
-                        SendMouseClick(startdrag.x, startdrag.y, 1); //4 4 move //5 release
+                        SendMouseClick(startdrag.x, startdrag.y, 6, 2); //4 4 move //5 release
                        ClientToScreen(hwnd, &fakecursor);
-                        Sleep(500); 
-                        SendMouseClick(fakecursor.x, fakecursor.y, 4);
-                        Sleep(500);
-                        SendMouseClick(fakecursor.x, fakecursor.y, 5);
+                       Sleep(100);
+                       
+                        SendMouseClick(fakecursor.x, fakecursor.y, 6, 1);
+                        Sleep(20);
+                        SendMouseClick(fakecursor.x, fakecursor.y, 7, 2);
+                        ScreenToClient(hwnd, &fakecursor);
+                        ScreenToClient(hwnd, &startdrag);
                         leftPressedold = false;
+                        }
                     }
                 }
 
@@ -877,24 +961,35 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         fakecursor.x = X;
                         fakecursor.y = Y;
 
+                        if (abs(startdrag.x - fakecursor.x) <= 5)
+                        {
+                            ClientToScreen(hwnd, &startdrag);
+                            SendMouseClick(startdrag.x, startdrag.y, 1, 3); //4 4 move //5 release
+                            ScreenToClient(hwnd, &startdrag);
+                            rightPressedold = false;
+                        }
+                        else
+                        {
+                            ClientToScreen(hwnd, &startdrag);
 
-                        ClientToScreen(hwnd, &startdrag);
-
-                        SendMouseClick(startdrag.x, startdrag.y, 3); //4 4 move //5 release
-                        ClientToScreen(hwnd, &fakecursor);
-                        Sleep(500); 
-                        SendMouseClick(fakecursor.x, fakecursor.y, 4);
-                        Sleep(500);
-                        SendMouseClick(fakecursor.x, fakecursor.y, 5);
-                        rightPressedold = false;
+                            SendMouseClick(startdrag.x, startdrag.y, 3, 2); //4 4 move //5 release
+                            ClientToScreen(hwnd, &fakecursor);
+                            Sleep(100);
+                            SendMouseClick(fakecursor.x, fakecursor.y, 3, 1); //4
+                            Sleep(20);
+                            SendMouseClick(fakecursor.x, fakecursor.y, 5, 2);
+                            ScreenToClient(hwnd, &fakecursor);
+                            ScreenToClient(hwnd, &startdrag);
+                            rightPressedold = false;
+                        }
                     }
-                }
-
+                } //rightpress
+                } // mode above 0
             } //no controller
 
         } // no hwnd
         if (mode == 0)
-            Sleep(100);
+            Sleep(50);
         if (mode > 0)
             Sleep(sovetid); //15-80 //
 
