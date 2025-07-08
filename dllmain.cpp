@@ -421,19 +421,28 @@ bool SendMouseClick(int x, int y, int z) {
     { //right button press, drag and release
         // Simulate mouse left button down
         input[1].type = INPUT_MOUSE;
-        input[1].mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
+        input[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+
+        input[2].type = INPUT_MOUSE;
+        input[2].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
     }
     else if (z == 5)
     { //right button press, drag and release
         // Simulate mouse left button up
+        input[1].type = INPUT_MOUSE;
+        input[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+
         input[2].type = INPUT_MOUSE;
-        input[2].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+        input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
     }
     else if (z == 4)
     { //right button press, drag and release
         // Simulate mouse left button up
+        input[1].type = INPUT_MOUSE;
+        input[1].mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+
         input[2].type = INPUT_MOUSE;
-        input[2].mi.dwFlags = 0;
+        input[2].mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
     }
     //z is 3 or anything just move mouse
     SendInput(3, input, sizeof(INPUT));
@@ -448,7 +457,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, 
         pausedraw = true;
         Sleep(25);
         bool foundit = false;
-        int i = startsearch + 1;
+        int i = startsearch;
         while (!foundit && i <= serchnum)
         {
             i++;
@@ -473,28 +482,31 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, 
                         if (strcmp(key, "\\A") == 0) {
                             startsearchA = i;
                         }
-                        if (strcmp(key, "\\B") == 0) {
+                        else if (strcmp(key, "\\B") == 0) {
                             startsearchB = i;
                         }
-                        if (strcmp(key, "\\X") == 0) {
+                        else if (strcmp(key, "\\X") == 0) {
                             startsearchX = i;
                         }
-                        if (strcmp(key, "\\Y") == 0) {
+                        else if (strcmp(key, "\\Y") == 0) {
                             startsearchY = i;
                         }
+                        else return false;
                         SendMouseClick(pt.x, pt.y, 1);
                        // startsearchA = i;
                         foundit = true;
 
                     }
-                    else  return false; 
+                    
+                   // else  return false; 
                     DeleteObject(hbmdsktop);
+                    
                     Sleep(20); //to avoid double press
                 }
-                else  return false; 
+               // else  return false; 
 
             }
-            else  return false; 
+           // else  return false; 
         }
         i = 0;
         while (!foundit && i <= serchnum)
@@ -522,29 +534,30 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, 
                             if (strcmp(key, "\\A") == 0) {
                                 startsearchA = 0;
                             }
-                            if (strcmp(key, "\\B") == 0) {
+                            else if (strcmp(key, "\\B") == 0) {
                                 startsearchB = 0;
                             }
-                            if (strcmp(key, "\\X") == 0) {
+                            else if (strcmp(key, "\\X") == 0) {
                                 startsearchX = 0;
                             }
-                            if (strcmp(key, "\\Y") == 0) {
+                            else if (strcmp(key, "\\Y") == 0) {
                                 startsearchY = 0;
                             }
+                            else return false;
                             ClientToScreen(hwnd, &pt);
                             SendMouseClick(pt.x, pt.y, 1);
                             foundit = true;
 
                         }
-                        else  return false;
+                      //  else  return false;
                         DeleteObject(hbmdsktop);
                         Sleep(20); //to avoid double press
                     }
-                    else  return false;
+                 //   else  return false;
 
                 }
 
-                else return false; //not load bmp
+             //   else return false; //not load bmp
         }
 
 
@@ -826,11 +839,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         ClientToScreen(hwnd, &startdrag);
 
                         SendMouseClick(startdrag.x, startdrag.y, 1); //4 4 move //5 release
-                      // ClientToScreen(hwnd, &fakecursor);
-                        //Sleep(500); 
-                      //  SendMouseClick(fakecursor.x, fakecursor.y, 4);
-                        //Sleep(500);
-                      //  SendMouseClick(fakecursor.x, fakecursor.y, 5);
+                       ClientToScreen(hwnd, &fakecursor);
+                        Sleep(500); 
+                        SendMouseClick(fakecursor.x, fakecursor.y, 4);
+                        Sleep(500);
+                        SendMouseClick(fakecursor.x, fakecursor.y, 5);
                         leftPressedold = false;
                     }
                 }
@@ -856,12 +869,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
                         ClientToScreen(hwnd, &startdrag);
 
-                        SendMouseClick(startdrag.x, startdrag.y, 2); //4 4 move //5 release
-                       // ClientToScreen(hwnd, &fakecursor);
-                        //Sleep(500); 
-                       // SendMouseClick(fakecursor.x, fakecursor.y, 4);
-                        //Sleep(500);
-                       // SendMouseClick(fakecursor.x, fakecursor.y, 5);
+                        SendMouseClick(startdrag.x, startdrag.y, 3); //4 4 move //5 release
+                        ClientToScreen(hwnd, &fakecursor);
+                        Sleep(500); 
+                        SendMouseClick(fakecursor.x, fakecursor.y, 4);
+                        Sleep(500);
+                        SendMouseClick(fakecursor.x, fakecursor.y, 5);
                         rightPressedold = false;
                     }
                 }
