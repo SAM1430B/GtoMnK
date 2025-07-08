@@ -644,6 +644,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     int AxisUpsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisUpsens", 0, iniPath.c_str());
     int AxisDownsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisDownsens", -16049, iniPath.c_str());
 
+    int InitialMode = GetPrivateProfileInt(iniSettings.c_str(), "Initial Mode", 0, iniPath.c_str());
+    int Modechange = GetPrivateProfileInt(iniSettings.c_str(), "Allow modechange", 1, iniPath.c_str());
+
     int sens = GetPrivateProfileInt(iniSettings.c_str(), "Dot Speed", 75, iniPath.c_str());
     int sens2 = GetPrivateProfileInt(iniSettings.c_str(), "CA Dot Speed", 100, iniPath.c_str());
 
@@ -654,7 +657,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
 
-    int mode = 0;
+    int mode = InitialMode;
     int numphotoA = -1;
     int numphotoB = -1;
     int numphotoX = -1;
@@ -835,19 +838,19 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 if (buttons & XINPUT_GAMEPAD_START)
                 {
 
-                    if (mode == 0)
+                    if (mode == 0 && Modechange == 1)
                     {
                         mode = 1;
 
                         MessageBox(NULL, "Bmp + Emulated cursor mode", "Move the flickering red dot and use right trigger for left click. left trigger for right click", MB_OK | MB_ICONINFORMATION);
                     }
-                    else if (mode == 1)
+                    else if (mode == 1 && Modechange == 1)
                     {
                         mode = 2;
                         MessageBox(NULL, "Edit Mode", "Button mapping. will map buttons you click with the flickering red dot as an input coordinate", MB_OK | MB_ICONINFORMATION);
 
                     }
-                    else if (mode == 2)
+                    else if (mode == 2 && Modechange == 1)
                     {
                         mode = 0;
                         MessageBox(NULL, "Bmp mode", "only send input on bmp match", MB_OK | MB_ICONINFORMATION);
