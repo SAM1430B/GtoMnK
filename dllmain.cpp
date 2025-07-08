@@ -45,6 +45,12 @@ bool Ypressed = false;
 bool leftPressedold;
 bool rightPressedold;
 
+int startsearch = 0;
+int startsearchA = 0;
+int startsearchB = 0;
+int startsearchX = 0;
+int startsearchY = 0;
+
 int x = 0;
 
 HBITMAP hbm;
@@ -435,15 +441,15 @@ bool SendMouseClick(int x, int y, int z) {
     CloseHandle(hMutex);
     return true;
 }
-bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop)
+bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, int startsearch)
 {
     if (mode != 2)
     {
         pausedraw = true;
         Sleep(25);
         bool foundit = false;
-        int i = 0;
-        while (!foundit && i < serchnum)
+        int i = startsearch + 1;
+        while (!foundit && i <= serchnum)
         {
             i++;
             std::string path = GetExecutableFolder() + key + std::to_string(i) + ".bmp";
@@ -459,23 +465,39 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop)
                 {
 
                     POINT pt;
-                    if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt, X + 2, Y))
+                    if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt, 0, 0))
                     {
                         X = pt.x;
                         Y = pt.y;
                         ClientToScreen(hwnd, &pt);
+                        if (strcmp(key, "\\A") == 0) {
+                            startsearchA = i;
+                        }
+                        if (strcmp(key, "\\B") == 0) {
+                            startsearchB = i;
+                        }
+                        if (strcmp(key, "\\X") == 0) {
+                            startsearchX = i;
+                        }
+                        if (strcmp(key, "\\Y") == 0) {
+                            startsearchY = i;
+                        }
                         SendMouseClick(pt.x, pt.y, 1);
+                       // startsearchA = i;
                         foundit = true;
 
                     }
+                    else  return false; 
                     DeleteObject(hbmdsktop);
                     Sleep(20); //to avoid double press
                 }
+                else  return false; 
 
             }
+            else  return false; 
         }
         i = 0;
-        while (!foundit && i < serchnum)
+        while (!foundit && i <= serchnum)
         {
                  i++;
                 std::string path = GetExecutableFolder() + key + std::to_string(i) + ".bmp";
@@ -497,18 +519,32 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop)
                            ;
                             X = pt.x;
                             Y = pt.y;
+                            if (strcmp(key, "\\A") == 0) {
+                                startsearchA = 0;
+                            }
+                            if (strcmp(key, "\\B") == 0) {
+                                startsearchB = 0;
+                            }
+                            if (strcmp(key, "\\X") == 0) {
+                                startsearchX = 0;
+                            }
+                            if (strcmp(key, "\\Y") == 0) {
+                                startsearchY = 0;
+                            }
                             ClientToScreen(hwnd, &pt);
                             SendMouseClick(pt.x, pt.y, 1);
                             foundit = true;
 
                         }
+                        else  return false;
                         DeleteObject(hbmdsktop);
                         Sleep(20); //to avoid double press
                     }
+                    else  return false;
 
                 }
 
-                else return false;
+                else return false; //not load bmp
         }
 
 
@@ -523,6 +559,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop)
         std::wstring wpath(path.begin(), path.end());
         SaveWindow10x10BMP(hwnd, wpath.c_str(), X, Y);
         MessageBox(NULL, "Mapped spot!", "A button is now mapped to red spot", MB_OK | MB_ICONINFORMATION);
+        return true;
         //numphotoA++;
 
     }
@@ -545,6 +582,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     int numphotoB = -1;
     int numphotoX = -1;
     int numphotoY = -1;
+
     HBITMAP hbmdsktop = NULL;
 
     //image numeration
@@ -635,25 +673,19 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 bool currA = (buttons & XINPUT_GAMEPAD_A) != 0;
                 bool Apressed = (buttons & XINPUT_GAMEPAD_A);
 
-                if (Apressed)
+                if (buttons & XINPUT_GAMEPAD_A)
                 {
-                    if (Aprev == false)
-                    { 
-                        Buttonaction("\\A", mode, numphotoA, hbmdsktop);
-                        if ( mode == 2)
-                        { 
-                            numphotoA++;
-                        }
-                        Aprev = true;
+                    startsearch = startsearchA;
+                    Buttonaction("\\A", mode, numphotoB, hbmdsktop, startsearch);
+                    if (mode == 2)
+                    {
+                        numphotoA++;
                     }
-                }
-                if (Apressed == false)
-                {
-                    Aprev = false;
                 }
                 if (buttons & XINPUT_GAMEPAD_B)
                 {
-                    Buttonaction("\\B", mode, numphotoB, hbmdsktop);
+                    startsearch = startsearchB;
+                    Buttonaction("\\B", mode, numphotoB, hbmdsktop, startsearch);
                     if (mode == 2)
                     {
                         numphotoB++;
@@ -679,7 +711,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 }
                 if (buttons & XINPUT_GAMEPAD_X)
                 {
-                    Buttonaction("\\X", mode, numphotoX, hbmdsktop);
+                    startsearch = startsearchX;
+                    Buttonaction("\\X", mode, numphotoX, hbmdsktop, startsearch);
                     if (mode == 2)
                     {
                         numphotoX++;
@@ -687,7 +720,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 }
                 if (buttons & XINPUT_GAMEPAD_Y)
                 {
-                    Buttonaction("\\Y", mode, numphotoY, hbmdsktop);
+                    startsearch = startsearchY;
+                    Buttonaction("\\Y", mode, numphotoY, hbmdsktop, startsearch);
                     if (mode == 2)
                     {
                         numphotoY++;
@@ -840,7 +874,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
         if (mode > 0)
             Sleep(sovetid); //15-80 //
 
-    } //loop end
+    } //loop end but endless
     return 0;
 }
 
@@ -853,5 +887,5 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
         
         break;
     }
-    return TRUE;
+    return true;
 }
