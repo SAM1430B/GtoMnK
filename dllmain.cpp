@@ -21,6 +21,8 @@ POINT activatewindow;
 bool loop = true;
 HWND hwnd = 0;
 HWND pointerwindow = 0;
+HANDLE hMutex;
+HANDLE hMutexx;
 
 int width1 = 0;
 int width2 = 0;
@@ -77,30 +79,34 @@ std::string GetExecutableFolder() {
 
 bool sendKey(char key, int typeofkey) { //VK_LEFT VK_RIGHT VK_DOWN VK_UP
     // Create a named mutex
-    HANDLE hMutex = CreateMutexA(
+    hMutexx = CreateMutexA(
         NULL,      // Default security
         FALSE,     // Initially not owned
         "Global\\PuttingInput_KB_ByMessenils" // Name of mutex
     );
-    if (hMutex == NULL) {
+    if (hMutexx == NULL) {
         std::cerr << "CreateMutex failed: " << GetLastError() << std::endl;
         MessageBox(NULL, "Error!", "Failed to create mutex", MB_OK | MB_ICONINFORMATION);
-        return false;
+        Sleep(12);
+        sendKey(key, typeofkey);
+        //return false;
     }
+     
     // Check if mutex already exists
     if (GetLastError() == ERROR_ALREADY_EXISTS)
     {
         std::cout << "Mutex exists, waiting for it to be released...\n";
         // Wait for mutex to be released by other process (INFINITE = wait forever)
-        DWORD waitResult = WaitForSingleObject(hMutex, INFINITE);
+        DWORD waitResult = WaitForSingleObject(hMutexx, INFINITE);
         if (waitResult == WAIT_OBJECT_0)
         {
             std::cout << "Acquired mutex after waiting!\n";
         }
         else {
-
-            MessageBox(NULL, "Error!", "Wait for mutex failed", MB_OK | MB_ICONINFORMATION);
-            return false;
+            Sleep(12);
+            sendKey(key, typeofkey);
+            //MessageBox(NULL, "Error!", "Wait for mutex failed", MB_OK | MB_ICONINFORMATION);
+           // return false;
 
         }
     }
@@ -123,10 +129,11 @@ bool sendKey(char key, int typeofkey) { //VK_LEFT VK_RIGHT VK_DOWN VK_UP
     ip.ki.dwFlags = 0; // Key down
     SendInput(1, &ip, sizeof(INPUT));
     // Key up event
+    Sleep(20); //value could be in config
     ip.ki.dwFlags = KEYEVENTF_KEYUP;
     SendInput(1, &ip, sizeof(INPUT));
-    ReleaseMutex(hMutex);
-    CloseHandle(hMutex);
+    ReleaseMutex(hMutexx);
+    //CloseHandle(hMutexx);
     return true;
 }
 
@@ -403,31 +410,29 @@ float Clamp(float v) {
 
 bool SendMouseClick(int x, int y, int z, int many) {
     // Create a named mutex
-    HANDLE hMutex = CreateMutexA(
-        NULL,      // Default security
-        FALSE,     // Initially not owned
-        "Global\\PuttingInputByMessenils" // Name of mutex
-    );
-    if (hMutex == NULL) {
-        std::cerr << "CreateMutex failed: " << GetLastError() << std::endl;
-        MessageBox(NULL, "Error!", "Failed to create mutex", MB_OK | MB_ICONINFORMATION);
-        return false;
-    }
-    // Check if mutex already exists
-    if (GetLastError() == ERROR_ALREADY_EXISTS)
+    if (z == 1 || z == 2 || z == 3 || z == 6)
     {
-        std::cout << "Mutex exists, waiting for it to be released...\n";
-        // Wait for mutex to be released by other process (INFINITE = wait forever)
-        DWORD waitResult = WaitForSingleObject(hMutex, INFINITE);
-        if (waitResult == WAIT_OBJECT_0)
-        {
-            std::cout << "Acquired mutex after waiting!\n";
+        hMutex = CreateMutexA(
+            NULL,      // Default security
+            FALSE,     // Initially not owned
+            "Global\\PuttingInputByMessenils" // Name of mutex
+        );
+        if (hMutex == NULL) {
+            Sleep(12);
+            SendMouseClick(x, y, z, many);
         }
-        else {
-
-            MessageBox(NULL, "Error!", "Wait for mutex failed", MB_OK | MB_ICONINFORMATION);
-            return false;
-
+        // Check if mutex already exists
+        if (GetLastError() == ERROR_ALREADY_EXISTS)
+        {
+            DWORD waitResult = WaitForSingleObject(hMutex, INFINITE);
+            if (waitResult == WAIT_OBJECT_0)
+            {
+                std::cout << "Acquired mutex after waiting!\n";
+            }
+            else {
+                Sleep(12);
+                SendMouseClick(x, y, z, many);
+            }
         }
     }
     // Convert screen coordinates to absolute values
@@ -476,7 +481,7 @@ bool SendMouseClick(int x, int y, int z, int many) {
         input[2].type = INPUT_MOUSE;
         input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
     }
-    else if (z == 6)
+    else if (z == 6 || z == 8) //only mousemove but 6 make mutex
     { //right button press, drag and release
         // Simulate mouse left button down
     }
@@ -495,8 +500,11 @@ bool SendMouseClick(int x, int y, int z, int many) {
     }
     //z is 3 or anything just move mouse
     SendInput(many, input, sizeof(INPUT));
-    ReleaseMutex(hMutex);
-    CloseHandle(hMutex);
+    if (z == 1 || z == 2 || z == 5 || z == 7)
+    {
+        ReleaseMutex(hMutex);
+        //CloseHandle(hMutex);
+    }
     return true;
 }
 bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, int startsearch)
@@ -650,6 +658,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     int sens = GetPrivateProfileInt(iniSettings.c_str(), "Dot Speed", 75, iniPath.c_str());
     int sens2 = GetPrivateProfileInt(iniSettings.c_str(), "CA Dot Speed", 100, iniPath.c_str());
 
+    int sendfocus = GetPrivateProfileInt(iniSettings.c_str(), "Sendfocus", 0, iniPath.c_str());
+    //int keyrespondtime = GetPrivateProfileInt(iniSettings.c_str(), "Keyresponsetime", 0, iniPath.c_str());
+
    // std::string path = GetExecutableFolder() + "\\image.bmp";
    // std::wstring wpath(path.begin(), path.end());
 
@@ -783,39 +794,88 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 }
                 if (buttons & XINPUT_GAMEPAD_DPAD_UP)
                 {
-                    activatewindow.x = 1;
-                    activatewindow.y = 1;
-                    ClientToScreen(hwnd, &activatewindow);
-                    SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
-                    ScreenToClient(hwnd, &activatewindow);
+                    if (sendfocus == 1) {
+                        activatewindow.x = 1; //safe click zone may need to change
+                       activatewindow.y = 1;
+                        ClientToScreen(hwnd, &activatewindow);
+                        SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
+                        ScreenToClient(hwnd, &activatewindow);
+                        ///////////////////////
+                    }
+                    if (sendfocus == 2) {
+                        //sendfocus
+                        SetForegroundWindow(hwnd);
+                    }
+                    if (sendfocus == 3) {
+                        //sendfocus
+                        SetActiveWindow(hwnd);
+                    }
                     sendKey(NULL, 3);
+                   // SendMessage(hwnd, WM_KEYDOWN, VK_UP, 0);
                 }
                 if (buttons & XINPUT_GAMEPAD_DPAD_DOWN)
                 {
-                    activatewindow.x = 1;
-                    activatewindow.y = 1;
-                    ClientToScreen(hwnd, &activatewindow);
-                    SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
-                    ScreenToClient(hwnd, &activatewindow);
+                    if (sendfocus == 1) {
+                        activatewindow.x = 1; //safe click zone may need to change
+                        activatewindow.y = 1;
+                        ClientToScreen(hwnd, &activatewindow);
+                        SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
+                        ScreenToClient(hwnd, &activatewindow);
+                        ///////////////////////
+                        
+                    }
+                    if (sendfocus == 2) {
+                        //sendfocus
+                        SetForegroundWindow(hwnd);
+                    }
+                    if (sendfocus == 3) {
+                        //sendfocus
+                        SetActiveWindow(hwnd);
+                    }
                     sendKey(NULL, 4);
+                   // SendMessage(hwnd, WM_KEYDOWN, VK_DOWN, 0);
                 }
                 if (buttons & XINPUT_GAMEPAD_DPAD_LEFT)
                 {
-                    activatewindow.x = 1;
-                    activatewindow.y = 1;
-                    ClientToScreen(hwnd, &activatewindow);
-                    SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
-                    ScreenToClient(hwnd, &activatewindow);
+                    if (sendfocus == 1) {
+                        activatewindow.x = 1; //safe click zone may need to change
+                        activatewindow.y = 1;
+                        ClientToScreen(hwnd, &activatewindow);
+                        SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
+                        ScreenToClient(hwnd, &activatewindow);
+                        ///////////////////////
+                    }
+                    if (sendfocus == 2) {
+                        //sendfocus
+                        SetForegroundWindow(hwnd);
+                    }
+                    if (sendfocus == 3) {
+                        //sendfocus
+                        SetActiveWindow(hwnd);
+                    }
                     sendKey(NULL, 1);
+                   // SendMessage(hwnd, WM_KEYDOWN, VK_LEFT, 0);
                 }
                 if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT)
                 {
-                    activatewindow.x = 1;
-                    activatewindow.y = 1;
-                    ClientToScreen(hwnd, &activatewindow);
-                    SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
-                    ScreenToClient(hwnd, &activatewindow);
+                    if (sendfocus == 1) {
+                        activatewindow.x = 1; //safe click zone may need to change
+                        activatewindow.y = 1;
+                        ClientToScreen(hwnd, &activatewindow);
+                        SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
+                        ScreenToClient(hwnd, &activatewindow);
+                        ///////////////////////
+                    }
+                    if (sendfocus == 2) {
+                        //sendfocus
+                        SetForegroundWindow(hwnd);
+                    }
+                    if (sendfocus == 3) {
+                        //sendfocus
+                        SetActiveWindow(hwnd);
+                    }
                     sendKey(NULL, 2);
+                   // SendMessage(hwnd, WM_KEYDOWN, VK_RIGHT, 0);
                 }
                 if (buttons & XINPUT_GAMEPAD_X)
                 {
@@ -936,10 +996,27 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         fakecursor.x = X;
                         fakecursor.y = Y;
 
+                          if (sendfocus == 1) {
+                        //sendfocus
+                        activatewindow.x = 1;
+                        activatewindow.y = 1;
+                        ClientToScreen(hwnd, &activatewindow);
+                        SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
+                        ScreenToClient(hwnd, &activatewindow);
+                    //    ///////////////////////
+                          }
+                          if (sendfocus == 2) {
+                              //sendfocus
+                              SetForegroundWindow(hwnd);
+                          }
+                          if (sendfocus == 3) {
+                              //sendfocus
+                              SetActiveWindow(hwnd);
+                          }
                         if (abs(startdrag.x - fakecursor.x) <= 5)
                         { 
                             ClientToScreen(hwnd, &startdrag);
-                            SendMouseClick(startdrag.x, startdrag.y, 2, 3); //4 4 move //5 release
+                            SendMouseClick(startdrag.x, startdrag.y, 2, 3 ); //4 4 move //5 release
                             ScreenToClient(hwnd, &startdrag);
                             leftPressedold = false;
                         }
@@ -949,9 +1026,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
                         SendMouseClick(startdrag.x, startdrag.y, 6, 2); //4 4 move //5 release
                        ClientToScreen(hwnd, &fakecursor);
-                       Sleep(100);
+                       Sleep(30);
                        
-                        SendMouseClick(fakecursor.x, fakecursor.y, 6, 1);
+                        SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
                         Sleep(20);
                         SendMouseClick(fakecursor.x, fakecursor.y, 7, 2);
                         ScreenToClient(hwnd, &fakecursor);
@@ -976,6 +1053,22 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 {
                     if (!rightPressed)
                     {
+                        if (sendfocus == 1) {
+                             activatewindow.x = 1; //safe click zone may need to change
+                             activatewindow.y = 1;
+                             ClientToScreen(hwnd, &activatewindow);
+                             SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
+                             ScreenToClient(hwnd, &activatewindow);
+                             ///////////////////////
+                        }
+                        if (sendfocus == 2) {
+                            //sendfocus
+                            SetForegroundWindow(hwnd);
+                        }
+                        if (sendfocus == 3) {
+                            //sendfocus
+                            SetActiveWindow(hwnd);
+                        }
                         fakecursor.x = X;
                         fakecursor.y = Y;
 
@@ -992,8 +1085,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
                             SendMouseClick(startdrag.x, startdrag.y, 3, 2); //4 4 move //5 release
                             ClientToScreen(hwnd, &fakecursor);
-                            Sleep(100);
-                            SendMouseClick(fakecursor.x, fakecursor.y, 3, 1); //4
+                            Sleep(30);
+                            SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //4 skal vere 3
                             Sleep(20);
                             SendMouseClick(fakecursor.x, fakecursor.y, 5, 2);
                             ScreenToClient(hwnd, &fakecursor);
