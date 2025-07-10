@@ -19,16 +19,24 @@ POINT fakecursor;
 POINT startdrag;
 POINT activatewindow;
 bool loop = true;
-HWND hwnd = 0;
-HWND pointerwindow = 0;
+HWND hwnd;
+
+//syncronization control
 HANDLE hMutex;
 HANDLE hMutexx;
+
+
+//iron curtain
+HWND phwnd;
+HBRUSH transparencyBrush;
+static constexpr auto transparencyKey = RGB(0, 0, 1);
 
 int width1 = 0;
 int width2 = 0;
 int height1 = 0;
 int height2 = 0;
-
+int getmouseonkey = 0;
+int keyrespondtime = 50;
 
 
 //fake cursor
@@ -65,6 +73,7 @@ int smallW, smallH;
 
 int mode = 0;
 int sovetid = 16;
+int knappsovetid = 100;
 
 
 std::string GetExecutableFolder() {
@@ -110,6 +119,7 @@ bool sendKey(char key, int typeofkey) { //VK_LEFT VK_RIGHT VK_DOWN VK_UP
 
         }
     }
+
     INPUT ip = {};
     ip.type = INPUT_KEYBOARD;
     if (typeofkey == 0)
@@ -129,11 +139,13 @@ bool sendKey(char key, int typeofkey) { //VK_LEFT VK_RIGHT VK_DOWN VK_UP
     ip.ki.dwFlags = 0; // Key down
     SendInput(1, &ip, sizeof(INPUT));
     // Key up event
-    Sleep(20); //value could be in config
+    Sleep(keyrespondtime);
     ip.ki.dwFlags = KEYEVENTF_KEYUP;
     SendInput(1, &ip, sizeof(INPUT));
+    SetForegroundWindow(phwnd);
     ReleaseMutex(hMutexx);
     //CloseHandle(hMutexx);
+    knappsovetid = 20;
     return true;
 }
 
@@ -174,7 +186,7 @@ HWND GetMainWindowHandle(DWORD targetPID) {
         HandleData* pData = reinterpret_cast<HandleData*>(lParam);
         DWORD windowPID = 0;
         GetWindowThreadProcessId(hWnd, &windowPID);
-        if (windowPID == pData->pid && GetWindow(hWnd, GW_OWNER) == nullptr && IsWindowVisible(hWnd) && hWnd != pointerwindow) {
+        if (windowPID == pData->pid && GetWindow(hWnd, GW_OWNER) == nullptr && IsWindowVisible(hWnd) && hWnd != phwnd) {
             pData->hwnd = hWnd;
             return FALSE; // Stop enumeration
         }
@@ -410,7 +422,7 @@ float Clamp(float v) {
 
 bool SendMouseClick(int x, int y, int z, int many) {
     // Create a named mutex
-    if (z == 1 || z == 2 || z == 3 || z == 6)
+    if (z == 1 || z == 2 || z == 3 || z == 6 || z == 10)
     {
         hMutex = CreateMutexA(
             NULL,      // Default security
@@ -481,7 +493,7 @@ bool SendMouseClick(int x, int y, int z, int many) {
         input[2].type = INPUT_MOUSE;
         input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
     }
-    else if (z == 6 || z == 8) //only mousemove but 6 make mutex
+    else if (z == 6 || z == 8 || z == 10) //only mousemove but 6 no mutex. only make mutex while 10 both make and release
     { //right button press, drag and release
         // Simulate mouse left button down
     }
@@ -500,9 +512,12 @@ bool SendMouseClick(int x, int y, int z, int many) {
     }
     //z is 3 or anything just move mouse
     SendInput(many, input, sizeof(INPUT));
-    if (z == 1 || z == 2 || z == 5 || z == 7)
+    if (z == 1 || z == 2 || z == 5 || z == 7 || z == 10)
     {
+        SetForegroundWindow(phwnd);
         ReleaseMutex(hMutex);
+        //lose focus
+        
         //CloseHandle(hMutex);
     }
     return true;
@@ -551,6 +566,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, 
                        // else return false;
                         SendMouseClick(pt.x, pt.y, 1, 3);
                         ScreenToClient(hwnd, &pt);
+                        SetForegroundWindow(phwnd);
                        // startsearchA = i;
                         foundit = true;
 
@@ -605,6 +621,8 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, 
                             ClientToScreen(hwnd, &pt);
                             SendMouseClick(pt.x, pt.y, 1, 3);
                             ScreenToClient(hwnd, &fakecursor);
+                            //closing curtains
+                            SetForegroundWindow(phwnd);
                             foundit = true;
 
                         }
@@ -636,7 +654,20 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, 
 
     }
 }
+LRESULT WINAPI FakeCursorWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    switch (msg)
+    {
+    case WM_DESTROY:
+       // PostQuitMessage(0);
+       // return 0;
+        break;
+    default:
+        break;
+    }
 
+    return DefWindowProc(hWnd, msg, wParam, lParam);
+}
 DWORD WINAPI ThreadFunction(LPVOID lpParam)
 {
     Sleep(2000);
@@ -659,13 +690,16 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     int sens2 = GetPrivateProfileInt(iniSettings.c_str(), "CA Dot Speed", 100, iniPath.c_str());
 
     int sendfocus = GetPrivateProfileInt(iniSettings.c_str(), "Sendfocus", 0, iniPath.c_str());
-    //int keyrespondtime = GetPrivateProfileInt(iniSettings.c_str(), "Keyresponsetime", 0, iniPath.c_str());
-
+    keyrespondtime = GetPrivateProfileInt(iniSettings.c_str(), "Keyresponsetime", 50, iniPath.c_str());
+    getmouseonkey = GetPrivateProfileInt(iniSettings.c_str(), "GetMouseOnKey", 0, iniPath.c_str());
    // std::string path = GetExecutableFolder() + "\\image.bmp";
    // std::wstring wpath(path.begin(), path.end());
 
     Sleep(1000);
     
+
+
+  
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
 
     int mode = InitialMode;
@@ -745,6 +779,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
         {
             hwnd = GetMainWindowHandle(GetCurrentProcessId());
         }
+
+        //iron curtain
+
+        
+
         else
         {
             XINPUT_STATE state;
@@ -806,6 +845,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         //sendfocus
                         SetForegroundWindow(hwnd);
                     }
+                    if (getmouseonkey == 1) {
+
+                        ClientToScreen(hwnd, &fakecursor);
+                        SendMouseClick(startdrag.x, startdrag.y, 10, 1); //4 4 move //5 release
+                        ScreenToClient(hwnd, &fakecursor);
+                    }
                     if (sendfocus == 3) {
                         //sendfocus
                         SetActiveWindow(hwnd);
@@ -823,6 +868,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         ScreenToClient(hwnd, &activatewindow);
                         ///////////////////////
                         
+                    }
+                    if (getmouseonkey == 1) {
+
+                        ClientToScreen(hwnd, &fakecursor);
+                        SendMouseClick(startdrag.x, startdrag.y, 10, 1); //4 4 move //5 release
+                        ScreenToClient(hwnd, &fakecursor);
                     }
                     if (sendfocus == 2) {
                         //sendfocus
@@ -845,6 +896,13 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         ScreenToClient(hwnd, &activatewindow);
                         ///////////////////////
                     }
+                    if (getmouseonkey == 1) {
+
+                        ClientToScreen(hwnd, &fakecursor);
+                        SendMouseClick(startdrag.x, startdrag.y, 10, 1); //4 4 move //5 release
+                        ScreenToClient(hwnd, &fakecursor);
+                        Sleep(20);
+                    }
                     if (sendfocus == 2) {
                         //sendfocus
                         SetForegroundWindow(hwnd);
@@ -864,7 +922,14 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         ClientToScreen(hwnd, &activatewindow);
                         SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
                         ScreenToClient(hwnd, &activatewindow);
-                        ///////////////////////
+                        ///////////////////////    
+
+                    }
+                    if (getmouseonkey == 1) {
+                        ClientToScreen(hwnd, &fakecursor);
+                        SendMouseClick(startdrag.x, startdrag.y, 10, 1); //4 4 move //5 release
+						ScreenToClient(hwnd, &fakecursor);
+                        Sleep(20);
                     }
                     if (sendfocus == 2) {
                         //sendfocus
@@ -1003,6 +1068,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         ClientToScreen(hwnd, &activatewindow);
                         SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
                         ScreenToClient(hwnd, &activatewindow);
+                        //closing curtains
+                        SetForegroundWindow(phwnd);
                     //    ///////////////////////
                           }
                           if (sendfocus == 2) {
@@ -1019,6 +1086,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             SendMouseClick(startdrag.x, startdrag.y, 2, 3 ); //4 4 move //5 release
                             ScreenToClient(hwnd, &startdrag);
                             leftPressedold = false;
+                            //closing curtains
+                            SetForegroundWindow(phwnd);
                         }
                         else
                         { 
@@ -1033,6 +1102,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         SendMouseClick(fakecursor.x, fakecursor.y, 7, 2);
                         ScreenToClient(hwnd, &fakecursor);
                         ScreenToClient(hwnd, &startdrag);
+                        //closing curtains
+                        //SetForegroundWindow(phwnd);
                         leftPressedold = false;
                         }
                     }
@@ -1059,6 +1130,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                              ClientToScreen(hwnd, &activatewindow);
                              SendMouseClick(activatewindow.x, activatewindow.y, 1, 3); //4 4 move //5 release
                              ScreenToClient(hwnd, &activatewindow);
+                             //closing curtains
+                            // SetForegroundWindow(phwnd);
                              ///////////////////////
                         }
                         if (sendfocus == 2) {
@@ -1077,6 +1150,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             ClientToScreen(hwnd, &startdrag);
                             SendMouseClick(startdrag.x, startdrag.y, 1, 3); //4 4 move //5 release
                             ScreenToClient(hwnd, &startdrag);
+                            //closing curtains
+                            SetForegroundWindow(phwnd);
                             rightPressedold = false;
                         }
                         else
@@ -1091,6 +1166,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             SendMouseClick(fakecursor.x, fakecursor.y, 5, 2);
                             ScreenToClient(hwnd, &fakecursor);
                             ScreenToClient(hwnd, &startdrag);
+                            //closing curtains
+                            //SetForegroundWindow(phwnd);
                             rightPressedold = false;
                         }
                     }
@@ -1099,6 +1176,18 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
             } //no controller
 
         } // no hwnd
+       //RECT rect;
+       // if (GetWindowRect(hwnd, &rect))
+		//{
+        if (knappsovetid > 20)
+        {
+            sovetid = 20;
+            knappsovetid = 100;
+            }
+            SetWindowPos(phwnd, HWND_TOPMOST, 0, 0, 1, 1, 0);//SWP_NOMOVE | | SWP_NOSIZE SWP_NOREDRAW //HWND_TOP
+		//}
+
+
         if (mode == 0)
             Sleep(50);
         if (mode > 0)
@@ -1107,14 +1196,87 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     } //loop end but endless
     return 0;
 }
-
+//DWORD WINAPI ThreadFunction(LPVOID lpParam)
+DWORD WINAPI Main() {
+    Sleep(500);
+    CreateThread(nullptr, 0, ThreadFunction, nullptr, 0, nullptr); //not recommended? but seem to work well
+    return true;
+}
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
 {
     switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH:
-        //may slow down parent process if it continues on this thread
-        CreateThread(nullptr, 0, ThreadFunction, nullptr, 0, nullptr); //not recommended? but seem to work well
-        
+        //buiding iron curtain
+  // Like a green screen
+        //stolen from protoinput
+        //window seems to crash but its no problem it seems?
+        transparencyBrush = (HBRUSH)CreateSolidBrush(transparencyKey);
+        const auto hInstance = GetModuleHandle(NULL);
+        WNDCLASS wc = { 0 };
+        wc.lpfnWndProc = FakeCursorWndProc;
+        wc.hInstance = hInstance;
+        wc.hbrBackground = transparencyBrush;
+
+        std::srand(std::time(nullptr));
+        std::string classNameStr = std::string("ProtoInputPointer") + std::to_string(std::rand());
+        const char* className = classNameStr.c_str();
+
+
+        wc.lpszClassName = className;
+        wc.style = CS_OWNDC | CS_NOCLOSE;
+
+        if (!RegisterClass(&wc))
+        {
+            fprintf(stderr, "Failed to open fake cursor window\n");
+        }
+        else
+        {
+            phwnd = CreateWindowExA(
+                WS_EX_NOACTIVATE | WS_EX_NOINHERITLAYOUT | WS_EX_NOPARENTNOTIFY |
+                WS_EX_TOPMOST | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_LAYERED,
+                wc.lpszClassName, // Make sure this is a const char* if you're using narrow strings!
+                className,        // This should also be a const char*
+                0, //WS_POPUP
+                0, 0, 200, 200,
+                nullptr, nullptr, hInstance, nullptr
+            );
+
+
+            SetWindowLongW(phwnd, GWL_STYLE, WS_VISIBLE | WS_DISABLED);
+            SetLayeredWindowAttributes(phwnd, transparencyKey, 0, LWA_COLORKEY);
+
+            // Nucleus can put the game window above the pointer without this
+            SetWindowPos(phwnd, HWND_TOPMOST, 0, 0, 1, 1, SWP_NOREDRAW);
+
+            // Over every screen
+           // EnumDisplayMonitors(nullptr, nullptr, &EnumWindowsProc, 0);
+           // MoveWindow(phwnd, fakeCursorMinX, fakeCursorMinY, fakeCursorMaxX - fakeCursorMinX, fakeCursorMaxY - fakeCursorMinY, TRUE);
+
+            //hdc = GetDC(pointerWindow);
+
+            //TODO: configurable cursor
+           // hCursor = LoadCursorW(NULL, IDC_ARROW);
+
+            const auto threadHandle = CreateThread(nullptr, 0,
+                (LPTHREAD_START_ROUTINE)ThreadFunction, GetModuleHandle(0), 0, 0);
+
+             if (threadHandle != nullptr)
+                 CloseHandle(threadHandle);
+
+             // Want to avoid doing anything in the message loop that might cause it to not respond, as the entire screen will say not responding...
+            // MSG msg;
+            // ZeroMemory(&msg, sizeof(msg));
+           //  while (msg.message != WM_QUIT)
+            // {
+            //     if (GetMessageW(&msg, phwnd, 0U, 0U))// Blocks
+            //     {
+            //         TranslateMessage(&msg);
+            //         DispatchMessage(&msg);
+            //         continue;
+            //     }
+           //  }
+        }
+       // CreateThread(nullptr, 0, ThreadFunction, nullptr, 0, nullptr); //not recommended? but seem to work well
         break;
     }
     return true;
