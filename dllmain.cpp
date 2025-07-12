@@ -156,7 +156,7 @@ bool SendMouseClick(int x, int y, int z, int many) {
         input[2].type = INPUT_MOUSE;
         input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
     }
-    else if (z == 6 || z == 8 || z == 10) //only mousemove but 6 no mutex. only make mutex while 10 both make and release
+    else if (z == 6 || z == 8 || z == 10 || z == 11) //only mousemove but 6 no mutex. only make mutex while 10 both make and release
     { //right button press, drag and release
         // Simulate mouse left button down
     }
