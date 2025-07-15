@@ -586,6 +586,9 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                         //MessageBox(NULL, "some kind of error", "found image", MB_OK | MB_ICONINFORMATION);
                         X = pt.x;
                         Y = pt.y;
+                       //  char buffer[100];
+// wsprintf(buffer, "A is %d", i);
+ // MessageBoxA(NULL, buffer, "Info", MB_OK);
                         ClientToScreen(hwnd, &pt);
                         if (strcmp(key, "\\A") == 0) {
                             if (Atype == 1)
@@ -659,26 +662,33 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
 
                         if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt, 0, 0))
                         {
-                            ;
+                            // char buffer[100];
+                           // wsprintf(buffer, "second A is %d", i);
+                            // MessageBoxA(NULL, buffer, "Info", MB_OK);
                             X = pt.x;
                             Y = pt.y;
                             if (strcmp(key, "\\A") == 0) {
-                                startsearchA = -1;
+                                startsearchA = i + 1;
+                                 char buffer[100];
                             }
                             else if (strcmp(key, "\\B") == 0) {
-                                startsearchB = -1;
+                                startsearchB = i + 1;
                             }
                             else if (strcmp(key, "\\X") == 0) {
-                                startsearchX = -1;
+                                startsearchX = i + 1;
                             }
                             else if (strcmp(key, "\\Y") == 0) {
-                                startsearchY = -1;
+                                startsearchY = i + 1;
+                            }
+                            if (movenotclick == true)
+                            {
                             }
                             else {
                                 ClientToScreen(hwnd, &pt);
                                 SendMouseClick(pt.x, pt.y, 1, 3);
                                 ScreenToClient(hwnd, &pt);
                             }
+                            break;
 
                         }
                         //  else  return false;
@@ -691,7 +701,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                
             }
         }
-        Sleep(300); //to avoid double press
+        Sleep(200); //to avoid double press
         return true;
 
     }
@@ -699,14 +709,11 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
     {
 		//RepaintWindow(hwnd, NULL, FALSE); 
         Sleep(500); //to make sure red flicker expired
-        std::wstring wpath = WGetExecutableFolder() + std::wstring(key, key + 3) + std::to_wstring(serchnum) + L".bmp";
-
-      //  std::wstring wpath(path.begin(), path.end());
+        std::string path = UGetExecutableFolder() + key + std::to_string(serchnum) + ".bmp";
+        std::wstring wpath(path.begin(), path.end());
         SaveWindow10x10BMP(hwnd, wpath.c_str(), X, Y);
         MessageBox(NULL, "Mapped spot!", "A button is now mapped to red spot", MB_OK | MB_ICONINFORMATION);
         return true;
-        //numphotoA++;
-
     }
 }
 DWORD WINAPI ThreadFunction(LPVOID lpParam)
