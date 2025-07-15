@@ -150,7 +150,13 @@ bool SendMouseClick(int x, int y, int z, int many) {
     // Create a named mutex
     if (z == 1 || z == 2 || z == 3 || z == 6 || z == 10)
     {
-        Mutexlock(true);
+        if (Mutexlock(true)) {
+
+        }
+        else
+        {
+            //errorhandling
+        }
            // SetForegroundWindow(hwnd);
         
     }
@@ -508,6 +514,7 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
         if (draw) {
             //hbm24 = NULL;
             HBRUSH hBrush = CreateSolidBrush(RGB(255, 60, 2));
+            // todo: for loop get cursor bmp and fillrect each pixel. maybe cpu intensive
             RECT rect = { X, Y, X + 4, Y + 4 };
             RECT rect2 = { X - 1, Y +1, X + 6, Y + 4 };
             FillRect(hdcWindow, &rect, hBrush);
@@ -589,7 +596,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                        //  char buffer[100];
 // wsprintf(buffer, "A is %d", i);
  // MessageBoxA(NULL, buffer, "Info", MB_OK);
-                        ClientToScreen(hwnd, &pt);
+                        
                         if (strcmp(key, "\\A") == 0) {
                             if (Atype == 1)
                             {
@@ -624,11 +631,12 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                         {   
                         }
                         else {
+                            ClientToScreen(hwnd, &pt);
                             SendMouseClick(pt.x, pt.y, 1, 3);
                             ScreenToClient(hwnd, &pt);
-                            foundit = true;
-                            break;
                         }
+                        foundit = true;
+                        break;
                     }
                     
                    // else  return false; 
