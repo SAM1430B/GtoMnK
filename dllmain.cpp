@@ -1,6 +1,7 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
 #include "pch.h"
 #include <windows.h>
+#include "MinHook.h"
 #include <Xinput.h>
 #include <tlhelp32.h>
 #include <tchar.h>
@@ -13,11 +14,16 @@
 #include <dwmapi.h>
 #pragma comment(lib, "dwmapi.lib")
 
+
 #pragma comment(lib, "Xinput9_1_0.lib")
+
+typedef UINT(WINAPI* GetCursorPos_t)(LPPOINT lpPoint);
+GetCursorPos_t fpGetCursorPos = nullptr;
 
 POINT fakecursor;
 POINT startdrag;
 POINT activatewindow;
+POINT scroll;
 bool loop = true;
 HWND hwnd;
 
@@ -30,6 +36,11 @@ int height1 = 0;
 int height2 = 0;
 int getmouseonkey = 0;
 int keyrespondtime = 50;
+int message = 0;
+
+
+//hooks
+
 
 
 //fake cursor
@@ -39,7 +50,7 @@ int OldX = 0;
 int OldY = 0;
 int ydrag;
 int xdrag;
-
+bool scrollmap = false;
 bool pausedraw = false;
 
 bool Apressed = false;
@@ -55,6 +66,12 @@ int startsearchB = 0;
 int startsearchX = 0;
 int startsearchY = 0;
 
+int Atype = 0;
+int Btype = 0;
+int Xtype = 0;
+int Ytype = 0;
+
+
 int x = 0;
 
 HBITMAP hbm;
@@ -67,6 +84,34 @@ int smallW, smallH;
 int mode = 0;
 int sovetid = 16;
 int knappsovetid = 100;
+
+BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
+    if (lpPoint) {
+        POINT mpos;
+        if (scrollmap == false)
+        { 
+            mpos.x = X;
+            mpos.y = Y;
+        ClientToScreen(hwnd, &mpos);
+		
+        lpPoint->x = mpos.x;
+        lpPoint->y = mpos.y;
+        ScreenToClient(hwnd, &mpos);
+        }
+		else
+		{
+            mpos.x = scroll.x;
+            mpos.y = scroll.y;
+            ClientToScreen(hwnd, &mpos);
+			lpPoint->x = mpos.x;
+			lpPoint->y = mpos.y;
+            ScreenToClient(hwnd, &mpos);
+		}
+        return TRUE;
+    }
+    return FALSE;
+}
+
 bool Mutexlock(bool lock) {
     // Create a named mutex
     if (lock == true)
@@ -87,7 +132,7 @@ bool Mutexlock(bool lock) {
             Sleep(5);
             ReleaseMutex(hMutex);
             CloseHandle(hMutex);
-            Mutexlock(true);
+            Mutexlock(true); //is this okay?
             
         }
     }
@@ -105,9 +150,8 @@ bool SendMouseClick(int x, int y, int z, int many) {
     // Create a named mutex
     if (z == 1 || z == 2 || z == 3 || z == 6 || z == 10)
     {
-        if (Mutexlock(true))
-            SetForegroundWindow(hwnd);
-        else return true;
+        Mutexlock(true);
+           // SetForegroundWindow(hwnd);
         
     }
     // Convert screen coordinates to absolute values
@@ -127,7 +171,7 @@ bool SendMouseClick(int x, int y, int z, int many) {
         // Simulate mouse left button down
         input[1].type = INPUT_MOUSE;
         input[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-
+        \
         // Simulate mouse left button up
         input[2].type = INPUT_MOUSE;
         input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
@@ -177,12 +221,12 @@ bool SendMouseClick(int x, int y, int z, int many) {
     SendInput(many, input, sizeof(INPUT));
     if (z == 1 || z == 2 || z == 5 || z == 7 || z == 10 || z == 11)
     {
-        SetForegroundWindow(GetDesktopWindow());
         Mutexlock(false);
     }
     return true;
 }
-std::string GetExecutableFolder() {
+
+std::string UGetExecutableFolder() {
     TCHAR path[MAX_PATH];
     GetModuleFileName(NULL, path, MAX_PATH);
     std::string exePath(path);
@@ -191,6 +235,19 @@ std::string GetExecutableFolder() {
     size_t lastSlash = exePath.find_last_of("\\/");
     return exePath.substr(0, lastSlash);
 }
+
+std::wstring WGetExecutableFolder() {
+    wchar_t path[MAX_PATH];
+    GetModuleFileNameW(NULL, path, MAX_PATH);
+    std::wstring exePath(path);
+    size_t lastSlash = exePath.find_last_of(L"\\/");
+
+    if (lastSlash == std::wstring::npos)
+        return L"";
+
+    return exePath.substr(0, lastSlash);
+}
+
 
 bool sendKey(char key, int typeofkey) { //VK_LEFT VK_RIGHT VK_DOWN VK_UP
     // Create a named mutex
@@ -226,7 +283,6 @@ bool sendKey(char key, int typeofkey) { //VK_LEFT VK_RIGHT VK_DOWN VK_UP
         Sleep(keyrespondtime);
         ip.ki.dwFlags = KEYEVENTF_KEYUP;
         SendInput(1, &ip, sizeof(INPUT));
-        SetForegroundWindow(GetDesktopWindow());
         Mutexlock(false);
         knappsovetid = 20;
         return true;
@@ -319,7 +375,7 @@ bool IsTriggerPressed(BYTE triggerValue, BYTE threshold = 30) {
     return triggerValue > threshold;
 }
 bool LoadBMP24Bit(const wchar_t* filename, std::vector<BYTE>& pixels, int& width, int& height, int& stride) {
-    hbm = (HBITMAP)LoadImageW(NULL, filename, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+    HBITMAP hbm = (HBITMAP)LoadImageW(NULL, filename, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
     if (!hbm) return false;
 
     BITMAP bmp;
@@ -369,6 +425,8 @@ bool SaveWindow10x10BMP(HWND hwnd, const wchar_t* filename, int x, int y) {
     bmi.bmiHeader.biBitCount = 24;
     bmi.bmiHeader.biCompression = BI_RGB;
 
+
+    //stretchblt
 
     BYTE* pBits = nullptr;
 
@@ -451,7 +509,9 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
             //hbm24 = NULL;
             HBRUSH hBrush = CreateSolidBrush(RGB(255, 60, 2));
             RECT rect = { X, Y, X + 4, Y + 4 };
+            RECT rect2 = { X - 1, Y +1, X + 6, Y + 4 };
             FillRect(hdcWindow, &rect, hBrush);
+            FillRect(hdcWindow, &rect2, hBrush);
             DeleteObject(hBrush);
             GetDIBits(hdcMem, hbm24, 0, height, pixels.data(), &bmi, DIB_RGB_COLORS);
             SelectObject(hdcMem, oldBmp);
@@ -489,81 +549,108 @@ float Clamp(float v) {
 
 
 
-bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, int startsearch)
+bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
 {
     if (mode != 2)
     {
         pausedraw = true;
         Sleep(25);
+		bool movenotclick = false;
+        //int i = startsearch;
         bool foundit = false;
-        int i = startsearch;
-        while (!foundit && i <= serchnum)
-        {
-            i++;
-            std::string path = GetExecutableFolder() + key + std::to_string(i) + ".bmp";
-            std::wstring wpath(path.begin(), path.end());
-            // std::string iniPath = GetExecutableFolder() + "\\click.ini";
-            
+        HBITMAP hbmdsktop;
+        
+        char buffer[100];
+        wsprintf(buffer, "searchnum is %d", serchnum);
+       // MessageBoxA(NULL, buffer, "Info", MB_OK);
+        wsprintf(buffer, "starting search at %d", startsearch);
+        //MessageBoxA(NULL, buffer, "Info", MB_OK);
 
-            // Load the subimage 
+        for (int i = startsearch; i < serchnum; i++) //memory problem here somewhere
+        {
+            
+            std::string path = UGetExecutableFolder() + key + std::to_string(i) + ".bmp";
+            std::wstring wpath(path.begin(), path.end());
+
             if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
             {
+               // MessageBox(NULL, "some kind of error", "loaded bmp", MB_OK | MB_ICONINFORMATION);
                 // Capture screen
                 if (hbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false))
                 {
-
+                   // MessageBox(NULL, "some kind of error", "captured desktop", MB_OK | MB_ICONINFORMATION);
+                    
                     POINT pt;
                     if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt, 0, 0))
                     {
+                        //MessageBox(NULL, "some kind of error", "found image", MB_OK | MB_ICONINFORMATION);
                         X = pt.x;
                         Y = pt.y;
                         ClientToScreen(hwnd, &pt);
                         if (strcmp(key, "\\A") == 0) {
-                            startsearchA = i;
+                            if (Atype == 1)
+                            {
+                                movenotclick = true;
+                            }
+                            startsearchA = i + 1;
                         }
                         else if (strcmp(key, "\\B") == 0) {
-                            startsearchB = i;
+                            if (Btype == 1)
+                            {
+                                movenotclick = true;
+                            }
+                            startsearchB = i + 1;
                         }
                         else if (strcmp(key, "\\X") == 0) {
-                            startsearchX = i;
+                            if (Xtype == 1)
+                            {
+                                movenotclick = true;
+                            }
+                            startsearchX = i + 1;
                         }
                         else if (strcmp(key, "\\Y") == 0) {
-                            startsearchY = i;
+                            if (Ytype == 1)
+                            {
+                                movenotclick = true;
+                            }
+                            startsearchY = i + 1;
                         }
                        // else return false;
-						//Mutexlock(true);
-                        SendMouseClick(pt.x, pt.y, 1, 3);
-                        
-                        ScreenToClient(hwnd, &pt);
-                        SetForegroundWindow(GetDesktopWindow());
-                       // Mutexlock(false);
-                       // startsearchA = i;
-                        foundit = true;
-
+						
+                        if (movenotclick == true)
+                        {   
+                        }
+                        else {
+                            SendMouseClick(pt.x, pt.y, 1, 3);
+                            ScreenToClient(hwnd, &pt);
+                            foundit = true;
+                            break;
+                        }
                     }
                     
                    // else  return false; 
                     DeleteObject(hbmdsktop);
                     
-                    Sleep(20); //to avoid double press
+                    
                 }
-               // else  return false; 
-
+               // else  
+                
             }
-          //  else  return false; 
+            
+           // else  
         }
-        i = 0;
-        while (!foundit && i <= serchnum)
-        {
-                 i++;
-                std::string path = GetExecutableFolder() + key + std::to_string(i) + ".bmp";
+        if (!foundit) {
+          //  MessageBox(NULL, "some kind of error", "captured desktop", MB_OK | MB_ICONINFORMATION);
+            for (int i = 0; i < serchnum; i++) //memory problem here somewhere
+            {
+                std::string path = UGetExecutableFolder() + key + std::to_string(i) + ".bmp";
                 std::wstring wpath(path.begin(), path.end());
-                // std::string iniPath = GetExecutableFolder() + "\\click.ini";
 
 
                 // Load the subimage 
                 if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
                 {
+                   // MessageBox(NULL, "Bmp + Emulated cursor mode", "other search", MB_OK | MB_ICONINFORMATION);
                     // Capture screen
                     if (hbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false))
                     {
@@ -572,53 +659,49 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, 
 
                         if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt, 0, 0))
                         {
-                           ;
+                            ;
                             X = pt.x;
                             Y = pt.y;
                             if (strcmp(key, "\\A") == 0) {
-                                startsearchA = 1;
+                                startsearchA = -1;
                             }
                             else if (strcmp(key, "\\B") == 0) {
-                                startsearchB = 1;
+                                startsearchB = -1;
                             }
                             else if (strcmp(key, "\\X") == 0) {
-                                startsearchX = 1;
+                                startsearchX = -1;
                             }
                             else if (strcmp(key, "\\Y") == 0) {
-                                startsearchY = 1;
+                                startsearchY = -1;
                             }
-                            else return false;
-                           // Mutexlock(true);
-                            ClientToScreen(hwnd, &pt);
-                            SendMouseClick(pt.x, pt.y, 1, 3);
-                            ScreenToClient(hwnd, &fakecursor);
-                            //closing curtains
-                            SetForegroundWindow(GetDesktopWindow());
-                           // Mutexlock(false);
-                            foundit = true;
+                            else {
+                                ClientToScreen(hwnd, &pt);
+                                SendMouseClick(pt.x, pt.y, 1, 3);
+                                ScreenToClient(hwnd, &pt);
+                            }
 
                         }
-                      //  else  return false;
+                        //  else  return false;
                         DeleteObject(hbmdsktop);
-                        Sleep(20); //to avoid double press
-                    }
-                 //   else  return false;
 
+                    }
                 }
 
-               // else return false; //not load bmp
+
+               
+            }
         }
-
-
+        Sleep(300); //to avoid double press
         return true;
 
     }
     else //mode 2 button mapping
     {
-
+		//RepaintWindow(hwnd, NULL, FALSE); 
         Sleep(500); //to make sure red flicker expired
-        std::string path = GetExecutableFolder() + key + std::to_string(serchnum) + ".bmp";
-        std::wstring wpath(path.begin(), path.end());
+        std::wstring wpath = WGetExecutableFolder() + std::wstring(key, key + 3) + std::to_wstring(serchnum) + L".bmp";
+
+      //  std::wstring wpath(path.begin(), path.end());
         SaveWindow10x10BMP(hwnd, wpath.c_str(), X, Y);
         MessageBox(NULL, "Mapped spot!", "A button is now mapped to red spot", MB_OK | MB_ICONINFORMATION);
         return true;
@@ -626,20 +709,12 @@ bool Buttonaction(const char key[3], int mode, int serchnum, HBITMAP hbmdsktop, 
 
     }
 }
-LRESULT WINAPI FakeCursorWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-      if (msg != WM_QUIT)
-  {
-          return DefWindowProc(hWnd, msg, wParam, lParam);
-  }
-    
-}
 DWORD WINAPI ThreadFunction(LPVOID lpParam)
 {
     Sleep(2000);
 
     // settings reporting
-    std::string iniPath = GetExecutableFolder() + "\\screenshotinput.ini";
+    std::string iniPath = UGetExecutableFolder() + "\\screenshotinput.ini";
     std::string iniSettings = "Settings";
    // std::string controllerID = getIniString(iniSettings.c_str(), "Controller ID", "0", iniPath);
 
@@ -652,19 +727,20 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     int InitialMode = GetPrivateProfileInt(iniSettings.c_str(), "Initial Mode", 0, iniPath.c_str());
     int Modechange = GetPrivateProfileInt(iniSettings.c_str(), "Allow modechange", 1, iniPath.c_str());
 
-    int sens = GetPrivateProfileInt(iniSettings.c_str(), "Dot Speed", 75, iniPath.c_str());
-    int sens2 = GetPrivateProfileInt(iniSettings.c_str(), "CA Dot Speed", 100, iniPath.c_str());
+    int sens = GetPrivateProfileInt(iniSettings.c_str(), "Dot Speed", 40, iniPath.c_str());
+    int sens2 = GetPrivateProfileInt(iniSettings.c_str(), "CA Dot Speed", 75, iniPath.c_str());
 
     int sendfocus = GetPrivateProfileInt(iniSettings.c_str(), "Sendfocus", 0, iniPath.c_str());
     keyrespondtime = GetPrivateProfileInt(iniSettings.c_str(), "Keyresponsetime", 50, iniPath.c_str());
     getmouseonkey = GetPrivateProfileInt(iniSettings.c_str(), "GetMouseOnKey", 0, iniPath.c_str());
-   // std::string path = GetExecutableFolder() + "\\image.bmp";
-   // std::wstring wpath(path.begin(), path.end());
+    Atype = GetPrivateProfileInt(iniSettings.c_str(), "Aonlymove", 0, iniPath.c_str());
+    Btype = GetPrivateProfileInt(iniSettings.c_str(), "Bonlymove", 0, iniPath.c_str());
+    Xtype = GetPrivateProfileInt(iniSettings.c_str(), "Xonlymove", 0, iniPath.c_str());
+    Ytype = GetPrivateProfileInt(iniSettings.c_str(), "Yonlymove", 0, iniPath.c_str());
 
     Sleep(1000);
     
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
-
     int mode = InitialMode;
     int numphotoA = -1;
     int numphotoB = -1;
@@ -676,8 +752,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     //image numeration
     while (numphotoA == -1 && x < 50)
     {
-        std::string path = GetExecutableFolder() + "\\A" + std::to_string(x) + ".bmp";
-        std::wstring wpath(path.begin(), path.end());
+        std::wstring wpath = WGetExecutableFolder() + L"\\A" + std::to_wstring(x) + L".bmp";
         if (hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
         {
             x++;
@@ -685,26 +760,31 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
         }
         else
             numphotoA = x;
+       // char buffer[100];
+      // wsprintf(buffer, "A is %d", numphotoA);
+      //  MessageBoxA(NULL, buffer, "Info", MB_OK);
         Sleep(2);
     }
     x = 0;
     while (numphotoB == -1 && x < 50)
     {
-        std::string path = GetExecutableFolder() + "\\B" + std::to_string(x) + ".bmp";
+        std::string path = UGetExecutableFolder() + "\\B" + std::to_string(x) + ".bmp";
         std::wstring wpath(path.begin(), path.end());
         if (HBITMAP hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
         {
             x++;
             DeleteObject(hbm);
         }
-        else
+        else {
             numphotoB = x;
+
+        }
         Sleep(2);
     }
     x = 0;
     while (numphotoY == -1 && x < 50)
     {
-        std::string path = GetExecutableFolder() + "\\Y" + std::to_string(x) + ".bmp";
+        std::string path = UGetExecutableFolder() + "\\Y" + std::to_string(x) + ".bmp";
         std::wstring wpath(path.begin(), path.end());
         if (HBITMAP hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
         {
@@ -718,7 +798,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     x = 0;
     while (numphotoX == -1 && x < 50)
     {
-        std::string path = GetExecutableFolder() + "\\X" + std::to_string(x) + ".bmp";
+        std::string path = UGetExecutableFolder() + "\\X" + std::to_string(x) + ".bmp";
         std::wstring wpath(path.begin(), path.end());
         if (HBITMAP hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
         {
@@ -768,21 +848,24 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 if (buttons & XINPUT_GAMEPAD_A)
                 {
                     startsearch = startsearchA;
-                    if (Buttonaction("\\A", mode, numphotoB, hbmdsktop, startsearch))
+                    if (hbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false))
                     {
-                    }
-                    else
-                    { //error handling
-                    }
-                    if (mode == 2)
-                    {
-                        numphotoA++;
+                        if (Buttonaction("\\A", mode, numphotoA, startsearch))
+                        {
+                        }
+                        else
+                        { //error handling
+                        }
+                        if (mode == 2)
+                        {
+                            numphotoA++;
+                        }
                     }
                 }
                 if (buttons & XINPUT_GAMEPAD_B)
                 {
                     startsearch = startsearchB;
-                    if (Buttonaction("\\B", mode, numphotoB, hbmdsktop, startsearch))
+                    if (Buttonaction("\\B", mode, numphotoB, startsearch))
                     { 
                     }
                     else 
@@ -793,58 +876,53 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         numphotoB++;
                     }
                 }
+
+
+
                 if (buttons & XINPUT_GAMEPAD_DPAD_UP)
                 {
                    
-                    POINT scroll;
+                    
                     scroll.x = rect.left + (rect.right - rect.left) / 2;
 				    scroll.y = rect.top + 1;
-                    ClientToScreen(hwnd, &scroll);
-                    SendMouseClick(scroll.x, scroll.y, 6, 1); //4 4 move //5 release
-                    ScreenToClient(hwnd, &scroll);
-                    Sleep(keyrespondtime);
-                    SendMouseClick(0, 0, 11, 1); //4 4 move //5 release
+                    scrollmap = true;
                 }
-                if (buttons & XINPUT_GAMEPAD_DPAD_DOWN)
+               else if (buttons & XINPUT_GAMEPAD_DPAD_DOWN)
                 {
-                    POINT scroll;
+                    
                     scroll.x = rect.left + (rect.right - rect.left) / 2;
                     scroll.y = rect.bottom - 1;
-                    ClientToScreen(hwnd, &scroll);
-                    SendMouseClick(scroll.x, scroll.y, 6, 1); //4 4 move //5 release
-                    ScreenToClient(hwnd, &scroll);
-                    Sleep(keyrespondtime);
-                    SendMouseClick(0, 0, 11, 1); //4 4 move //5 release
+                    scrollmap = true;
                 }
-                if (buttons & XINPUT_GAMEPAD_DPAD_LEFT)
+                else if (buttons & XINPUT_GAMEPAD_DPAD_LEFT)
                 {
-                    POINT scroll;
+                    
                     scroll.x = rect.left + 1;
                     scroll.y = rect.top + (rect.bottom - rect.top) / 2;
-                    ClientToScreen(hwnd, &scroll);
-                    SendMouseClick(scroll.x, scroll.y, 6, 1); //4 4 move //5 release
-                    ScreenToClient(hwnd, &scroll);
-                    Sleep(keyrespondtime);
-                    SendMouseClick(0, 0, 11, 1); //4 4 move //5 release
+
+                    scrollmap = true;
 
                 }
-                if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT)
+                else if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT)
                 {
 
-                    POINT scroll;
+                    
                     scroll.x = rect.right - 1;
                     scroll.y = rect.top + (rect.bottom - rect.top) / 2;
 
-                    ClientToScreen(hwnd, &scroll);
-                    SendMouseClick(scroll.x, scroll.y, 6, 1); //4 4 move //5 release
-                    ScreenToClient(hwnd, &scroll);
-                    Sleep(keyrespondtime);
-                    SendMouseClick(0, 0, 11, 1); //4 4 move //5 release
+                    scrollmap = true;
                 }
+                else
+                {
+                    scrollmap = false;
+                }
+
+
+
                 if (buttons & XINPUT_GAMEPAD_X)
                 {
                     startsearch = startsearchX;
-                    Buttonaction("\\X", mode, numphotoX, hbmdsktop, startsearch);
+                    Buttonaction("\\X", mode, numphotoX, startsearch);
                     if (mode == 2)
                     {
                         numphotoX++;
@@ -852,8 +930,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 }
                 if (buttons & XINPUT_GAMEPAD_Y)
                 {
-                    startsearch = startsearchY;
-                    Buttonaction("\\Y", mode, numphotoY, hbmdsktop, startsearch);
+                    Buttonaction("\\Y", mode, numphotoY, startsearch);
                     if (mode == 2)
                     {
                         numphotoY++;
@@ -887,8 +964,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
                     int width = rect.right - rect.left;
                         int height = rect.bottom - rect.top;
-                    int Xaxis = state.Gamepad.sThumbLX;
-                    int Yaxis = state.Gamepad.sThumbLY;
+                    int Xaxis = state.Gamepad.sThumbRX;
+                    int Yaxis = state.Gamepad.sThumbRY;
 
                     
 
@@ -961,7 +1038,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             ScreenToClient(hwnd, &startdrag);
                             leftPressedold = false;
                             //closing curtains
-                            SetForegroundWindow(GetDesktopWindow());
                         }
                         else
                         { 
@@ -1004,7 +1080,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             ClientToScreen(hwnd, &startdrag);
                             SendMouseClick(startdrag.x, startdrag.y, 1, 3); //4 4 move //5 release
                             ScreenToClient(hwnd, &startdrag);
-                            SetForegroundWindow(GetDesktopWindow());
                             rightPressedold = false;
                         }
                         else
@@ -1029,8 +1104,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
         } // no hwnd
         if (knappsovetid > 20)
         {
-            sovetid = 20;
-            knappsovetid = 100;
+          //  sovetid = 20;
+          //  knappsovetid = 100;
             
 		}
 
@@ -1044,22 +1119,26 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     return 0;
 }
 //DWORD WINAPI ThreadFunction(LPVOID lpParam)
-DWORD WINAPI Main() {
-    Sleep(500);
-    CreateThread(nullptr, 0, ThreadFunction, nullptr, 0, nullptr); //not recommended? but seem to work well
-    return true;
+void RemoveHook() {
+    MH_DisableHook(MH_ALL_HOOKS);
+    MH_Uninitialize();
 }
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
-{
+void SetupHook() {
+    MH_Initialize();
+	MH_CreateHookApi(L"user32", "GetCursorPos", &MyGetCursorPos, reinterpret_cast<LPVOID*>(&fpGetCursorPos));   
+    MH_EnableHook(MH_ALL_HOOKS);
+}
+
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH:
- 
-            const auto threadHandle = CreateThread(nullptr, 0,
-                (LPTHREAD_START_ROUTINE)ThreadFunction, GetModuleHandle(0), 0, 0);
-
-             if (threadHandle != nullptr)
-                 CloseHandle(threadHandle);
+        SetupHook();
+      CreateThread(nullptr, 0,
+          (LPTHREAD_START_ROUTINE)ThreadFunction, GetModuleHandle(0), 0, 0);
+        break;
+    case DLL_PROCESS_DETACH:
+        RemoveHook();
         break;
     }
-    return true;
+    return TRUE;
 }
