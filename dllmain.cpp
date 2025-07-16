@@ -56,25 +56,25 @@ bool pausedraw = false;
 //beautiful cursor
 int colorfulSword[20][20] = {
 {1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,1,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,1,2,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0},
-{0,1,2,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0},
-{0,1,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0},
-{0,1,2,2,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0},
-{0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,0,0,0},
-{0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0},
-{0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0},
-{0,1,2,2,2,2,2,2,2,2,2,2,2,1,1,1,0,0,0,0},
-{0,1,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0},
-{0,1,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0,0},
-{0,1,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0,0},
-{0,1,2,2,2,2,2,1,1,2,2,2,1,0,0,0,0,0,0,0},
-{0,1,2,2,2,2,1,0,0,1,2,2,2,2,1,0,0,0,0,0},
-{0,1,1,1,1,1,0,0,0,0,1,2,2,2,1,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,1,2,2,2,1,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,1,2,2,2,1,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0},
+{1,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{1,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{1,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0},
+{1,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0},
+{1,2,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0},
+{1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0},
+{1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,0,0,0},
+{1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0},
+{1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0},
+{1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,0,0,0,0},
+{1,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0},
+{1,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0,0},
+{1,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0,0},
+{1,2,2,2,2,2,2,1,1,2,2,2,1,0,0,0,0,0,0,0},
+{1,2,2,2,2,2,1,0,0,1,2,2,2,2,1,0,0,0,0,0},
+{1,2,2,2,2,1,0,0,0,0,1,2,2,2,1,0,0,0,0,0},
+{1,1,2,2,1,0,0,0,0,0,0,1,2,2,2,1,0,0,0,0},
+{1,2,2,1,0,0,0,0,0,0,0,1,2,2,2,1,0,0,0,0},
+{1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0},
 };
 COLORREF colors[4] = {
     RGB(0, 0, 0),          // Transparent - won't be drawn
@@ -758,6 +758,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
 
 
                 }
+                if (hbmdsktop != 0)
                 DeleteObject(hbmdsktop);
                 // else  
 
@@ -897,6 +898,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
 
                     }
                     //  else  return false;
+                    if (hbmdsktop != 0)
                     DeleteObject(hbmdsktop);
 
                 }
@@ -1182,7 +1184,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 if (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER)
                 {
                     startsearch = startsearchC;
-                    Buttonaction("\\C", mode, numphotoY, startsearch);
+                    Buttonaction("\\C", mode, numphotoC, startsearch);
                     if (mode == 2)
                     {
                         numphotoC++;
@@ -1191,7 +1193,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 if (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER)
                 {
                     startsearch = startsearchD;
-                    Buttonaction("\\D", mode, numphotoY, startsearch);
+                    Buttonaction("\\D", mode, numphotoD, startsearch);
                     if (mode == 2)
                     {
                         numphotoD++;
@@ -1200,7 +1202,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 if (buttons & XINPUT_GAMEPAD_RIGHT_THUMB)
                 {
                     startsearch = startsearchE;
-                    Buttonaction("\\E", mode, numphotoY, startsearch);
+                    Buttonaction("\\E", mode, numphotoE, startsearch);
                     if (mode == 2)
                     {
                         numphotoE++;
@@ -1209,7 +1211,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 if (buttons & XINPUT_GAMEPAD_LEFT_THUMB)
                 {
                     startsearch = startsearchF;
-                    Buttonaction("\\F", mode, numphotoY, startsearch);
+                    Buttonaction("\\F", mode, numphotoF, startsearch);
                     if (mode == 2)
                     {
                         numphotoF++;
@@ -1468,5 +1470,5 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         RemoveHook();
         break;
     }
-    return TRUE;
+    return true;
 }
