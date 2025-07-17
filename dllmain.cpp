@@ -1,6 +1,7 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
 #include "pch.h"
 #include <windows.h>
+#include <windowsx.h>
 #include "MinHook.h"
 #include <Xinput.h>
 #include <tlhelp32.h>
@@ -58,6 +59,8 @@ int getkeystatehook = 0;
 int getasynckeystatehook = 0;
 int getcursorposhook = 0;
 int userealmouse = 1;
+HHOOK hMouseHook;
+
 
 
 //fake cursor
@@ -69,6 +72,8 @@ int ydrag;
 int xdrag;
 bool scrollmap = false;
 bool pausedraw = false;
+int cursorimage = 0;
+HICON hCursor = 0;
 
 //beautiful cursor
 int colorfulSword[20][20] = {
@@ -150,6 +155,19 @@ int knappsovetid = 100;
 
 int samekey = 0;
 int samekeyA = 0;
+
+// Hook callback function
+LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode == HC_ACTION) {
+        MSLLHOOKSTRUCT* pMouseStruct = (MSLLHOOKSTRUCT*)lParam;
+        if (pMouseStruct != nullptr) {
+            std::cout << "Mouse at (" << pMouseStruct->pt.x << ", " << pMouseStruct->pt.y << ")" << std::endl;
+        }
+    }
+    return CallNextHookEx(hMouseHook, nCode, wParam, lParam);
+}
+
+
 SHORT WINAPI HookedGetAsyncKeyState(int vKey) 
 {
     
@@ -192,18 +210,20 @@ SHORT WINAPI HookedGetKeyState(int vKey) {
 }
 
 BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
-    if (lpPoint) {
+    if (lpPoint) 
+    {
         POINT mpos;
-        if (scrollmap == false)
-        { 
-            mpos.x = X;
-            mpos.y = Y;
-        ClientToScreen(hwnd, &mpos);
+            if (scrollmap == false)
+            { 
+                mpos.x = X; //hwnd coordinates 0-800 on a 800x600 window
+                mpos.y = Y;//hwnd coordinate s0-600 on a 800x600 window
+            ClientToScreen(hwnd, &mpos);
 		
-        lpPoint->x = mpos.x;
-        lpPoint->y = mpos.y;
-        ScreenToClient(hwnd, &mpos);
-        }
+            lpPoint->x = mpos.x; //desktop coordinates
+            lpPoint->y = mpos.y;
+            ScreenToClient(hwnd, &mpos); //revert so i am sure its done
+            }
+            
 		else
 		{
             mpos.x = scroll.x;
@@ -211,11 +231,12 @@ BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
             ClientToScreen(hwnd, &mpos);
 			lpPoint->x = mpos.x;
 			lpPoint->y = mpos.y;
+
             ScreenToClient(hwnd, &mpos);
 		}
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 BOOL WINAPI HookedClipCursor(const RECT* lpRect) {
     return true; //nonzero bool or int
@@ -256,6 +277,18 @@ bool Mutexlock(bool lock) {
 
     }
     return true;
+}
+bool IsCursorInWindow(HWND hwnd) {
+    POINT pt;
+    DWORD pos = GetMessagePos();
+    pt.x = GET_X_LPARAM(pos);
+    pt.y = GET_Y_LPARAM(pos);
+    //ScreenToClient(hwnd, &pt);
+
+    RECT clientRect;
+    GetClientRect(hwnd, &clientRect);
+
+    return PtInRect(&clientRect, pt);
 }
 bool SendMouseClick(int x, int y, int z, int many) {
     // Create a named mutex
@@ -626,35 +659,63 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
 
         if (draw) {
 
+            if (cursorimage == 1)
+            {
+                
+                CURSORINFO ci = { sizeof(CURSORINFO) };
+                if (GetCursorInfo(&ci) && ci.flags == CURSOR_SHOWING && IsCursorInWindow(hwnd)) 
+                {
+                    if (IsCursorInWindow(hwnd) == true) {
+                        hCursor = ci.hCursor;
+                    }
+                    //ICONINFO iconInfo;  
+                    // 
+                // Fill bitmap with transparent background
+                    RECT rect = { 0, 0, 32, 32 }; //need bmp width height
+                    FillRect(hdcMem, &rect, (HBRUSH)(COLOR_WINDOW + 1));
 
-            for (int y = 0; y < 20; y++) {
-                for (int x = 0; x < 20; x++) {
-                    int val = colorfulSword[y][x];
-                    if (val != 0) {
-                        HBRUSH hBrush = CreateSolidBrush(colors[val]);
-                        RECT rect = { X + x , Y + y , X + x  + 1, Y + y + 1 };
-                        FillRect(hdcWindow, &rect, hBrush);
-                        DeleteObject(hBrush);
+
+                    // Draw icon into memory DC
+                    if (hCursor != 0)
+                    { 
+                        DrawIconEx(hdcWindow, 0 + X, 0 + Y, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
                     }
                 }
             }
-
-            //hbm24 = NULL;
-          //  HBRUSH hBrush = CreateSolidBrush(RGB(255, 60, 2));
-            // todo: for loop get cursor bmp and fillrect each pixel. maybe cpu intensive
-         //   RECT rect = { X, Y, X + 4, Y + 4 };
-          //  RECT rect2 = { X - 1, Y +1, X + 6, Y + 4 };
-         //   FillRect(hdcWindow, &rect, hBrush);
-         //   FillRect(hdcWindow, &rect2, hBrush);
-         //   DeleteObject(hBrush);
-            GetDIBits(hdcMem, hbm24, 0, height, pixels.data(), &bmi, DIB_RGB_COLORS);
-            SelectObject(hdcMem, oldBmp);
-            DeleteDC(hdcMem);
-            ReleaseDC(hwnd, hdcWindow);
-            DeleteObject(hbm24);
-            return 0;
-        }
-
+            else
+            {
+               for (int y = 0; y < 20; y++)
+                  {
+                 for (int x = 0; x < 20; x++)
+                     {
+                      int val = colorfulSword[y][x];
+                       if (val != 0)
+                       {
+                          HBRUSH hBrush = CreateSolidBrush(colors[val]);
+                           RECT rect = { X + x , Y + y , X + x + 1, Y + y + 1 };
+                           FillRect(hdcWindow, &rect, hBrush);
+                          DeleteObject(hBrush);
+                       }
+                    }
+               }
+            }
+           
+                //hbm24 = NULL;
+              //  HBRUSH hBrush = CreateSolidBrush(RGB(255, 60, 2));
+                // todo: for loop get cursor bmp and fillrect each pixel. maybe cpu intensive
+             //   RECT rect = { X, Y, X + 4, Y + 4 };
+              //  RECT rect2 = { X - 1, Y +1, X + 6, Y + 4 };
+             //   FillRect(hdcWindow, &rect, hBrush);
+             //   FillRect(hdcWindow, &rect2, hBrush);
+             //   DeleteObject(hBrush);
+                GetDIBits(hdcMem, hbm24, 0, height, pixels.data(), &bmi, DIB_RGB_COLORS);
+                SelectObject(hdcMem, oldBmp);
+                DeleteDC(hdcMem);
+                ReleaseDC(hwnd, hdcWindow);
+                DeleteObject(hbm24);
+                return 0;
+            }
+        
         // Copy bits out
         GetDIBits(hdcMem, hbm24, 0, height, pixels.data(), &bmi, DIB_RGB_COLORS);
    
@@ -665,7 +726,7 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
     ReleaseDC(hwnd, hdcWindow);
 
     return hbm24;
-}
+    }
 // Helper: Get stick magnitude
 float GetStickMagnitude(SHORT x, SHORT y) {
     return sqrtf(static_cast<float>(x) * x + static_cast<float>(y) * y);
@@ -1003,7 +1064,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
    // std::string controllerID = getIniString(iniSettings.c_str(), "Controller ID", "0", iniPath);
 
     //controller settings
-    int controllerID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", 0, iniPath.c_str());
+    int controllerID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", 0, iniPath.c_str()); //simple test if settings read but write it wont work.
     int AxisLeftsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisLeftsens", -7849, iniPath.c_str());
     int AxisRightsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisRightsens", 12000, iniPath.c_str());
     int AxisUpsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisUpsens", 0, iniPath.c_str());
@@ -1011,7 +1072,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     righthanded = GetPrivateProfileInt(iniSettings.c_str(), "Righthanded", 0, iniPath.c_str());
 
     //mode
-    int InitialMode = GetPrivateProfileInt(iniSettings.c_str(), "Initial Mode", 0, iniPath.c_str());
+    int InitialMode = GetPrivateProfileInt(iniSettings.c_str(), "Initial Mode", 1, iniPath.c_str());
     int Modechange = GetPrivateProfileInt(iniSettings.c_str(), "Allow modechange", 1, iniPath.c_str());
 
 
@@ -1028,6 +1089,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     Dtype = GetPrivateProfileInt(iniSettings.c_str(), "Dinputtype", 0, iniPath.c_str());
     Etype = GetPrivateProfileInt(iniSettings.c_str(), "Einputtype", 0, iniPath.c_str());
     Ftype = GetPrivateProfileInt(iniSettings.c_str(), "Finputtype", 0, iniPath.c_str());
+    cursorimage = GetPrivateProfileInt(iniSettings.c_str(), "Cursortype", 1, iniPath.c_str());
 
     //hooks
     int drawfakecursor = GetPrivateProfileInt(iniSettings.c_str(), "DrawFakeCursor", 1, iniPath.c_str());
@@ -1035,8 +1097,72 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     
 
     Sleep(1000);
+    if (controllerID == -9999)
 
+        //hhmousehook
+//        hMouseHook = SetWindowsHookEx(WH_MOUSE_LL, LowLevelMouseProc, GetModuleHandle(NULL), 0);
+//    if (hMouseHook == NULL) {
+//        std::cerr << "Failed to install hook!" << std::endl;
+//        return 1;
+//    }
 
+ //   std::cout << "Mouse hook installed. Press Ctrl+C to exit." << std::endl;
+
+    // Message loop to keep the hook alive
+ //   MSG msg;
+ //   while (GetMessage(&msg, NULL, 0, 0)) {
+ //       TranslateMessage(&msg);
+ //       DispatchMessage(&msg);
+ //   }
+
+  //  { // presume missing settings file. attempt to generate
+	//	MessageBoxA(NULL, "Settings file not found. Generating default settings.", "Error", MB_OK | MB_ICONERROR);
+       // controllerID = 0; //reset fault check
+    //    std::string valueStr = "1"; //controlerid
+    //    WritePrivateProfileString(iniSettings.c_str(), "Controllerid", valueStr.c_str(), iniPath.c_str());
+    //    valueStr = "-7849"; 
+    //    WritePrivateProfileString(iniSettings.c_str(), "AxisLeftsens", valueStr.c_str(), iniPath.c_str());
+    //    valueStr = "12000"; 
+    //    WritePrivateProfileString(iniSettings.c_str(), "AxisRightsens", valueStr.c_str(), iniPath.c_str());
+    //    valueStr = "0"; 
+   //     WritePrivateProfileString(iniSettings.c_str(), "AxisUpsens", valueStr.c_str(), iniPath.c_str());
+    //    valueStr = "-16049"; 
+    //    WritePrivateProfileString(iniSettings.c_str(), "AxisDownsens", valueStr.c_str(), iniPath.c_str());
+    //    valueStr = "0"; 
+    //    WritePrivateProfileString(iniSettings.c_str(), "Righthanded", valueStr.c_str(), iniPath.c_str());/////////////////////
+   //     valueStr = "1";
+   //    WritePrivateProfileString(iniSettings.c_str(), "Initial Mode", valueStr.c_str(), iniPath.c_str());
+   //     WritePrivateProfileString(iniSettings.c_str(), "Allow modechange", valueStr.c_str(), iniPath.c_str());
+   //     valueStr = "40"; 
+   //     WritePrivateProfileString(iniSettings.c_str(), "Dot Speed", valueStr.c_str(), iniPath.c_str());
+    //    valueStr = "75";
+    //    WritePrivateProfileString(iniSettings.c_str(), "CA Dot Speed", valueStr.c_str(), iniPath.c_str());
+    //    valueStr = "0";
+    //    WritePrivateProfileString(iniSettings.c_str(), "Sendfocus", valueStr.c_str(), iniPath.c_str()); 
+    //    valueStr = "50";
+    //    WritePrivateProfileString(iniSettings.c_str(), "Keyresponsetime", valueStr.c_str(), iniPath.c_str()); 
+    //    valueStr = "0";
+    //    WritePrivateProfileString(iniSettings.c_str(), "GetMouseOnKey", valueStr.c_str(), iniPath.c_str()); 
+    ///    WritePrivateProfileString(iniSettings.c_str(), "Ainputtype", valueStr.c_str(), iniPath.c_str()); 
+    //    WritePrivateProfileString(iniSettings.c_str(), "Binputtype", valueStr.c_str(), iniPath.c_str()); 
+    //    WritePrivateProfileString(iniSettings.c_str(), "Xinputtype", valueStr.c_str(), iniPath.c_str()); 
+    //    WritePrivateProfileString(iniSettings.c_str(), "Yinputtype", valueStr.c_str(), iniPath.c_str()); 
+    //    WritePrivateProfileString(iniSettings.c_str(), "Cinputtype", valueStr.c_str(), iniPath.c_str()); 
+    //    WritePrivateProfileString(iniSettings.c_str(), "Dinputtype", valueStr.c_str(), iniPath.c_str()); 
+    //    WritePrivateProfileString(iniSettings.c_str(), "Cinputtype", valueStr.c_str(), iniPath.c_str()); 
+    //    WritePrivateProfileString(iniSettings.c_str(), "Dinputtype", valueStr.c_str(), iniPath.c_str()); 
+    //    WritePrivateProfileString(iniSettings.c_str(), "Einputtype", valueStr.c_str(), iniPath.c_str()); 
+   //     WritePrivateProfileString(iniSettings.c_str(), "Finputtype", valueStr.c_str(), iniPath.c_str()); 
+    //    valueStr = "1";
+    ///    WritePrivateProfileString(iniSettings.c_str(), "DrawFakeCursor", valueStr.c_str(), iniPath.c_str());
+    //    WritePrivateProfileString(iniSettings.c_str(), "UseRealMouse", valueStr.c_str(), iniPath.c_str());
+    //    iniSettings = "Hooks";
+    //    WritePrivateProfileString(iniSettings.c_str(), "ClipCursorHook", valueStr.c_str(), iniPath.c_str());
+   //     WritePrivateProfileString(iniSettings.c_str(), "GetKeystateHook", valueStr.c_str(), iniPath.c_str());
+    //    WritePrivateProfileString(iniSettings.c_str(), "GetAsynckeystateHook", valueStr.c_str(), iniPath.c_str());
+    //    WritePrivateProfileString(iniSettings.c_str(), "GetCursorposHook", valueStr.c_str(), iniPath.c_str());
+
+ //   }
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
     int mode = InitialMode;
     int numphotoA = -1;
@@ -1553,7 +1679,7 @@ void SetupHook() {
         MH_CreateHook(&ClipCursor, &HookedClipCursor, reinterpret_cast<LPVOID*>(&originalClipCursor));
         MH_EnableHook(&ClipCursor);
     }
-    // MH_EnableHook(MH_ALL_HOOKS);
+     //MH_EnableHook(MH_ALL_HOOKS);
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) 
@@ -1563,10 +1689,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         case DLL_PROCESS_ATTACH:
         {
 
+            //supposed to help againt crashes?
+            //DisableThreadLibraryCalls(hModule);
+			//WaitForInputIdle(GetCurrentProcess(), 1000); //wait for input to be ready
 
-            DisableThreadLibraryCalls(hModule);
-            WaitForInputIdle(GetCurrentProcess(), 0);
-            SetupHook();
             std::string iniPath = UGetExecutableFolder() + "\\screenshotinput.ini";
             std::string iniSettings = "Hooks";
             // std::string controllerID = getIniString(iniSettings.c_str(), "Controller ID", "0", iniPath);
@@ -1576,7 +1702,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             getkeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetKeystateHook", 0, iniPath.c_str());
             getasynckeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetAsynckeystateHook", 0, iniPath.c_str());
             getcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorposHook", 0, iniPath.c_str());
-
+            SetupHook();
             CreateThread(nullptr, 0,
                 (LPTHREAD_START_ROUTINE)ThreadFunction, GetModuleHandle(0), 0, 0);
             break;
