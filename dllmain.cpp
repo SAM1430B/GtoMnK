@@ -18,7 +18,19 @@
 #pragma comment(lib, "Xinput9_1_0.lib")
 
 typedef UINT(WINAPI* GetCursorPos_t)(LPPOINT lpPoint);
+typedef SHORT(WINAPI* GetAsyncKeyState_t)(int);
+typedef SHORT(WINAPI* GetKeyState_t)(int);
+typedef BOOL(WINAPI* ClipCursor_t)(const RECT*);
+
+
+
 GetCursorPos_t fpGetCursorPos = nullptr;
+GetAsyncKeyState_t originalGetAsyncKeyState = nullptr;
+GetKeyState_t originalGetKeyState = nullptr;
+ClipCursor_t originalClipCursor = nullptr;
+
+
+
 
 POINT fakecursor;
 POINT startdrag;
@@ -40,7 +52,12 @@ int message = 0;
 
 
 //hooks
-
+int keystatesend = 0; //key to send
+int clipcursorhook = 0;
+int getkeystatehook = 0;
+int getasynckeystatehook = 0;
+int getcursorposhook = 0;
+int userealmouse = 1;
 
 
 //fake cursor
@@ -76,11 +93,15 @@ int colorfulSword[20][20] = {
 {1,2,2,1,0,0,0,0,0,0,0,1,2,2,2,1,0,0,0,0},
 {1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0},
 };
-COLORREF colors[4] = {
+//temporary cursor on success
+
+COLORREF colors[5] = {
     RGB(0, 0, 0),          // Transparent - won't be drawn
     RGB(140, 140, 140),    // Gray for blade
     RGB(255, 255, 255),    // White shine
-    RGB(139, 69, 19)       // Brown handle
+    RGB(139, 69, 19),       // Brown handle
+    RGB(50, 150, 255)     // Light blue accent
+
 };
 
 
@@ -101,7 +122,6 @@ int startsearchD = 0;
 int startsearchE = 0;
 int startsearchF = 0;
 
-int getcursorposhook = 0;
 int righthanded = 0;
 
 
@@ -128,6 +148,49 @@ int mode = 0;
 int sovetid = 16;
 int knappsovetid = 100;
 
+int samekey = 0;
+int samekeyA = 0;
+SHORT WINAPI HookedGetAsyncKeyState(int vKey) 
+{
+    
+    if (samekeyA == vKey) {
+        return 8001; 
+        //8001 on hold key. but this may not work
+    }
+    else samekeyA = 0;
+
+    if (vKey == keystatesend)
+    {
+        samekeyA = vKey;
+        return 8000; //8001 ?
+    }
+    else
+    {
+        SHORT result = originalGetAsyncKeyState(vKey);
+        return result;
+    }
+}
+
+// Hooked GetKeyState
+SHORT WINAPI HookedGetKeyState(int vKey) {
+    if (samekey == vKey) {
+        return 8001;
+        //8001 on hold key. but this may not work
+    }
+    else samekey = 0;
+
+    if (vKey == keystatesend)
+    {
+        samekey = vKey;
+        return 8000; //8001 ?
+    }
+    else
+    {
+        SHORT result = originalGetKeyState(vKey);
+        return result;
+    }
+}
+
 BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
     if (lpPoint) {
         POINT mpos;
@@ -153,6 +216,11 @@ BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
         return TRUE;
     }
     return FALSE;
+}
+BOOL WINAPI HookedClipCursor(const RECT* lpRect) {
+    return true; //nonzero bool or int
+    //return originalClipCursor(nullptr);
+
 }
 
 bool Mutexlock(bool lock) {
@@ -191,6 +259,9 @@ bool Mutexlock(bool lock) {
 }
 bool SendMouseClick(int x, int y, int z, int many) {
     // Create a named mutex
+    if (userealmouse == 0) {
+        return true;
+    }
     if (z == 1 || z == 2 || z == 3 || z == 6 || z == 10)
     {
         if (Mutexlock(true)) {
@@ -220,6 +291,7 @@ bool SendMouseClick(int x, int y, int z, int many) {
         // Simulate mouse left button down
         input[1].type = INPUT_MOUSE;
         input[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+        keystatesend = VK_LEFT;
         \
         // Simulate mouse left button up
         input[2].type = INPUT_MOUSE;
@@ -239,6 +311,7 @@ bool SendMouseClick(int x, int y, int z, int many) {
         // Simulate mouse left button down
         input[1].type = INPUT_MOUSE;
         input[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+        keystatesend = VK_LEFT;
     }
     else if (z == 5)
     { //right button press, drag and release
@@ -300,7 +373,8 @@ std::wstring WGetExecutableFolder() {
 
 bool sendKey(char key, int typeofkey) { //VK_LEFT VK_RIGHT VK_DOWN VK_UP
     // Create a named mutex
-     if (Mutexlock(true))
+
+    if (Mutexlock(true))
      { 
          if (getmouseonkey == 1){
              
@@ -789,7 +863,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                         // MessageBox(NULL, "some kind of error", "captured desktop", MB_OK | MB_ICONINFORMATION);
                         if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt, 0, 0))
                         {
-                             char buffer[100];
+                             //char buffer[100];
 
                             X = pt.x;
                             Y = pt.y;
@@ -956,10 +1030,13 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     Ftype = GetPrivateProfileInt(iniSettings.c_str(), "Finputtype", 0, iniPath.c_str());
 
     //hooks
-    getcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "CursorPosHook", 1, iniPath.c_str());
+    int drawfakecursor = GetPrivateProfileInt(iniSettings.c_str(), "DrawFakeCursor", 1, iniPath.c_str());
+	userealmouse = GetPrivateProfileInt(iniSettings.c_str(), "UseRealMouse", 1, iniPath.c_str());   
+    
 
     Sleep(1000);
-    
+
+
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
     int mode = InitialMode;
     int numphotoA = -1;
@@ -1100,11 +1177,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
         Sleep(2);
     }
-    //////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////LLLLLLLOOOOOOOOOOOOOPPPPPPPPPPPPP
     bool Aprev = false;
         
     while (loop == true)
     {
+        keystatesend = 0; //reset keystate
         if (hwnd == NULL)
         {
             hwnd = GetMainWindowHandle(GetCurrentProcessId());
@@ -1278,7 +1356,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         mode = 0;
                         MessageBox(NULL, "Bmp mode", "only send input on bmp match", MB_OK | MB_ICONINFORMATION);
                     }
-                    Sleep(1000); //have time to release button. this is no hurry anyway
+                    else { //assume modechange not allowed. send escape key instead
+                        keystatesend = VK_ESCAPE;
+                    }
+                    Sleep(700); //have time to release button. this is no hurry anyway
                 }
                 if (mode > 0 )
                 { 
@@ -1338,7 +1419,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         sovetid = nysovetid;
                     if (sovetid < 3) //speedlimit
                         sovetid = 3;
-                    CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw
+                    if (drawfakecursor == 1)
+                        CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw fake cursor
                     //MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
 
               
@@ -1453,22 +1535,57 @@ void RemoveHook() {
 }
 void SetupHook() {
     MH_Initialize();
-   // if ( getcursorposhook == 1){ too early. before settings read
-	    MH_CreateHookApi(L"user32", "GetCursorPos", &MyGetCursorPos, reinterpret_cast<LPVOID*>(&fpGetCursorPos));   
-  //  }
-    MH_EnableHook(MH_ALL_HOOKS);
+    if (getcursorposhook == 1) {
+        MH_CreateHookApi(L"user32", "GetCursorPos", &MyGetCursorPos, reinterpret_cast<LPVOID*>(&fpGetCursorPos));
+        MH_EnableHook(&GetCursorPos);
+    }
+    if (getkeystatehook == 1) {
+        MH_CreateHook(&GetAsyncKeyState, &HookedGetAsyncKeyState, reinterpret_cast<LPVOID*>(&originalGetAsyncKeyState));
+        MH_EnableHook(&GetAsyncKeyState);
+    }
+
+    if (getasynckeystatehook == 1) {
+        MH_CreateHook(&GetKeyState, &HookedGetKeyState, reinterpret_cast<LPVOID*>(&originalGetKeyState));
+        MH_EnableHook(&GetKeyState);
+    }
+
+    if (clipcursorhook == 1) {
+        MH_CreateHook(&ClipCursor, &HookedClipCursor, reinterpret_cast<LPVOID*>(&originalClipCursor));
+        MH_EnableHook(&ClipCursor);
+    }
+    // MH_EnableHook(MH_ALL_HOOKS);
 }
 
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
-    switch (ul_reason_for_call) {
-    case DLL_PROCESS_ATTACH:
-        SetupHook();
-      CreateThread(nullptr, 0,
-          (LPTHREAD_START_ROUTINE)ThreadFunction, GetModuleHandle(0), 0, 0);
-        break;
-    case DLL_PROCESS_DETACH:
-        RemoveHook();
-        break;
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) 
+{
+    switch (ul_reason_for_call) 
+    {
+        case DLL_PROCESS_ATTACH:
+        {
+
+
+            DisableThreadLibraryCalls(hModule);
+            WaitForInputIdle(GetCurrentProcess(), 0);
+            SetupHook();
+            std::string iniPath = UGetExecutableFolder() + "\\screenshotinput.ini";
+            std::string iniSettings = "Hooks";
+            // std::string controllerID = getIniString(iniSettings.c_str(), "Controller ID", "0", iniPath);
+
+             //hook settings
+            clipcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "ClipCursorHook", 0, iniPath.c_str());
+            getkeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetKeystateHook", 0, iniPath.c_str());
+            getasynckeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetAsynckeystateHook", 0, iniPath.c_str());
+            getcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorposHook", 0, iniPath.c_str());
+
+            CreateThread(nullptr, 0,
+                (LPTHREAD_START_ROUTINE)ThreadFunction, GetModuleHandle(0), 0, 0);
+            break;
+        }
+        case DLL_PROCESS_DETACH:
+        {
+            RemoveHook();
+            break;
+        }
     }
     return true;
 }
