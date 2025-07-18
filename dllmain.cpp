@@ -292,7 +292,40 @@ bool IsCursorInWindow(HWND hwnd) {
 }
 bool SendMouseClick(int x, int y, int z, int many) {
     // Create a named mutex
-    if (userealmouse == 0) {
+    if (userealmouse == 0) 
+        {
+        POINT heer;
+        heer.x = x;
+        heer.y = y;
+        ScreenToClient(hwnd, &heer);
+        LPARAM clickPos = MAKELPARAM(heer.x, heer.y);
+        if ( z == 1){
+            
+            PostMessage(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, clickPos);
+            PostMessage(hwnd, WM_LBUTTONUP, 0, clickPos);
+            keystatesend = VK_LEFT;
+        }
+        if (z == 2) {
+            PostMessage(hwnd, WM_RBUTTONDOWN, MK_RBUTTON, clickPos);
+            PostMessage(hwnd, WM_RBUTTONUP, 0, clickPos);
+        }
+        if (z == 3) {
+            PostMessage(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, clickPos);
+            keystatesend = VK_LEFT;
+        }
+        if (z == 5)
+        {
+            PostMessage(hwnd, WM_LBUTTONUP, 0, clickPos);
+
+        }
+        else if (z == 6 || z == 8 || z == 10 || z == 11 || z == 4) //only mousemove
+        {
+            PostMessage(hwnd, WM_MOUSEMOVE, 0, clickPos);
+        }
+        else if (z == 4) //only mousemove
+        {
+            PostMessage(hwnd, WM_RBUTTONUP, 0, clickPos);
+        }
         return true;
     }
     if (z == 1 || z == 2 || z == 3 || z == 6 || z == 10)
@@ -325,7 +358,7 @@ bool SendMouseClick(int x, int y, int z, int many) {
         input[1].type = INPUT_MOUSE;
         input[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
         keystatesend = VK_LEFT;
-        \
+        
         // Simulate mouse left button up
         input[2].type = INPUT_MOUSE;
         input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
@@ -1054,6 +1087,46 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
         return true;
     }
 }
+//DWORD WINAPI hhmousehookthread(LPVOID lpParam)
+//{
+   // hMouseHook = SetWindowsHookEx(WH_MOUSE_LL, LowLevelMouseProc, GetModuleHandle(NULL), 0);
+//    hMouseHook = SetWindowsHookEx(WH_MOUSE, MouseProc, GetModuleHandle(NULL), GetCurrentThreadId());
+//
+//    if (hMouseHook == NULL) 
+//    {
+//        std::cerr << "Failed to install hook!" << std::endl;
+       // return 1;
+//    }
+  //     MSG msg;
+//   while (GetMessage(&msg, NULL, 0, 0)) 
+// {
+//       TranslateMessage(&msg);
+//       DispatchMessage(&msg);
+//   }
+//}
+//LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
+//    if (nCode == HC_ACTION) {
+//        MSLLHOOKSTRUCT* info = (MSLLHOOKSTRUCT*)lParam;
+//
+//    }
+//    return CallNextHookEx(NULL, nCode, wParam, lParam);
+//}
+
+LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode >= 0) {
+        MOUSEHOOKSTRUCT* mhs = (MOUSEHOOKSTRUCT*)lParam;
+
+        if (mhs->hwnd == hwnd) {
+            
+
+        }
+
+    }
+
+    return CallNextHookEx(hMouseHook, nCode, wParam, lParam);
+}
+
+
 DWORD WINAPI ThreadFunction(LPVOID lpParam)
 {
     Sleep(2000);
@@ -1097,14 +1170,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     
 
     Sleep(1000);
-    if (controllerID == -9999)
 
+ //   CreateThread(nullptr, 0,
+  //      (LPTHREAD_START_ROUTINE)hhmousehookthread, GetModuleHandle(0), 0, 0);
         //hhmousehook
-//        hMouseHook = SetWindowsHookEx(WH_MOUSE_LL, LowLevelMouseProc, GetModuleHandle(NULL), 0);
-//    if (hMouseHook == NULL) {
-//        std::cerr << "Failed to install hook!" << std::endl;
-//        return 1;
-//    }
+
 
  //   std::cout << "Mouse hook installed. Press Ctrl+C to exit." << std::endl;
 
@@ -1162,7 +1232,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     //    WritePrivateProfileString(iniSettings.c_str(), "GetAsynckeystateHook", valueStr.c_str(), iniPath.c_str());
     //    WritePrivateProfileString(iniSettings.c_str(), "GetCursorposHook", valueStr.c_str(), iniPath.c_str());
 
- //   }
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
     int mode = InitialMode;
     int numphotoA = -1;
@@ -1494,6 +1563,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     int Yaxis = 0;
                     int width = rect.right - rect.left;
                     int height = rect.bottom - rect.top;
+                    bool movedmouse;
                     if (righthanded == 1) {
                         Xaxis = state.Gamepad.sThumbRX;
                         Yaxis = state.Gamepad.sThumbRY;
@@ -1511,6 +1581,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         { 
                             sovetid = sens - (std::abs(Xaxis) / 450);
                         X = X - 2;
+                        movedmouse = true;
                         }
                     }
                     else if (Xaxis > AxisRightsens) //strange values. but tested many before choosing this
@@ -1519,6 +1590,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         {
                             sovetid = sens - (Xaxis / 450);
                             X = X + 2;
+                            movedmouse = true;
                         }
                     }
                     int accumulater = std::abs(Xaxis) + std::abs(Yaxis);
@@ -1530,6 +1602,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         {
                             sovetid = sens - (std::abs(Yaxis) / 450);
                             Y = Y - 2;
+                            movedmouse = true;
                         }
                     }
                     else  if (Yaxis < AxisDownsens) //strange values. but tested many before choosing this
@@ -1538,7 +1611,17 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         {
                             sovetid = sens - (std::abs(Yaxis) / 450); //a litt
                             Y = Y + 2;
+                            movedmouse = true;
                         }
+                    }
+                    if (movedmouse == true) //fake cursor move message
+                    {
+                        if (userealmouse == 0) 
+                        {
+                            SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
+                        }
+                        movedmouse = false;
+
                     }
                     int nysovetid = sens2 - (accumulater / 700);
                     if (nysovetid < sovetid)
