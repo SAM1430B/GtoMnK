@@ -18,7 +18,11 @@
 
 #pragma comment(lib, "Xinput9_1_0.lib")
 
+HMODULE g_hModule = nullptr;
+
 typedef UINT(WINAPI* GetCursorPos_t)(LPPOINT lpPoint);
+typedef UINT(WINAPI* SetCursorPos_t)(LPPOINT lpPoint);
+
 typedef SHORT(WINAPI* GetAsyncKeyState_t)(int);
 typedef SHORT(WINAPI* GetKeyState_t)(int);
 typedef BOOL(WINAPI* ClipCursor_t)(const RECT*);
@@ -29,6 +33,7 @@ typedef HCURSOR(WINAPI* SetCursor_t)(HCURSOR);
 
 
 GetCursorPos_t fpGetCursorPos = nullptr;
+GetCursorPos_t fpSetCursorPos = nullptr;
 GetAsyncKeyState_t originalGetAsyncKeyState = nullptr;
 GetKeyState_t originalGetKeyState = nullptr;
 ClipCursor_t originalClipCursor = nullptr;
@@ -180,7 +185,8 @@ HCURSOR WINAPI HookedSetCursor(HCURSOR hcursor) {
     // Optionally replace the cursor
     // hCursor = LoadCursor(NULL, IDC_HAND);
 
-    return originalSetCursor(hcursor); // Call original
+   // return originalSetCursor(hcursor); // Call original
+        return hcursor;
 }
 
 SHORT WINAPI HookedGetAsyncKeyState(int vKey) 
@@ -251,6 +257,16 @@ BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
 		}
         return true;
     }
+    return false;
+}
+BOOL WINAPI MySetCursorPos(PPOINT lpPoint) {
+        //POINT mpos;
+        //ClientToScreen(hwnd, &mpos);
+
+        X = lpPoint->x; //desktop coordinates? or hwnd?
+        Y = lpPoint->y;
+        //ScreenToClient(hwnd, &mpos); //revert so i am sure its done
+
     return false;
 }
 BOOL WINAPI HookedClipCursor(const RECT* lpRect) {
@@ -336,7 +352,7 @@ bool SendMouseClick(int x, int y, int z, int many) {
         else if (z == 6 || z == 8 || z == 10 || z == 11 || z == 4) //only mousemove
         {
             PostMessage(hwnd, WM_MOUSEMOVE, 0, clickPos);
-            PostMessage(hwnd, WM_SETCURSOR, (WPARAM)hwnd, MAKELPARAM(HTCLIENT, WM_MOUSEMOVE));
+            //PostMessage(hwnd, WM_SETCURSOR, (WPARAM)hwnd, MAKELPARAM(HTCLIENT, WM_MOUSEMOVE));
 
         }
         else if (z == 4) //only mousemove
@@ -1815,9 +1831,15 @@ void RemoveHook() {
 }
 void SetupHook() {
     MH_Initialize();
+
+    CreateThread(nullptr, 0,
+        (LPTHREAD_START_ROUTINE)ThreadFunction, g_hModule, 0, 0);
+
     if (getcursorposhook == 1) {
         MH_CreateHookApi(L"user32", "GetCursorPos", &MyGetCursorPos, reinterpret_cast<LPVOID*>(&fpGetCursorPos));
         MH_EnableHook(&GetCursorPos);
+        MH_CreateHookApi(L"user32", "SetCursorPos", &MySetCursorPos, reinterpret_cast<LPVOID*>(&fpSetCursorPos));
+        MH_EnableHook(&SetCursorPos);
     }
     if (getkeystatehook == 1) {
         MH_CreateHook(&GetAsyncKeyState, &HookedGetAsyncKeyState, reinterpret_cast<LPVOID*>(&originalGetAsyncKeyState));
@@ -1853,8 +1875,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         {
 
             //supposed to help againt crashes?
-            //DisableThreadLibraryCalls(hModule);
-			//WaitForInputIdle(GetCurrentProcess(), 1000); //wait for input to be ready
+            WaitForInputIdle(GetCurrentProcess(), 1000); //wait for input to be ready
+            DisableThreadLibraryCalls(hModule);
+            g_hModule = hModule;
 
             std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
             std::string iniSettings = "Hooks";
@@ -1867,8 +1890,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             getcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorposHook", 1, iniPath.c_str());
             setcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorHook", 1, iniPath.c_str());
             SetupHook();
-            CreateThread(nullptr, 0,
-                (LPTHREAD_START_ROUTINE)ThreadFunction, GetModuleHandle(0), 0, 0);
             break;
         }
         case DLL_PROCESS_DETACH:
