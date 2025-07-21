@@ -1,0 +1,1 @@
+This DLL depends on Minhook.dll available on github. Inject both dlls in target process

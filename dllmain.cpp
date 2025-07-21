@@ -22,6 +22,9 @@ typedef UINT(WINAPI* GetCursorPos_t)(LPPOINT lpPoint);
 typedef SHORT(WINAPI* GetAsyncKeyState_t)(int);
 typedef SHORT(WINAPI* GetKeyState_t)(int);
 typedef BOOL(WINAPI* ClipCursor_t)(const RECT*);
+typedef HCURSOR(WINAPI* SetCursor_t)(HCURSOR);
+
+
 
 
 
@@ -29,7 +32,7 @@ GetCursorPos_t fpGetCursorPos = nullptr;
 GetAsyncKeyState_t originalGetAsyncKeyState = nullptr;
 GetKeyState_t originalGetKeyState = nullptr;
 ClipCursor_t originalClipCursor = nullptr;
-
+SetCursor_t originalSetCursor = nullptr;
 
 
 
@@ -58,7 +61,8 @@ int clipcursorhook = 0;
 int getkeystatehook = 0;
 int getasynckeystatehook = 0;
 int getcursorposhook = 0;
-int userealmouse = 1;
+int setcursorhook = 0;
+int userealmouse = 0;
 HHOOK hMouseHook;
 
 
@@ -157,16 +161,27 @@ int samekey = 0;
 int samekeyA = 0;
 
 // Hook callback function
-LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
-    if (nCode == HC_ACTION) {
-        MSLLHOOKSTRUCT* pMouseStruct = (MSLLHOOKSTRUCT*)lParam;
-        if (pMouseStruct != nullptr) {
-            std::cout << "Mouse at (" << pMouseStruct->pt.x << ", " << pMouseStruct->pt.y << ")" << std::endl;
-        }
-    }
-    return CallNextHookEx(hMouseHook, nCode, wParam, lParam);
-}
+//LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
+//    if (nCode == HC_ACTION) {
+//        MSLLHOOKSTRUCT* pMouseStruct = (MSLLHOOKSTRUCT*)lParam;
+//        if (pMouseStruct != nullptr) {
+//            std::cout << "Mouse at (" << pMouseStruct->pt.x << ", " << pMouseStruct->pt.y << ")" << std::endl;
+//        }
+//    }
+ //   return CallNextHookEx(hMouseHook, nCode, wParam, lParam);
+//}
 
+HCURSOR WINAPI HookedSetCursor(HCURSOR hcursor) {
+    // Example: log or replace cursor
+   // OutputDebugString(L"SetCursor was called!\n");
+		hCursor = hcursor; // Store the cursor handle   
+    
+    
+    // Optionally replace the cursor
+    // hCursor = LoadCursor(NULL, IDC_HAND);
+
+    return originalSetCursor(hcursor); // Call original
+}
 
 SHORT WINAPI HookedGetAsyncKeyState(int vKey) 
 {
@@ -321,6 +336,8 @@ bool SendMouseClick(int x, int y, int z, int many) {
         else if (z == 6 || z == 8 || z == 10 || z == 11 || z == 4) //only mousemove
         {
             PostMessage(hwnd, WM_MOUSEMOVE, 0, clickPos);
+            PostMessage(hwnd, WM_SETCURSOR, (WPARAM)hwnd, MAKELPARAM(HTCLIENT, WM_MOUSEMOVE));
+
         }
         else if (z == 4) //only mousemove
         {
@@ -695,12 +712,10 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
             if (cursorimage == 1)
             {
                 
-                CURSORINFO ci = { sizeof(CURSORINFO) };
-                if (GetCursorInfo(&ci) && ci.flags == CURSOR_SHOWING && IsCursorInWindow(hwnd)) 
-                {
-                    if (IsCursorInWindow(hwnd) == true) {
-                        hCursor = ci.hCursor;
-                    }
+              //  CURSORINFO ci = { sizeof(CURSORINFO) };
+            //    if (IsCursorInWindow(hwnd) == true) {
+                 //       hCursor = ci.hCursor;
+                 //   }
                     //ICONINFO iconInfo;  
                     // 
                 // Fill bitmap with transparent background
@@ -713,7 +728,22 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
                     { 
                         DrawIconEx(hdcWindow, 0 + X, 0 + Y, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
                     }
-                }
+                    else {
+                        for (int y = 0; y < 20; y++)
+                        {
+                            for (int x = 0; x < 20; x++)
+                            {
+                                int val = colorfulSword[y][x];
+                                if (val != 0)
+                                {
+                                    HBRUSH hBrush = CreateSolidBrush(colors[val]);
+                                    RECT rect = { X + x , Y + y , X + x + 1, Y + y + 1 };
+                                    FillRect(hdcWindow, &rect, hBrush);
+                                    DeleteObject(hBrush);
+                                }
+                            }
+                        }
+                    }
             }
             else
             {
@@ -911,6 +941,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                         { 
                             X = pt.x;
                             Y = pt.y;
+                            //MessageBox(NULL, "some kind of error", "found image", MB_OK | MB_ICONINFORMATION);
                         }
                         if (movenotclick == false) {
                             ClientToScreen(hwnd, &pt);
@@ -959,8 +990,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                         {
                              //char buffer[100];
 
-                            X = pt.x;
-                            Y = pt.y;
+
                             if (strcmp(key, "\\A") == 0) {
                                 if (Atype == 1)
                                 {
@@ -1049,10 +1079,13 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                                 }
                                 startsearchF = i + 1;
                             }
+                           // X = pt.x;
+                           // Y = pt.y;
                             if (clicknotmove == false)
                             {
                                 X = pt.x;
                                 Y = pt.y;
+                               // MessageBox(NULL, "some kind of error", "found image", MB_OK | MB_ICONINFORMATION);
                             }
                             if (movenotclick == false)
                             { 
@@ -1071,38 +1104,64 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
 
                 }
             }
-            Sleep(300); //to avoid double press
-            return true;
+
 
         }
     }
     else //mode 2 button mapping
     {
 		//RepaintWindow(hwnd, NULL, FALSE); 
-        Sleep(500); //to make sure red flicker expired
+        Sleep(100); //to make sure red flicker expired
         std::string path = UGetExecutableFolder() + key + std::to_string(serchnum) + ".bmp";
         std::wstring wpath(path.begin(), path.end());
         SaveWindow10x10BMP(hwnd, wpath.c_str(), X, Y);
         MessageBox(NULL, "Mapped spot!", key, MB_OK | MB_ICONINFORMATION);
         return true;
     }
+    Sleep(50); //to avoid double press
+    return true;
 }
+//LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode == HC_ACTION) {
+        PMSLLHOOKSTRUCT pMouse = (PMSLLHOOKSTRUCT)lParam;
+
+        HWND hwndUnderCursor = WindowFromPoint(pMouse->pt);
+        if (hwndUnderCursor == hwnd) {
+            // Swallow the message
+           // MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
+            return 1; // Non-zero return value blocks the message
+        }
+    }
+    return CallNextHookEx(NULL, nCode, wParam, lParam);
+}
+
+
 //DWORD WINAPI hhmousehookthread(LPVOID lpParam)
 //{
-   // hMouseHook = SetWindowsHookEx(WH_MOUSE_LL, LowLevelMouseProc, GetModuleHandle(NULL), 0);
+  ///  hMouseHook = SetWindowsHookEx(WH_MOUSE_LL, LowLevelMouseProc, GetModuleHandle(NULL), 0);
 //    hMouseHook = SetWindowsHookEx(WH_MOUSE, MouseProc, GetModuleHandle(NULL), GetCurrentThreadId());
 //
-//    if (hMouseHook == NULL) 
-//    {
-//        std::cerr << "Failed to install hook!" << std::endl;
-       // return 1;
-//    }
-  //     MSG msg;
-//   while (GetMessage(&msg, NULL, 0, 0)) 
+//    HHOOK hMouseHook = SetWindowsHookEx(
+//        WH_MOUSE_LL,          // Low-level mouse hook
+ //       MouseHookProc,        // Your hook procedure
+ //       NULL,            // NULL if in same process; DLL handle if injected
+ //       0                     // Hook all threads
+ //   );
+
+
+ //   if (hMouseHook == NULL) 
+ //   {
+ //       
+ //       return 1;
+////  }
+ //      MSG msg;
+ //  while (GetMessage(&msg, NULL, 0, 0)) 
 // {
 //       TranslateMessage(&msg);
-//       DispatchMessage(&msg);
-//   }
+//       //MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
+//      DispatchMessage(&msg);
+//  }
 //}
 //LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
 //    if (nCode == HC_ACTION) {
@@ -1112,19 +1171,20 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
 //    return CallNextHookEx(NULL, nCode, wParam, lParam);
 //}
 
-LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
-    if (nCode >= 0) {
-        MOUSEHOOKSTRUCT* mhs = (MOUSEHOOKSTRUCT*)lParam;
+//LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
+//    if (nCode >= 0) {
+//        MOUSEHOOKSTRUCT* mhs = (MOUSEHOOKSTRUCT*)lParam;
 
-        if (mhs->hwnd == hwnd) {
+//        if (mhs->hwnd == hwnd) {
             
 
-        }
+ //       }
 
-    }
+ //   }
 
-    return CallNextHookEx(hMouseHook, nCode, wParam, lParam);
-}
+ //   return CallNextHookEx(hMouseHook, nCode, wParam, lParam);
+//}
+
 
 
 DWORD WINAPI ThreadFunction(LPVOID lpParam)
@@ -1132,7 +1192,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     Sleep(2000);
 
     // settings reporting
-    std::string iniPath = UGetExecutableFolder() + "\\screenshotinput.ini";
+    std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
     std::string iniSettings = "Settings";
    // std::string controllerID = getIniString(iniSettings.c_str(), "Controller ID", "0", iniPath);
 
@@ -1154,11 +1214,14 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     int sendfocus = GetPrivateProfileInt(iniSettings.c_str(), "Sendfocus", 0, iniPath.c_str());
     keyrespondtime = GetPrivateProfileInt(iniSettings.c_str(), "Keyresponsetime", 50, iniPath.c_str());
     getmouseonkey = GetPrivateProfileInt(iniSettings.c_str(), "GetMouseOnKey", 0, iniPath.c_str());
+
+    //clicknotmove 2
+    //movenotclick 1
     Atype = GetPrivateProfileInt(iniSettings.c_str(), "Ainputtype", 0, iniPath.c_str());
     Btype = GetPrivateProfileInt(iniSettings.c_str(), "Binputtype", 0, iniPath.c_str());
-    Xtype = GetPrivateProfileInt(iniSettings.c_str(), "Xinputtype", 0, iniPath.c_str());
+    Xtype = GetPrivateProfileInt(iniSettings.c_str(), "Xinputtype", 1, iniPath.c_str());
     Ytype = GetPrivateProfileInt(iniSettings.c_str(), "Yinputtype", 0, iniPath.c_str());
-    Ctype = GetPrivateProfileInt(iniSettings.c_str(), "Cinputtype", 0, iniPath.c_str());
+    Ctype = GetPrivateProfileInt(iniSettings.c_str(), "Cinputtype", 2, iniPath.c_str());
     Dtype = GetPrivateProfileInt(iniSettings.c_str(), "Dinputtype", 0, iniPath.c_str());
     Etype = GetPrivateProfileInt(iniSettings.c_str(), "Einputtype", 0, iniPath.c_str());
     Ftype = GetPrivateProfileInt(iniSettings.c_str(), "Finputtype", 0, iniPath.c_str());
@@ -1166,13 +1229,14 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
     //hooks
     int drawfakecursor = GetPrivateProfileInt(iniSettings.c_str(), "DrawFakeCursor", 1, iniPath.c_str());
-	userealmouse = GetPrivateProfileInt(iniSettings.c_str(), "UseRealMouse", 1, iniPath.c_str());   
+	userealmouse = GetPrivateProfileInt(iniSettings.c_str(), "UseRealMouse", 0, iniPath.c_str());   //scrolloutsidewindow
+    int scrolloutsidewindow = GetPrivateProfileInt(iniSettings.c_str(), "Scrollmapfix", 1, iniPath.c_str());   //scrolloutsidewindow
     
 
     Sleep(1000);
 
- //   CreateThread(nullptr, 0,
-  //      (LPTHREAD_START_ROUTINE)hhmousehookthread, GetModuleHandle(0), 0, 0);
+   // CreateThread(nullptr, 0,
+    //    (LPTHREAD_START_ROUTINE)hhmousehookthread, GetModuleHandle(0), 0, 0);
         //hhmousehook
 
 
@@ -1495,20 +1559,28 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 {
 
                     scroll.x = rect.left + (rect.right - rect.left) / 2;
-                    scroll.y = rect.top + 1;
+                    if (scrolloutsidewindow == 0)
+                        scroll.y = rect.top + 1;
+                    else
+                        scroll.y = rect.top - 1;
                     scrollmap = true;
                 }
                else if (buttons & XINPUT_GAMEPAD_DPAD_DOWN)
                 {
                     
                     scroll.x = rect.left + (rect.right - rect.left) / 2;
-                    scroll.y = rect.bottom - 1;
+                    if (scrolloutsidewindow == 0)
+                        scroll.y = rect.bottom - 1;
+                    else
+                        scroll.y = rect.bottom + 1;
                     scrollmap = true;
                 }
                 else if (buttons & XINPUT_GAMEPAD_DPAD_LEFT)
                 {
-                    
-                    scroll.x = rect.left + 1;
+                    if (scrolloutsidewindow == 0)
+                        scroll.x = rect.left + 1;
+                    else 
+                        scroll.x = rect.left - 1;
                     scroll.y = rect.top + (rect.bottom - rect.top) / 2;
 
                     scrollmap = true;
@@ -1517,8 +1589,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 else if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT)
                 {
 
-                    
-                    scroll.x = rect.right - 1;
+                    if (scrolloutsidewindow == 0)
+                        scroll.x = rect.right - 1;
+                    else
+                        scroll.x = rect.right + 1;
                     scroll.y = rect.top + (rect.bottom - rect.top) / 2;
 
                     scrollmap = true;
@@ -1563,7 +1637,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     int Yaxis = 0;
                     int width = rect.right - rect.left;
                     int height = rect.bottom - rect.top;
-                    bool movedmouse;
+                    bool movedmouse = false;
                     if (righthanded == 1) {
                         Xaxis = state.Gamepad.sThumbRX;
                         Yaxis = state.Gamepad.sThumbRY;
@@ -1620,7 +1694,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         {
                             SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
                         }
-                        movedmouse = false;
+                        //movedmouse = false;
 
                     }
                     int nysovetid = sens2 - (accumulater / 700);
@@ -1635,13 +1709,14 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
               
                 if (leftPressed)
                 { 
+
                     if (leftPressedold == false)
                     {
-                        //save coordinates
-                        startdrag.x = X;
-                        startdrag.y = Y;
+                     //save coordinates
+                     startdrag.x = X;
+                     startdrag.y = Y;
                     }
-                    leftPressedold = true;
+                     leftPressedold = true;
                 }
                 if (leftPressedold)
                 {
@@ -1653,30 +1728,26 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         if (abs(startdrag.x - fakecursor.x) <= 5)
                         { 
                             ClientToScreen(hwnd, &startdrag);
-                            SendMouseClick(startdrag.x, startdrag.y, 2, 3 ); //4 4 move //5 release
+                                 SendMouseClick(startdrag.x, startdrag.y, 2, 3 ); //4 4 move //5 release
+                            
                             ScreenToClient(hwnd, &startdrag);
                             leftPressedold = false;
-                            //closing curtains
                         }
                         else
                         { 
-                        ClientToScreen(hwnd, &startdrag);
-
-                        SendMouseClick(startdrag.x, startdrag.y, 6, 2); //4 4 move //5 release
-                        ClientToScreen(hwnd, &fakecursor);
-                        Sleep(30);
-                       
-                        SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
-                        Sleep(20);
-                        SendMouseClick(fakecursor.x, fakecursor.y, 7, 2);
-                        ScreenToClient(hwnd, &fakecursor);
-                        ScreenToClient(hwnd, &startdrag);
-                        leftPressedold = false;
+                           ClientToScreen(hwnd, &startdrag);
+                           ClientToScreen(hwnd, &fakecursor);
+                           SendMouseClick(startdrag.x, startdrag.y, 6, 2); //4 4 move //5 release
+                           Sleep(30);
+                           SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
+                           Sleep(20);
+                           SendMouseClick(fakecursor.x, fakecursor.y, 7, 2);
+                           ScreenToClient(hwnd, &fakecursor);
+                           ScreenToClient(hwnd, &startdrag);
+                           leftPressedold = false;
                         }
-                    }
+                    }   
                 }
-
-
                 if (rightPressed)
                 {
                     if (rightPressedold == false)
@@ -1762,6 +1833,15 @@ void SetupHook() {
         MH_CreateHook(&ClipCursor, &HookedClipCursor, reinterpret_cast<LPVOID*>(&originalClipCursor));
         MH_EnableHook(&ClipCursor);
     }
+    if (setcursorhook == 1)
+    MH_CreateHookApi(
+        L"user32", "SetCursor",
+        &HookedSetCursor,
+        reinterpret_cast<LPVOID*>(&originalSetCursor)
+    );
+
+    MH_EnableHook(&SetCursor);
+
      //MH_EnableHook(MH_ALL_HOOKS);
 }
 
@@ -1776,15 +1856,16 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             //DisableThreadLibraryCalls(hModule);
 			//WaitForInputIdle(GetCurrentProcess(), 1000); //wait for input to be ready
 
-            std::string iniPath = UGetExecutableFolder() + "\\screenshotinput.ini";
+            std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
             std::string iniSettings = "Hooks";
             // std::string controllerID = getIniString(iniSettings.c_str(), "Controller ID", "0", iniPath);
 
              //hook settings
-            clipcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "ClipCursorHook", 0, iniPath.c_str());
-            getkeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetKeystateHook", 0, iniPath.c_str());
-            getasynckeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetAsynckeystateHook", 0, iniPath.c_str());
-            getcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorposHook", 0, iniPath.c_str());
+            clipcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "ClipCursorHook", 1, iniPath.c_str());
+            getkeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetKeystateHook", 1, iniPath.c_str());
+            getasynckeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetAsynckeystateHook", 1, iniPath.c_str());
+            getcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorposHook", 1, iniPath.c_str());
+            setcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorHook", 1, iniPath.c_str());
             SetupHook();
             CreateThread(nullptr, 0,
                 (LPTHREAD_START_ROUTINE)ThreadFunction, GetModuleHandle(0), 0, 0);
@@ -1793,6 +1874,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         case DLL_PROCESS_DETACH:
         {
             RemoveHook();
+            exit(0);
             break;
         }
     }
