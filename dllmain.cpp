@@ -82,6 +82,7 @@ int xdrag;
 bool scrollmap = false;
 bool pausedraw = false;
 int cursorimage = 0;
+int drawfakecursor = 0;
 HICON hCursor = 0;
 
 //beautiful cursor
@@ -616,7 +617,8 @@ bool LoadBMP24Bit(const wchar_t* filename, std::vector<BYTE>& pixels, int& width
     bmi.bmiHeader.biBitCount = 24;
     bmi.bmiHeader.biCompression = BI_RGB;
 
-    HDC hdc = GetDC(NULL);
+   // HDC hdc = GetDC(NULL);
+	HDC hdc = CreateCompatibleDC(NULL);
     GetDIBits(hdc, hbm, 0, height, pixels.data(), &bmi, DIB_RGB_COLORS);
     ReleaseDC(NULL, hdc);
     DeleteObject(hbm);
@@ -1135,22 +1137,23 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
         return true;
     }
     Sleep(50); //to avoid double press
+    pausedraw = false;
     return true;
 }
 //LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
-LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
-    if (nCode == HC_ACTION) {
-        PMSLLHOOKSTRUCT pMouse = (PMSLLHOOKSTRUCT)lParam;
-
-        HWND hwndUnderCursor = WindowFromPoint(pMouse->pt);
-        if (hwndUnderCursor == hwnd) {
+//LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
+ //   if (nCode == HC_ACTION) {
+//        PMSLLHOOKSTRUCT pMouse = (PMSLLHOOKSTRUCT)lParam;
+//
+//        HWND hwndUnderCursor = WindowFromPoint(pMouse->pt);
+//        if (hwndUnderCursor == hwnd) {
             // Swallow the message
            // MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
-            return 1; // Non-zero return value blocks the message
-        }
-    }
-    return CallNextHookEx(NULL, nCode, wParam, lParam);
-}
+ //           return 1; // Non-zero return value blocks the message
+ //       }
+ //   }
+//    return CallNextHookEx(NULL, nCode, wParam, lParam);
+//}
 
 
 //DWORD WINAPI hhmousehookthread(LPVOID lpParam)
@@ -1200,7 +1203,45 @@ LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
 
  //   return CallNextHookEx(hMouseHook, nCode, wParam, lParam);
 //}
+//LRESULT CALLBACK CallWndProcHook(int nCode, WPARAM wParam, LPARAM lParam)
+//{
+//    if (nCode >= 0)
+//    {
+//        CWPSTRUCT* cwp = (CWPSTRUCT*)lParam;
+//        if (cwp->message == WM_PAINT)
+//        {
+//            if ( hwnd != 0)
+//                CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw fake cursor
+ //       }
+//    }
 
+ //   return CallNextHookEx(hMouseHook, nCode, wParam, lParam);
+//}
+
+DWORD WINAPI Drawthread(LPVOID lpParam)
+{
+
+    while (loop == true) {
+        if (hwnd && pausedraw == false) {
+            CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true);
+            
+        }
+        Sleep(16); // Sync with refresh rate
+    }
+
+
+  //  HHOOK hMouseHook = SetWindowsHookEx(WH_CALLWNDPROC, CallWndProcHook, GetModuleHandle(NULL), 0);
+
+
+  //  MSG msg;
+  //  while (GetMessage(&msg, NULL, 0, 0))
+  //  {
+   //     TranslateMessage(&msg);
+  //      DispatchMessage(&msg);
+  //  }
+    return 1;
+
+}
 
 
 DWORD WINAPI ThreadFunction(LPVOID lpParam)
@@ -1244,7 +1285,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     cursorimage = GetPrivateProfileInt(iniSettings.c_str(), "Cursortype", 1, iniPath.c_str());
 
     //hooks
-    int drawfakecursor = GetPrivateProfileInt(iniSettings.c_str(), "DrawFakeCursor", 1, iniPath.c_str());
+    drawfakecursor = GetPrivateProfileInt(iniSettings.c_str(), "DrawFakeCursor", 1, iniPath.c_str());
 	userealmouse = GetPrivateProfileInt(iniSettings.c_str(), "UseRealMouse", 0, iniPath.c_str());   //scrolloutsidewindow
     int scrolloutsidewindow = GetPrivateProfileInt(iniSettings.c_str(), "Scrollmapfix", 1, iniPath.c_str());   //scrolloutsidewindow
     
@@ -1311,6 +1352,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
    //     WritePrivateProfileString(iniSettings.c_str(), "GetKeystateHook", valueStr.c_str(), iniPath.c_str());
     //    WritePrivateProfileString(iniSettings.c_str(), "GetAsynckeystateHook", valueStr.c_str(), iniPath.c_str());
     //    WritePrivateProfileString(iniSettings.c_str(), "GetCursorposHook", valueStr.c_str(), iniPath.c_str());
+
+    CreateThread(nullptr, 0,
+        (LPTHREAD_START_ROUTINE)Drawthread, g_hModule, 0, 0); //GetModuleHandle(0)
 
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
     int mode = InitialMode;
@@ -1667,19 +1711,19 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     OldX = X;
                     if (Xaxis < AxisLeftsens) //strange values. but tested many before choosing this
                     { 
-                        if (X > 0)
+                        if (X >= 2)
                         { 
                             sovetid = sens - (std::abs(Xaxis) / 450);
-                        X = X - 2;
+                        X = X - (std::abs(Xaxis) / 2000) + 4;
                         movedmouse = true;
                         }
                     }
                     else if (Xaxis > AxisRightsens) //strange values. but tested many before choosing this
                     {
-                        if (X < width - 1)
+                        if (X <= width - 2)
                         {
                             sovetid = sens - (Xaxis / 450);
-                            X = X + 2;
+                            X = X + (Xaxis / 2000) - 6;
                             movedmouse = true;
                         }
                     }
@@ -1688,19 +1732,19 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     /////////////////////
                     if (Yaxis > AxisUpsens) //strange values. but tested many before choosing this
                     {
-                        if (Y > 0)
+                        if (Y >= 2)
                         {
                             sovetid = sens - (std::abs(Yaxis) / 450);
-                            Y = Y - 2;
+                            Y = Y - (std::abs(Yaxis) / 2000) - 1;
                             movedmouse = true;
                         }
                     }
                     else  if (Yaxis < AxisDownsens) //strange values. but tested many before choosing this
                     { //my controller is not calibrated maybe
-                        if (Y < height - 1)
+                        if (Y <= height - 2)
                         {
-                            sovetid = sens - (std::abs(Yaxis) / 450); //a litt
-                            Y = Y + 2;
+                            sovetid = sens - (std::abs(Yaxis) / 450); // Loop poll rate
+                            Y = Y + (std::abs(Yaxis) / 2000) - 8; // Y movement rate
                             movedmouse = true;
                         }
                     }
@@ -1716,10 +1760,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     int nysovetid = sens2 - (accumulater / 700);
                     if (nysovetid < sovetid)
                         sovetid = nysovetid;
-                    if (sovetid < 3) //speedlimit
-                        sovetid = 3;
-                    if (drawfakecursor == 1)
-                        CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw fake cursor
+                    if (sovetid < 1) 
+                        sovetid = 1; //speedlimit
+                   // if (drawfakecursor == 1)
+                      //  CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw fake cursor
                     //MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
 
               
@@ -1833,7 +1877,9 @@ void SetupHook() {
     MH_Initialize();
 
     CreateThread(nullptr, 0,
-        (LPTHREAD_START_ROUTINE)ThreadFunction, g_hModule, 0, 0);
+        (LPTHREAD_START_ROUTINE)ThreadFunction, g_hModule, 0, 0); //GetModuleHandle(0)
+
+
 
     if (getcursorposhook == 1) {
         MH_CreateHookApi(L"user32", "GetCursorPos", &MyGetCursorPos, reinterpret_cast<LPVOID*>(&fpGetCursorPos));
