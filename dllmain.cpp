@@ -1226,7 +1226,7 @@ DWORD WINAPI Drawthread(LPVOID lpParam)
             CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true);
             
         }
-        Sleep(16); // Sync with refresh rate
+        Sleep(3); // Sync with refresh rate
     }
 
 
@@ -1711,7 +1711,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     OldX = X;
                     if (Xaxis < AxisLeftsens) //strange values. but tested many before choosing this
                     { 
-                        if (X >= 2)
+                        if (Xaxis < -25000)
+                            Xaxis = -25000;
+                        if (X >= (std::abs(Xaxis) / 2000) + 14)
                         { 
                             sovetid = sens - (std::abs(Xaxis) / 450);
                         X = X - (std::abs(Xaxis) / 2000) + 4;
@@ -1720,7 +1722,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
                     else if (Xaxis > AxisRightsens) //strange values. but tested many before choosing this
                     {
-                        if (X <= width - 2)
+                        if (Xaxis > 25000)
+                            Xaxis = 25000;
+                        if (X <= width - (Xaxis / 2000) - 16)
                         {
                             sovetid = sens - (Xaxis / 450);
                             X = X + (Xaxis / 2000) - 6;
@@ -1732,7 +1736,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     /////////////////////
                     if (Yaxis > AxisUpsens) //strange values. but tested many before choosing this
                     {
-                        if (Y >= 2)
+                        if (Yaxis > 25000)
+                            Yaxis = 25000;
+                        if (Y >= (std::abs(Yaxis) / 2000) + 10)
                         {
                             sovetid = sens - (std::abs(Yaxis) / 450);
                             Y = Y - (std::abs(Yaxis) / 2000) - 1;
@@ -1741,10 +1747,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
                     else  if (Yaxis < AxisDownsens) //strange values. but tested many before choosing this
                     { //my controller is not calibrated maybe
-                        if (Y <= height - 2)
+                        if (Yaxis < -25000)
+                            Yaxis = -25000;
+                        if (Y <= height - (std::abs(Yaxis) / 2000) - 18)
                         {
                             sovetid = sens - (std::abs(Yaxis) / 450); // Loop poll rate
-                            Y = Y + (std::abs(Yaxis) / 2000) - 8; // Y movement rate
+                            Y = Y + (std::abs(Yaxis) / 2000) - 6; // Y movement rate
                             movedmouse = true;
                         }
                     }
