@@ -47,6 +47,8 @@ POINT activatewindow;
 POINT scroll;
 bool loop = true;
 HWND hwnd;
+int showmessage = 0; //0 = no message, 1 = initializing, 2 = bmp mode, 3 = bmp and cursor mode, 4 = edit mode   
+int counter = 0;
 
 //syncronization control
 HANDLE hMutex;
@@ -765,7 +767,29 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
                     // Draw icon into memory DC
                     if (hCursor != 0)
                     { 
-                        DrawIconEx(hdcWindow, 0 + X, 0 + Y, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
+                        
+                        if (showmessage == 1)
+                        {
+                            TextOut(hdcWindow, X, Y, TEXT("BMP MODE"), 8);
+                            TextOut(hdcWindow, X, Y + 17, TEXT("only mapping searches"), 21);
+                        }
+                        else if (showmessage == 2)
+                        {
+                            TextOut(hdcWindow, X, Y, TEXT("CURSOR MODE"), 11);
+                            TextOut(hdcWindow, X, Y + 17, TEXT("mapping searches + cursor"), 25);
+                        }
+                        else if (showmessage == 3)
+                        {
+                            TextOut(hdcWindow, X, Y, TEXT("EDIT MODE"), 9);
+                            TextOut(hdcWindow, X, Y + 15, TEXT("tap a button to bind it to coordinate"), 37);
+                            TextOut(hdcWindow, X, Y + 30, TEXT("A,B,X,Y,R2,R3,L2,L3 can be mapped"), 32);
+                        }
+                        else if (showmessage == 10)
+                        {
+                            TextOut(hdcWindow, X, Y, TEXT("BUTTON MAPPED"), 13);
+                        }
+                        else DrawIconEx(hdcWindow, 0 + X, 0 + Y, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
+
                     }
                     else {
                         for (int y = 0; y < 20; y++)
@@ -783,6 +807,7 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
                             }
                         }
                     }
+
             }
             else
             {
@@ -1148,14 +1173,15 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
 
         }
     }
-    else //mode 2 button mapping
+    else if (showmessage == 0) //mode 2 button mapping //showmessage var to make sure no double map or map while message
     {
 		//RepaintWindow(hwnd, NULL, FALSE); 
         Sleep(100); //to make sure red flicker expired
         std::string path = UGetExecutableFolder() + key + std::to_string(serchnum) + ".bmp";
         std::wstring wpath(path.begin(), path.end());
         SaveWindow10x10BMP(hwnd, wpath.c_str(), X, Y);
-        MessageBox(NULL, "Mapped spot!", key, MB_OK | MB_ICONINFORMATION);
+       // MessageBox(NULL, "Mapped spot!", key, MB_OK | MB_ICONINFORMATION);
+        showmessage = 10;
         return true;
     }
     Sleep(50); //to avoid double press
@@ -1689,30 +1715,35 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
 
 
-                if (buttons & XINPUT_GAMEPAD_START)
+                if (buttons & XINPUT_GAMEPAD_START && showmessage == 0)
                 {
 
                     if (mode == 0 && Modechange == 1)
                     {
                         mode = 1;
 
-                        MessageBox(NULL, "Bmp + Emulated cursor mode", "Move the flickering red dot and use right trigger for left click. left trigger for right click", MB_OK | MB_ICONINFORMATION);
+                       // MessageBox(NULL, "Bmp + Emulated cursor mode", "Move the flickering red dot and use right trigger for left click. left trigger for right click", MB_OK | MB_ICONINFORMATION);
+                        showmessage = 2;
                     }
                     else if (mode == 1 && Modechange == 1)
                     {
                         mode = 2;
-                        MessageBox(NULL, "Edit Mode", "Button mapping. will map buttons you click with the flickering red dot as an input coordinate", MB_OK | MB_ICONINFORMATION);
+                        //MessageBox(NULL, "Edit Mode", "Button mapping. will map buttons you click with the flickering red dot as an input coordinate", MB_OK | MB_ICONINFORMATION);
+                        showmessage = 3;
+                        
 
                     }
                     else if (mode == 2 && Modechange == 1)
                     {
-                        mode = 0;
-                        MessageBox(NULL, "Bmp mode", "only send input on bmp match", MB_OK | MB_ICONINFORMATION);
+                       // mode = 0;
+                       // MessageBox(NULL, "Bmp mode", "only send input on bmp match", MB_OK | MB_ICONINFORMATION);
+                        showmessage = 1;
                     }
                     else { //assume modechange not allowed. send escape key instead
                         keystatesend = VK_ESCAPE;
                     }
-                    Sleep(700); //have time to release button. this is no hurry anyway
+                   // Sleep(1000); //have time to release button. this is no hurry anyway
+                    
                 }
                 if (mode > 0 )
                 { 
@@ -1811,7 +1842,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     {
                         if (Yaxis > 25000)
                             Yaxis = 25000;
-                        if (Y >= (std::abs(Yaxis) / 2000) + 10)
+                        if (Y >= (std::abs(Yaxis) / 2000) + 18)
                         {
                             sovetid = sens - (std::abs(Yaxis) / 450);
                             Y = Y - (std::abs(Yaxis) / 2000) - 1;
@@ -1950,6 +1981,19 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
             if (movedmouse == true)
                 Sleep(5 - calcsleep); //max 3. 0-2 on slow movement
             else Sleep(2); //max 3. 0-2 on slow movement
+        }
+        if (showmessage != 0)
+        {
+            counter++;
+            if (counter > 500)
+            {
+                if (showmessage == 1) {
+                    mode = 0;
+                }
+                showmessage = 0;
+                counter = 0;
+
+            }
         }
 
     } //loop end but endless
