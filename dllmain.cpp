@@ -322,8 +322,27 @@ bool IsCursorInWindow(HWND hwnd) {
 
     return PtInRect(&clientRect, pt);
 }
+void vibrateController(int controllerId, WORD strength)
+{
+    XINPUT_VIBRATION vibration = {};
+    vibration.wLeftMotorSpeed = strength;   // range: 0 - 65535
+    vibration.wRightMotorSpeed = strength;
+
+    // Activate vibration
+    XInputSetState(controllerId, &vibration);
+
+    // Keep vibration on for 1 second
+    Sleep(50); // milliseconds
+
+    // Stop vibration
+    vibration.wLeftMotorSpeed = 0;
+    vibration.wRightMotorSpeed = 0;
+    XInputSetState(controllerId, &vibration);
+}
+
 bool SendMouseClick(int x, int y, int z, int many) {
     // Create a named mutex
+    
     if (userealmouse == 0) 
         {
         POINT heer;
@@ -338,6 +357,7 @@ bool SendMouseClick(int x, int y, int z, int many) {
             keystatesend = VK_LEFT;
         }
         if (z == 2) {
+            
             PostMessage(hwnd, WM_RBUTTONDOWN, MK_RBUTTON, clickPos);
             PostMessage(hwnd, WM_RBUTTONUP, 0, clickPos);
         }
@@ -511,6 +531,7 @@ bool sendKey(char key, int typeofkey) { //VK_LEFT VK_RIGHT VK_DOWN VK_UP
         return true;
      }
 }
+
 
 
 bool FindSubImage24(
@@ -829,6 +850,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
 {
     if (mode != 2)
     {
+        
         pausedraw = true;
         Sleep(25);
         bool movenotclick = false;
@@ -865,7 +887,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                           //char buffer[100];
  // wsprintf(buffer, "A is %d", i);
  //  MessageBoxA(NULL, buffer, "Info", MB_OK);
-
+                        vibrateController(0, 15000);
                         if (strcmp(key, "\\A") == 0) {
                             if (Atype == 1)
                             {
@@ -1008,7 +1030,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                         {
                              //char buffer[100];
 
-
+                            vibrateController(0, 15000);
                             if (strcmp(key, "\\A") == 0) {
                                 if (Atype == 1)
                                 {
@@ -1218,16 +1240,16 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
  //   return CallNextHookEx(hMouseHook, nCode, wParam, lParam);
 //}
 
-DWORD WINAPI Drawthread(LPVOID lpParam)
-{
+//DWORD WINAPI Drawthread(LPVOID lpParam)
+//{
 
-    while (loop == true) {
-        if (hwnd && pausedraw == false) {
-            CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true);
-            
-        }
-        Sleep(3); // Sync with refresh rate
-    }
+ //   while (loop == true) {
+ //       if (hwnd && pausedraw == false) {
+ //           CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true);
+ //            
+  //      }
+ //       Sleep(3); // Sync with refresh rate
+ //   }
 
 
   //  HHOOK hMouseHook = SetWindowsHookEx(WH_CALLWNDPROC, CallWndProcHook, GetModuleHandle(NULL), 0);
@@ -1239,9 +1261,9 @@ DWORD WINAPI Drawthread(LPVOID lpParam)
    //     TranslateMessage(&msg);
   //      DispatchMessage(&msg);
   //  }
-    return 1;
+//    return 1;
 
-}
+//}
 
 
 DWORD WINAPI ThreadFunction(LPVOID lpParam)
@@ -1353,8 +1375,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     //    WritePrivateProfileString(iniSettings.c_str(), "GetAsynckeystateHook", valueStr.c_str(), iniPath.c_str());
     //    WritePrivateProfileString(iniSettings.c_str(), "GetCursorposHook", valueStr.c_str(), iniPath.c_str());
 
-    CreateThread(nullptr, 0,
-        (LPTHREAD_START_ROUTINE)Drawthread, g_hModule, 0, 0); //GetModuleHandle(0)
+    //CreateThread(nullptr, 0,
+    //    (LPTHREAD_START_ROUTINE)Drawthread, g_hModule, 0, 0); //GetModuleHandle(0)
 
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
     int mode = InitialMode;
@@ -1501,7 +1523,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
         
     while (loop == true)
     {
+        bool movedmouse = false; //reset
         keystatesend = 0; //reset keystate
+        int calcsleep = 0;
         if (hwnd == NULL)
         {
             hwnd = GetMainWindowHandle(GetCurrentProcessId());
@@ -1697,7 +1721,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     int Yaxis = 0;
                     int width = rect.right - rect.left;
                     int height = rect.bottom - rect.top;
-                    bool movedmouse = false;
+                    
+					 
                     if (righthanded == 1) {
                         Xaxis = state.Gamepad.sThumbRX;
                         Yaxis = state.Gamepad.sThumbRY;
@@ -1708,6 +1733,54 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         Yaxis = state.Gamepad.sThumbLY;
                     }
 
+
+                    //sleeptime adjust. slow movement on low axis
+                    if (Xaxis < 0) //negative
+                    {
+                        if (Xaxis < -22000) //-7849
+                            calcsleep = 3;
+                        else if (Xaxis < -15000)
+                            calcsleep = 2;
+                        else if (Xaxis < -10000)
+                            calcsleep = 1;
+                        else calcsleep = 0;
+                    }
+                    else if (Xaxis > 0) //positive
+                    {
+                        if (Xaxis > 24000) //12000
+                            calcsleep = 3;
+                        else if (Xaxis > 18000)
+                            calcsleep = 2;
+                        else if (Xaxis > 14000)
+                            calcsleep = 1;
+                        else calcsleep = 0;
+					}   
+                    if (Yaxis < 0) //negative
+                    {
+                        if (Yaxis < -24000) //-16000
+                            calcsleep = 3;
+                        else if (Yaxis < -22000)
+                            calcsleep = 2;
+                        else if (Yaxis < -17000)
+                            calcsleep = 1;
+                        else calcsleep = 0;
+                    }
+                    else if (Yaxis > 0) //positive
+                    {
+                        if (Yaxis > 24000) //0
+                            calcsleep = 3;
+                        else if (Yaxis > 20000)
+                            calcsleep = 2;
+                        else if (Yaxis > 16000)
+                            calcsleep = 1;
+                        else calcsleep = 0;
+                    }
+
+
+
+
+
+
                     OldX = X;
                     if (Xaxis < AxisLeftsens) //strange values. but tested many before choosing this
                     { 
@@ -1716,7 +1789,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         if (X >= (std::abs(Xaxis) / 2000) + 14)
                         { 
                             sovetid = sens - (std::abs(Xaxis) / 450);
-                        X = X - (std::abs(Xaxis) / 2000) + 4;
+                        X = X - (std::abs(Xaxis) / 1500) + 4;
                         movedmouse = true;
                         }
                     }
@@ -1727,7 +1800,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         if (X <= width - (Xaxis / 2000) - 16)
                         {
                             sovetid = sens - (Xaxis / 450);
-                            X = X + (Xaxis / 2000) - 6;
+                            X = X + (Xaxis / 1500) - 6;
                             movedmouse = true;
                         }
                     }
@@ -1752,26 +1825,28 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         if (Y <= height - (std::abs(Yaxis) / 2000) - 18)
                         {
                             sovetid = sens - (std::abs(Yaxis) / 450); // Loop poll rate
-                            Y = Y + (std::abs(Yaxis) / 2000) - 6; // Y movement rate
+                            Y = Y + (std::abs(Yaxis) / 1700) - 6; // Y movement rate
                             movedmouse = true;
                         }
                     }
                     if (movedmouse == true) //fake cursor move message
                     {
+                        pausedraw = true;
                         if (userealmouse == 0) 
                         {
                             SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
                         }
-                        //movedmouse = false;
-
+                       // movedmouse = false;
+                        Sleep(1);
+                        pausedraw = false;
                     }
                     int nysovetid = sens2 - (accumulater / 700);
                     if (nysovetid < sovetid)
                         sovetid = nysovetid;
-                    if (sovetid < 1) 
-                        sovetid = 1; //speedlimit
-                   // if (drawfakecursor == 1)
-                      //  CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw fake cursor
+                    if (sovetid < 3) 
+                        sovetid = 3; //speedlimit
+                    if (drawfakecursor == 1)
+                        CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw fake cursor
                     //MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
 
               
@@ -1870,8 +1945,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
         if (mode == 0)
             Sleep(50);
-        if (mode > 0)
-            Sleep(sovetid); //15-80 //ini value
+        if (mode > 0) {
+           // Sleep(sovetid); //15-80 //ini value
+            if (movedmouse == true)
+                Sleep(5 - calcsleep); //max 3. 0-2 on slow movement
+            else Sleep(2); //max 3. 0-2 on slow movement
+        }
 
     } //loop end but endless
     return 0;
