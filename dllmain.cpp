@@ -110,6 +110,29 @@ int colorfulSword[20][20] = {
 {1,2,2,1,0,0,0,0,0,0,0,1,2,2,2,1,0,0,0,0},
 {1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0},
 };
+
+int colo4rfulSword[20][20] = {
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+};
 //temporary cursor on success
 
 COLORREF colors[5] = {
@@ -162,7 +185,7 @@ int strideLarge, strideSmall;
 int smallW, smallH;
 
 int mode = 0;
-int sovetid = 16;
+//int sovetid = 16;
 int knappsovetid = 100;
 
 int samekey = 0;
@@ -788,6 +811,14 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
                         {
                             TextOut(hdcWindow, X, Y, TEXT("BUTTON MAPPED"), 13);
                         }
+                        else if (showmessage == 11)
+                        {
+                            TextOut(hdcWindow, X, Y, TEXT("WAIT FOR MESSAGE EXPIRE!"), 24);
+                        }
+                        else if (showmessage == 12)
+                        {
+                            TextOut(hdcWindow, X, Y, TEXT("DISCONNECTED!"), 14);
+                        }
                         else DrawIconEx(hdcWindow, 0 + X, 0 + Y, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
 
                     }
@@ -1184,6 +1215,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
         showmessage = 10;
         return true;
     }
+    else showmessage = 11;
     Sleep(50); //to avoid double press
     pausedraw = false;
     return true;
@@ -1314,11 +1346,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     int Modechange = GetPrivateProfileInt(iniSettings.c_str(), "Allow modechange", 1, iniPath.c_str());
 
 
-    int sens = GetPrivateProfileInt(iniSettings.c_str(), "Dot Speed", 40, iniPath.c_str());
-    int sens2 = GetPrivateProfileInt(iniSettings.c_str(), "CA Dot Speed", 75, iniPath.c_str());
+    int horsens = GetPrivateProfileInt(iniSettings.c_str(), "Hsensitivity", 500, iniPath.c_str());
+    int versens = GetPrivateProfileInt(iniSettings.c_str(), "Vsensitivity", 500, iniPath.c_str()); //unused
     int sendfocus = GetPrivateProfileInt(iniSettings.c_str(), "Sendfocus", 0, iniPath.c_str());
     keyrespondtime = GetPrivateProfileInt(iniSettings.c_str(), "Keyresponsetime", 50, iniPath.c_str());
-    getmouseonkey = GetPrivateProfileInt(iniSettings.c_str(), "GetMouseOnKey", 0, iniPath.c_str());
+    getmouseonkey = GetPrivateProfileInt(iniSettings.c_str(), "GetMouseOnKey", 0, iniPath.c_str()); //unused
 
     //clicknotmove 2
     //movenotclick 1
@@ -1590,7 +1622,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         else
                         { //error handling
                         }
-                        if (mode == 2)
+                        if (mode == 2 && showmessage != 11)
                         {
                             numphotoA++;
                         }
@@ -1605,7 +1637,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     else 
                     { //error handling
                     }
-                    if (mode == 2)
+                    if (mode == 2 && showmessage != 11)
                     {
                         numphotoB++;
                     }
@@ -1614,7 +1646,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 {
                     startsearch = startsearchX;
                     Buttonaction("\\X", mode, numphotoX, startsearch);
-                    if (mode == 2)
+                    if (mode == 2 && showmessage != 11)
                     {
                         numphotoX++;
                     }
@@ -1623,7 +1655,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 {
                     startsearch = startsearchY;
                     Buttonaction("\\Y", mode, numphotoY, startsearch);
-                    if (mode == 2)
+                    if (mode == 2 && showmessage != 11)
                     {
                         numphotoY++;
                     }
@@ -1632,7 +1664,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 {
                     startsearch = startsearchC;
                     Buttonaction("\\C", mode, numphotoC, startsearch);
-                    if (mode == 2)
+                    if (mode == 2 && showmessage != 11)
                     {
                         numphotoC++;
                     }
@@ -1641,7 +1673,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 {
                     startsearch = startsearchD;
                     Buttonaction("\\D", mode, numphotoD, startsearch);
-                    if (mode == 2)
+                    if (mode == 2 && showmessage != 11)
                     {
                         numphotoD++;
                     }
@@ -1650,7 +1682,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 {
                     startsearch = startsearchE;
                     Buttonaction("\\E", mode, numphotoE, startsearch);
-                    if (mode == 2)
+                    if (mode == 2 && showmessage != 11)
                     {
                         numphotoE++;
                     }
@@ -1659,7 +1691,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 {
                     startsearch = startsearchF;
                     Buttonaction("\\F", mode, numphotoF, startsearch);
-                    if (mode == 2)
+                    if (mode == 2 && showmessage != 11)
                     {
                         numphotoF++;
                     }
@@ -1817,10 +1849,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     { 
                         if (Xaxis < -25000)
                             Xaxis = -25000;
-                        if (X >= (std::abs(Xaxis) / 2000) + 14)
+                        if (X >= (std::abs(Xaxis) / (700 + horsens)) + 14)
                         { 
-                            sovetid = sens - (std::abs(Xaxis) / 450);
-                        X = X - (std::abs(Xaxis) / 1500) + 4;
+                          //  sovetid = sens - (std::abs(Xaxis) / 450);
+                        X = X - (std::abs(Xaxis) / (700 + horsens)) + (std::abs(AxisLeftsens) / (700 + horsens)); //1500
                         movedmouse = true;
                         }
                     }
@@ -1828,10 +1860,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     {
                         if (Xaxis > 25000)
                             Xaxis = 25000;
-                        if (X <= width - (Xaxis / 2000) - 16)
+                        if (X <= width - (Xaxis / (500 + horsens)) - 16)
                         {
-                            sovetid = sens - (Xaxis / 450);
-                            X = X + (Xaxis / 1500) - 6;
+                          //  sovetid = sens - (Xaxis / 450);
+                            X = X + (Xaxis / (500 + horsens)) - (AxisRightsens / (500 + horsens)); //1500
                             movedmouse = true;
                         }
                     }
@@ -1842,10 +1874,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     {
                         if (Yaxis > 25000)
                             Yaxis = 25000;
-                        if (Y >= (std::abs(Yaxis) / 2000) + 18)
+                        if (Y >= (std::abs(Yaxis) / (900 + versens)) + 18)
                         {
-                            sovetid = sens - (std::abs(Yaxis) / 450);
-                            Y = Y - (std::abs(Yaxis) / 2000) - 1;
+                          //  sovetid = sens - (std::abs(Yaxis) / 450);
+                            Y = Y - (std::abs(Yaxis) / (900 + versens)) + (AxisUpsens / (900 + versens)); //2000
                             movedmouse = true;
                         }
                     }
@@ -1853,10 +1885,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     { //my controller is not calibrated maybe
                         if (Yaxis < -25000)
                             Yaxis = -25000;
-                        if (Y <= height - (std::abs(Yaxis) / 2000) - 18)
+                        if (Y <= height - (std::abs(Yaxis) / (900 + versens)) - 18)
                         {
-                            sovetid = sens - (std::abs(Yaxis) / 450); // Loop poll rate
-                            Y = Y + (std::abs(Yaxis) / 1700) - 6; // Y movement rate
+                           // sovetid = sens - (std::abs(Yaxis) / 450); // Loop poll rate
+                            Y = Y + (std::abs(Yaxis) / (900 + versens)) - (std::abs(AxisDownsens) / (900 + versens)); // Y movement rate //1700
                             movedmouse = true;
                         }
                     }
@@ -1868,17 +1900,15 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
                         }
                        // movedmouse = false;
-                        Sleep(1);
+                      //  Sleep(sens); //flickery on move but effective
                         pausedraw = false;
                     }
-                    int nysovetid = sens2 - (accumulater / 700);
-                    if (nysovetid < sovetid)
-                        sovetid = nysovetid;
-                    if (sovetid < 3) 
-                        sovetid = 3; //speedlimit
-                    if (drawfakecursor == 1)
-                        CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw fake cursor
-                    //MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
+                  //  int nysovetid = sens2 - (accumulater / 700);
+                 //   if (nysovetid < sovetid)
+                  //      sovetid = nysovetid;
+                 //   if (sovetid < 3) 
+                  //      sovetid = 3; //speedlimit
+
 
               
                 if (leftPressed)
@@ -1964,7 +1994,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 } //rightpress
                 } // mode above 0
             } //no controller
-
+            else {
+                showmessage = 14;
+            }
+            if (drawfakecursor == 1)
+                CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw fake cursor
+            //MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
         } // no hwnd
         if (knappsovetid > 20)
         {
@@ -1979,7 +2014,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
         if (mode > 0) {
            // Sleep(sovetid); //15-80 //ini value
             if (movedmouse == true)
-                Sleep(5 - calcsleep); //max 3. 0-2 on slow movement
+                Sleep(4 - calcsleep); //max 3. 0-2 on slow movement
             else Sleep(2); //max 3. 0-2 on slow movement
         }
         if (showmessage != 0)
