@@ -68,6 +68,7 @@ int clipcursorhook = 0;
 int getkeystatehook = 0;
 int getasynckeystatehook = 0;
 int getcursorposhook = 0;
+int setcursorposhook = 0;
 int setcursorhook = 0;
 int userealmouse = 0;
 HHOOK hMouseHook;
@@ -75,6 +76,7 @@ HHOOK hMouseHook;
 
 
 //fake cursor
+int controllerID = 0;
 int X = 20;
 int Y = 20;
 int OldX = 0;
@@ -110,29 +112,6 @@ int colorfulSword[20][20] = {
 {1,2,2,1,0,0,0,0,0,0,0,1,2,2,2,1,0,0,0,0},
 {1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0},
 };
-
-int colo4rfulSword[20][20] = {
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-};
 //temporary cursor on success
 
 COLORREF colors[5] = {
@@ -144,7 +123,7 @@ COLORREF colors[5] = {
 
 };
 
-
+bool onoroff = true;
 bool Apressed = false;
 bool Bpressed = false;
 bool Xpressed = false;
@@ -191,27 +170,8 @@ int knappsovetid = 100;
 int samekey = 0;
 int samekeyA = 0;
 
-// Hook callback function
-//LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
-//    if (nCode == HC_ACTION) {
-//        MSLLHOOKSTRUCT* pMouseStruct = (MSLLHOOKSTRUCT*)lParam;
-//        if (pMouseStruct != nullptr) {
-//            std::cout << "Mouse at (" << pMouseStruct->pt.x << ", " << pMouseStruct->pt.y << ")" << std::endl;
-//        }
-//    }
- //   return CallNextHookEx(hMouseHook, nCode, wParam, lParam);
-//}
-
 HCURSOR WINAPI HookedSetCursor(HCURSOR hcursor) {
-    // Example: log or replace cursor
-   // OutputDebugString(L"SetCursor was called!\n");
 		hCursor = hcursor; // Store the cursor handle   
-    
-    
-    // Optionally replace the cursor
-    // hCursor = LoadCursor(NULL, IDC_HAND);
-
-   // return originalSetCursor(hcursor); // Call original
         return hcursor;
 }
 
@@ -772,10 +732,6 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
         BitBlt(hdcMem, 0, 0, width, height, hdcWindow, 0, 0, SRCCOPY);
 
         if (draw) {
-
-            if (cursorimage == 1)
-            {
-                
               //  CURSORINFO ci = { sizeof(CURSORINFO) };
             //    if (IsCursorInWindow(hwnd) == true) {
                  //       hCursor = ci.hCursor;
@@ -786,43 +742,47 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
                     RECT rect = { 0, 0, 32, 32 }; //need bmp width height
                     FillRect(hdcMem, &rect, (HBRUSH)(COLOR_WINDOW + 1));
 
-
-                    // Draw icon into memory DC
-                    if (hCursor != 0)
-                    { 
-                        
-                        if (showmessage == 1)
-                        {
-                            TextOut(hdcWindow, X, Y, TEXT("BMP MODE"), 8);
-                            TextOut(hdcWindow, X, Y + 17, TEXT("only mapping searches"), 21);
-                        }
-                        else if (showmessage == 2)
-                        {
-                            TextOut(hdcWindow, X, Y, TEXT("CURSOR MODE"), 11);
-                            TextOut(hdcWindow, X, Y + 17, TEXT("mapping searches + cursor"), 25);
-                        }
-                        else if (showmessage == 3)
-                        {
-                            TextOut(hdcWindow, X, Y, TEXT("EDIT MODE"), 9);
-                            TextOut(hdcWindow, X, Y + 15, TEXT("tap a button to bind it to coordinate"), 37);
-                            TextOut(hdcWindow, X, Y + 30, TEXT("A,B,X,Y,R2,R3,L2,L3 can be mapped"), 32);
-                        }
-                        else if (showmessage == 10)
-                        {
-                            TextOut(hdcWindow, X, Y, TEXT("BUTTON MAPPED"), 13);
-                        }
-                        else if (showmessage == 11)
-                        {
-                            TextOut(hdcWindow, X, Y, TEXT("WAIT FOR MESSAGE EXPIRE!"), 24);
-                        }
-                        else if (showmessage == 12)
-                        {
-                            TextOut(hdcWindow, X, Y, TEXT("DISCONNECTED!"), 14);
-                        }
-                        else DrawIconEx(hdcWindow, 0 + X, 0 + Y, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
-
+                    if (showmessage == 1)
+                    {
+                        TextOut(hdcWindow, X, Y, TEXT("BMP MODE"), 8);
+                        TextOut(hdcWindow, X, Y + 17, TEXT("only mapping searches"), 21);
                     }
-                    else {
+                    else if (showmessage == 2)
+                    {
+                        TextOut(hdcWindow, X, Y, TEXT("CURSOR MODE"), 11);
+                        TextOut(hdcWindow, X, Y + 17, TEXT("mapping searches + cursor"), 25);
+                    }
+                    else if (showmessage == 3)
+                    {
+                        TextOut(hdcWindow, X, Y, TEXT("EDIT MODE"), 9);
+                        TextOut(hdcWindow, X, Y + 15, TEXT("tap a button to bind it to coordinate"), 37);
+                        TextOut(hdcWindow, X, Y + 30, TEXT("A,B,X,Y,R2,R3,L2,L3 can be mapped"), 32);
+                    }
+                    else if (showmessage == 10)
+                    {
+                        TextOut(hdcWindow, X, Y, TEXT("BUTTON MAPPED"), 13);
+                    }
+                    else if (showmessage == 11)
+                    {
+                        TextOut(hdcWindow, X, Y, TEXT("WAIT FOR MESSAGE EXPIRE!"), 24);
+                    }
+                    else if (showmessage == 12)
+                    {
+                        TextOut(hdcWindow, X, Y, TEXT("DISCONNECTED!"), 14);
+                    }
+                    else if (showmessage == 69)
+                    {
+                        TextOut(hdcWindow, X, Y, TEXT("SHUTTING DOWN"), 13);
+                    }
+                    else if (showmessage == 70)
+                    {
+                        TextOut(hdcWindow, X, Y, TEXT("STARTING!"), 10);
+                    }
+                    else if (hCursor != 0 && onoroff == true)
+                    { 
+                         DrawIconEx(hdcWindow, 0 + X, 0 + Y, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
+                    }
+                    else if ( onoroff == true){
                         for (int y = 0; y < 20; y++)
                         {
                             for (int x = 0; x < 20; x++)
@@ -839,24 +799,7 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
                         }
                     }
 
-            }
-            else
-            {
-               for (int y = 0; y < 20; y++)
-                  {
-                 for (int x = 0; x < 20; x++)
-                     {
-                      int val = colorfulSword[y][x];
-                       if (val != 0)
-                       {
-                          HBRUSH hBrush = CreateSolidBrush(colors[val]);
-                           RECT rect = { X + x , Y + y , X + x + 1, Y + y + 1 };
-                           FillRect(hdcWindow, &rect, hBrush);
-                          DeleteObject(hBrush);
-                       }
-                    }
-               }
-            }
+            
            
                 //hbm24 = NULL;
               //  HBRUSH hBrush = CreateSolidBrush(RGB(255, 60, 2));
@@ -943,7 +886,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                           //char buffer[100];
  // wsprintf(buffer, "A is %d", i);
  //  MessageBoxA(NULL, buffer, "Info", MB_OK);
-                        vibrateController(0, 15000);
+                        vibrateController(controllerID, 15000);
                         if (strcmp(key, "\\A") == 0) {
                             if (Atype == 1)
                             {
@@ -1086,7 +1029,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                         {
                              //char buffer[100];
 
-                            vibrateController(0, 15000);
+                            vibrateController(controllerID, 15000);
                             if (strcmp(key, "\\A") == 0) {
                                 if (Atype == 1)
                                 {
@@ -1220,110 +1163,6 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
     pausedraw = false;
     return true;
 }
-//LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
-//LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
- //   if (nCode == HC_ACTION) {
-//        PMSLLHOOKSTRUCT pMouse = (PMSLLHOOKSTRUCT)lParam;
-//
-//        HWND hwndUnderCursor = WindowFromPoint(pMouse->pt);
-//        if (hwndUnderCursor == hwnd) {
-            // Swallow the message
-           // MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
- //           return 1; // Non-zero return value blocks the message
- //       }
- //   }
-//    return CallNextHookEx(NULL, nCode, wParam, lParam);
-//}
-
-
-//DWORD WINAPI hhmousehookthread(LPVOID lpParam)
-//{
-  ///  hMouseHook = SetWindowsHookEx(WH_MOUSE_LL, LowLevelMouseProc, GetModuleHandle(NULL), 0);
-//    hMouseHook = SetWindowsHookEx(WH_MOUSE, MouseProc, GetModuleHandle(NULL), GetCurrentThreadId());
-//
-//    HHOOK hMouseHook = SetWindowsHookEx(
-//        WH_MOUSE_LL,          // Low-level mouse hook
- //       MouseHookProc,        // Your hook procedure
- //       NULL,            // NULL if in same process; DLL handle if injected
- //       0                     // Hook all threads
- //   );
-
-
- //   if (hMouseHook == NULL) 
- //   {
- //       
- //       return 1;
-////  }
- //      MSG msg;
- //  while (GetMessage(&msg, NULL, 0, 0)) 
-// {
-//       TranslateMessage(&msg);
-//       //MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
-//      DispatchMessage(&msg);
-//  }
-//}
-//LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
-//    if (nCode == HC_ACTION) {
-//        MSLLHOOKSTRUCT* info = (MSLLHOOKSTRUCT*)lParam;
-//
-//    }
-//    return CallNextHookEx(NULL, nCode, wParam, lParam);
-//}
-
-//LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
-//    if (nCode >= 0) {
-//        MOUSEHOOKSTRUCT* mhs = (MOUSEHOOKSTRUCT*)lParam;
-
-//        if (mhs->hwnd == hwnd) {
-            
-
- //       }
-
- //   }
-
- //   return CallNextHookEx(hMouseHook, nCode, wParam, lParam);
-//}
-//LRESULT CALLBACK CallWndProcHook(int nCode, WPARAM wParam, LPARAM lParam)
-//{
-//    if (nCode >= 0)
-//    {
-//        CWPSTRUCT* cwp = (CWPSTRUCT*)lParam;
-//        if (cwp->message == WM_PAINT)
-//        {
-//            if ( hwnd != 0)
-//                CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw fake cursor
- //       }
-//    }
-
- //   return CallNextHookEx(hMouseHook, nCode, wParam, lParam);
-//}
-
-//DWORD WINAPI Drawthread(LPVOID lpParam)
-//{
-
- //   while (loop == true) {
- //       if (hwnd && pausedraw == false) {
- //           CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true);
- //            
-  //      }
- //       Sleep(3); // Sync with refresh rate
- //   }
-
-
-  //  HHOOK hMouseHook = SetWindowsHookEx(WH_CALLWNDPROC, CallWndProcHook, GetModuleHandle(NULL), 0);
-
-
-  //  MSG msg;
-  //  while (GetMessage(&msg, NULL, 0, 0))
-  //  {
-   //     TranslateMessage(&msg);
-  //      DispatchMessage(&msg);
-  //  }
-//    return 1;
-
-//}
-
-
 DWORD WINAPI ThreadFunction(LPVOID lpParam)
 {
     Sleep(2000);
@@ -1331,10 +1170,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     // settings reporting
     std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
     std::string iniSettings = "Settings";
-   // std::string controllerID = getIniString(iniSettings.c_str(), "Controller ID", "0", iniPath);
 
     //controller settings
-    int controllerID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", 0, iniPath.c_str()); //simple test if settings read but write it wont work.
+    controllerID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", 0, iniPath.c_str()); //simple test if settings read but write it wont work.
     int AxisLeftsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisLeftsens", -7849, iniPath.c_str());
     int AxisRightsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisRightsens", 12000, iniPath.c_str());
     int AxisUpsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisUpsens", 0, iniPath.c_str());
@@ -1371,71 +1209,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     
 
     Sleep(1000);
-
-   // CreateThread(nullptr, 0,
-    //    (LPTHREAD_START_ROUTINE)hhmousehookthread, GetModuleHandle(0), 0, 0);
-        //hhmousehook
-
-
- //   std::cout << "Mouse hook installed. Press Ctrl+C to exit." << std::endl;
-
-    // Message loop to keep the hook alive
- //   MSG msg;
- //   while (GetMessage(&msg, NULL, 0, 0)) {
- //       TranslateMessage(&msg);
- //       DispatchMessage(&msg);
- //   }
-
-  //  { // presume missing settings file. attempt to generate
-	//	MessageBoxA(NULL, "Settings file not found. Generating default settings.", "Error", MB_OK | MB_ICONERROR);
-       // controllerID = 0; //reset fault check
-    //    std::string valueStr = "1"; //controlerid
-    //    WritePrivateProfileString(iniSettings.c_str(), "Controllerid", valueStr.c_str(), iniPath.c_str());
-    //    valueStr = "-7849"; 
-    //    WritePrivateProfileString(iniSettings.c_str(), "AxisLeftsens", valueStr.c_str(), iniPath.c_str());
-    //    valueStr = "12000"; 
-    //    WritePrivateProfileString(iniSettings.c_str(), "AxisRightsens", valueStr.c_str(), iniPath.c_str());
-    //    valueStr = "0"; 
-   //     WritePrivateProfileString(iniSettings.c_str(), "AxisUpsens", valueStr.c_str(), iniPath.c_str());
-    //    valueStr = "-16049"; 
-    //    WritePrivateProfileString(iniSettings.c_str(), "AxisDownsens", valueStr.c_str(), iniPath.c_str());
-    //    valueStr = "0"; 
-    //    WritePrivateProfileString(iniSettings.c_str(), "Righthanded", valueStr.c_str(), iniPath.c_str());/////////////////////
-   //     valueStr = "1";
-   //    WritePrivateProfileString(iniSettings.c_str(), "Initial Mode", valueStr.c_str(), iniPath.c_str());
-   //     WritePrivateProfileString(iniSettings.c_str(), "Allow modechange", valueStr.c_str(), iniPath.c_str());
-   //     valueStr = "40"; 
-   //     WritePrivateProfileString(iniSettings.c_str(), "Dot Speed", valueStr.c_str(), iniPath.c_str());
-    //    valueStr = "75";
-    //    WritePrivateProfileString(iniSettings.c_str(), "CA Dot Speed", valueStr.c_str(), iniPath.c_str());
-    //    valueStr = "0";
-    //    WritePrivateProfileString(iniSettings.c_str(), "Sendfocus", valueStr.c_str(), iniPath.c_str()); 
-    //    valueStr = "50";
-    //    WritePrivateProfileString(iniSettings.c_str(), "Keyresponsetime", valueStr.c_str(), iniPath.c_str()); 
-    //    valueStr = "0";
-    //    WritePrivateProfileString(iniSettings.c_str(), "GetMouseOnKey", valueStr.c_str(), iniPath.c_str()); 
-    ///    WritePrivateProfileString(iniSettings.c_str(), "Ainputtype", valueStr.c_str(), iniPath.c_str()); 
-    //    WritePrivateProfileString(iniSettings.c_str(), "Binputtype", valueStr.c_str(), iniPath.c_str()); 
-    //    WritePrivateProfileString(iniSettings.c_str(), "Xinputtype", valueStr.c_str(), iniPath.c_str()); 
-    //    WritePrivateProfileString(iniSettings.c_str(), "Yinputtype", valueStr.c_str(), iniPath.c_str()); 
-    //    WritePrivateProfileString(iniSettings.c_str(), "Cinputtype", valueStr.c_str(), iniPath.c_str()); 
-    //    WritePrivateProfileString(iniSettings.c_str(), "Dinputtype", valueStr.c_str(), iniPath.c_str()); 
-    //    WritePrivateProfileString(iniSettings.c_str(), "Cinputtype", valueStr.c_str(), iniPath.c_str()); 
-    //    WritePrivateProfileString(iniSettings.c_str(), "Dinputtype", valueStr.c_str(), iniPath.c_str()); 
-    //    WritePrivateProfileString(iniSettings.c_str(), "Einputtype", valueStr.c_str(), iniPath.c_str()); 
-   //     WritePrivateProfileString(iniSettings.c_str(), "Finputtype", valueStr.c_str(), iniPath.c_str()); 
-    //    valueStr = "1";
-    ///    WritePrivateProfileString(iniSettings.c_str(), "DrawFakeCursor", valueStr.c_str(), iniPath.c_str());
-    //    WritePrivateProfileString(iniSettings.c_str(), "UseRealMouse", valueStr.c_str(), iniPath.c_str());
-    //    iniSettings = "Hooks";
-    //    WritePrivateProfileString(iniSettings.c_str(), "ClipCursorHook", valueStr.c_str(), iniPath.c_str());
-   //     WritePrivateProfileString(iniSettings.c_str(), "GetKeystateHook", valueStr.c_str(), iniPath.c_str());
-    //    WritePrivateProfileString(iniSettings.c_str(), "GetAsynckeystateHook", valueStr.c_str(), iniPath.c_str());
-    //    WritePrivateProfileString(iniSettings.c_str(), "GetCursorposHook", valueStr.c_str(), iniPath.c_str());
-
-    //CreateThread(nullptr, 0,
-    //    (LPTHREAD_START_ROUTINE)Drawthread, g_hModule, 0, 0); //GetModuleHandle(0)
-
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
     int mode = InitialMode;
     int numphotoA = -1;
@@ -1611,7 +1384,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 bool currA = (buttons & XINPUT_GAMEPAD_A) != 0;
                 bool Apressed = (buttons & XINPUT_GAMEPAD_A);
 
-                if (buttons & XINPUT_GAMEPAD_A)
+                if (buttons & XINPUT_GAMEPAD_A && onoroff == true)
                 {
                     startsearch = startsearchA;
                     if (hbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false))
@@ -1628,7 +1401,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         }
                     }
                 }
-                if (buttons & XINPUT_GAMEPAD_B)
+                if (buttons & XINPUT_GAMEPAD_B && onoroff == true)
                 {
                     startsearch = startsearchB;
                     if (Buttonaction("\\B", mode, numphotoB, startsearch))
@@ -1642,7 +1415,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         numphotoB++;
                     }
                 }
-                if (buttons & XINPUT_GAMEPAD_X)
+                if (buttons & XINPUT_GAMEPAD_X && onoroff == true)
                 {
                     startsearch = startsearchX;
                     Buttonaction("\\X", mode, numphotoX, startsearch);
@@ -1651,7 +1424,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         numphotoX++;
                     }
                 }
-                if (buttons & XINPUT_GAMEPAD_Y)
+                if (buttons & XINPUT_GAMEPAD_Y && onoroff == true)
                 {
                     startsearch = startsearchY;
                     Buttonaction("\\Y", mode, numphotoY, startsearch);
@@ -1660,7 +1433,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         numphotoY++;
                     }
                 }
-                if (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER)
+                if (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER && onoroff == true)
                 {
                     startsearch = startsearchC;
                     Buttonaction("\\C", mode, numphotoC, startsearch);
@@ -1669,7 +1442,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         numphotoC++;
                     }
                 }
-                if (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER)
+                if (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && onoroff == true)
                 {
                     startsearch = startsearchD;
                     Buttonaction("\\D", mode, numphotoD, startsearch);
@@ -1678,7 +1451,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         numphotoD++;
                     }
                 }
-                if (buttons & XINPUT_GAMEPAD_RIGHT_THUMB)
+                if (buttons & XINPUT_GAMEPAD_RIGHT_THUMB && onoroff == true)
                 {
                     startsearch = startsearchE;
                     Buttonaction("\\E", mode, numphotoE, startsearch);
@@ -1687,7 +1460,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         numphotoE++;
                     }
                 }
-                if (buttons & XINPUT_GAMEPAD_LEFT_THUMB)
+                if (buttons & XINPUT_GAMEPAD_LEFT_THUMB && onoroff == true)
                 {
                     startsearch = startsearchF;
                     Buttonaction("\\F", mode, numphotoF, startsearch);
@@ -1697,7 +1470,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
                 }
 
-                if (buttons & XINPUT_GAMEPAD_DPAD_UP)
+                if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
                 {
 
                     scroll.x = rect.left + (rect.right - rect.left) / 2;
@@ -1707,7 +1480,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         scroll.y = rect.top - 1;
                     scrollmap = true;
                 }
-               else if (buttons & XINPUT_GAMEPAD_DPAD_DOWN)
+               else if (buttons & XINPUT_GAMEPAD_DPAD_DOWN && onoroff == true)
                 {
                     
                     scroll.x = rect.left + (rect.right - rect.left) / 2;
@@ -1717,7 +1490,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         scroll.y = rect.bottom + 1;
                     scrollmap = true;
                 }
-                else if (buttons & XINPUT_GAMEPAD_DPAD_LEFT)
+                else if (buttons & XINPUT_GAMEPAD_DPAD_LEFT && onoroff == true)
                 {
                     if (scrolloutsidewindow == 0)
                         scroll.x = rect.left + 1;
@@ -1728,7 +1501,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     scrollmap = true;
 
                 }
-                else if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT)
+                else if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT && onoroff == true)
                 {
 
                     if (scrolloutsidewindow == 0)
@@ -1744,20 +1517,27 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     scrollmap = false;
                 }
 
-
-
-
                 if (buttons & XINPUT_GAMEPAD_START && showmessage == 0)
                 {
-
-                    if (mode == 0 && Modechange == 1)
+                    Sleep(100);
+                    if (onoroff == true && buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER)
+                    {
+                         //MessageBox(NULL, "Bmp mode", "shutdown", MB_OK | MB_ICONINFORMATION);
+                        showmessage = 69;
+                    }
+                    else if (onoroff == false && buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER)
+                    {
+                         //MessageBox(NULL, "Bmp mode", "starting", MB_OK | MB_ICONINFORMATION);
+                        showmessage = 70;
+                    }
+                    else if (mode == 0 && Modechange == 1 && onoroff == true)
                     {
                         mode = 1;
 
                        // MessageBox(NULL, "Bmp + Emulated cursor mode", "Move the flickering red dot and use right trigger for left click. left trigger for right click", MB_OK | MB_ICONINFORMATION);
                         showmessage = 2;
                     }
-                    else if (mode == 1 && Modechange == 1)
+                    else if (mode == 1 && Modechange == 1 && onoroff == true)
                     {
                         mode = 2;
                         //MessageBox(NULL, "Edit Mode", "Button mapping. will map buttons you click with the flickering red dot as an input coordinate", MB_OK | MB_ICONINFORMATION);
@@ -1765,19 +1545,20 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         
 
                     }
-                    else if (mode == 2 && Modechange == 1)
+                    else if (mode == 2 && Modechange == 1 && onoroff == true)
                     {
                        // mode = 0;
                        // MessageBox(NULL, "Bmp mode", "only send input on bmp match", MB_OK | MB_ICONINFORMATION);
                         showmessage = 1;
                     }
-                    else { //assume modechange not allowed. send escape key instead
+
+                    else if (onoroff == true) { //assume modechange not allowed. send escape key instead
                         keystatesend = VK_ESCAPE;
                     }
                    // Sleep(1000); //have time to release button. this is no hurry anyway
                     
                 }
-                if (mode > 0 )
+                if (mode > 0 && onoroff == true)
                 { 
                     //fake cursor poll
                     int Xaxis = 0;
@@ -1839,11 +1620,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         else calcsleep = 0;
                     }
 
-
-
-
-
-
                     OldX = X;
                     if (Xaxis < AxisLeftsens) //strange values. but tested many before choosing this
                     { 
@@ -1894,22 +1670,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
                     if (movedmouse == true) //fake cursor move message
                     {
-                        pausedraw = true;
                         if (userealmouse == 0) 
                         {
                             SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
                         }
-                       // movedmouse = false;
-                      //  Sleep(sens); //flickery on move but effective
-                        pausedraw = false;
                     }
-                  //  int nysovetid = sens2 - (accumulater / 700);
-                 //   if (nysovetid < sovetid)
-                  //      sovetid = nysovetid;
-                 //   if (sovetid < 3) 
-                  //      sovetid = 3; //speedlimit
-
-
               
                 if (leftPressed)
                 { 
@@ -2008,15 +1773,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
             
 		}
 
-
-        if (mode == 0)
-            Sleep(50);
-        if (mode > 0) {
-           // Sleep(sovetid); //15-80 //ini value
-            if (movedmouse == true)
-                Sleep(4 - calcsleep); //max 3. 0-2 on slow movement
-            else Sleep(2); //max 3. 0-2 on slow movement
-        }
         if (showmessage != 0)
         {
             counter++;
@@ -2025,11 +1781,29 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 if (showmessage == 1) {
                     mode = 0;
                 }
+                if (showmessage == 69) { //disabling dll
+                    onoroff = false;
+                    MH_DisableHook(MH_ALL_HOOKS);
+                }
+                if (showmessage == 70) { //enabling dll
+                    onoroff = true;
+                    MH_EnableHook(MH_ALL_HOOKS);
+                }
                 showmessage = 0;
                 counter = 0;
 
             }
         }
+
+        if (mode == 0)
+            Sleep(10);
+        if (mode > 0) {
+           // Sleep(sovetid); //15-80 //ini value
+            if (movedmouse == true)
+                Sleep(4 - calcsleep); //max 3. 0-2 on slow movement
+            else Sleep(2); //max 3. 0-2 on slow movement
+        }
+
 
     } //loop end but endless
     return 0;
@@ -2045,11 +1819,13 @@ void SetupHook() {
     CreateThread(nullptr, 0,
         (LPTHREAD_START_ROUTINE)ThreadFunction, g_hModule, 0, 0); //GetModuleHandle(0)
 
-
+    //each of there hooks have a high chance of crashing the game
 
     if (getcursorposhook == 1) {
         MH_CreateHookApi(L"user32", "GetCursorPos", &MyGetCursorPos, reinterpret_cast<LPVOID*>(&fpGetCursorPos));
         MH_EnableHook(&GetCursorPos);
+    }
+    if (setcursorposhook == 1) {
         MH_CreateHookApi(L"user32", "SetCursorPos", &MySetCursorPos, reinterpret_cast<LPVOID*>(&fpSetCursorPos));
         MH_EnableHook(&SetCursorPos);
     }
@@ -2068,14 +1844,14 @@ void SetupHook() {
         MH_EnableHook(&ClipCursor);
     }
     if (setcursorhook == 1)
-    MH_CreateHookApi(
-        L"user32", "SetCursor",
-        &HookedSetCursor,
-        reinterpret_cast<LPVOID*>(&originalSetCursor)
-    );
-
-    MH_EnableHook(&SetCursor);
-
+    { 
+        MH_CreateHookApi(
+            L"user32", "SetCursor",
+            &HookedSetCursor,
+            reinterpret_cast<LPVOID*>(&originalSetCursor)
+        );
+        MH_EnableHook(&SetCursor);
+    }
      //MH_EnableHook(MH_ALL_HOOKS);
 }
 
@@ -2096,11 +1872,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             // std::string controllerID = getIniString(iniSettings.c_str(), "Controller ID", "0", iniPath);
 
              //hook settings
-            clipcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "ClipCursorHook", 1, iniPath.c_str());
-            getkeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetKeystateHook", 1, iniPath.c_str());
-            getasynckeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetAsynckeystateHook", 1, iniPath.c_str());
-            getcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorposHook", 1, iniPath.c_str());
-            setcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorHook", 1, iniPath.c_str());
+            clipcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "ClipCursorHook", 0, iniPath.c_str());
+            getkeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetKeystateHook", 0, iniPath.c_str());
+            getasynckeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetAsynckeystateHook", 0, iniPath.c_str());
+            getcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorposHook", 0, iniPath.c_str());
+            setcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorposHook", 0, iniPath.c_str());
+            setcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorHook", 0, iniPath.c_str());
             SetupHook();
             break;
         }
