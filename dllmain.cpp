@@ -123,13 +123,28 @@ COLORREF colors[5] = {
 
 };
 
+
 bool onoroff = true;
+
+//remember old keystates
+int oldscrollrightaxis = false; //reset 
+int oldscrollleftaxis = false; //reset 
+int oldscrollupaxis = false; //reset 
+int oldscrolldownaxis = false; //reset 
 bool Apressed = false;
 bool Bpressed = false;
 bool Xpressed = false;
 bool Ypressed = false;
 bool leftPressedold;
 bool rightPressedold;
+bool oldA = false; 
+bool oldB = false;
+bool oldX = false;
+bool oldY = false;
+bool oldC = false;
+bool oldD = false;
+bool oldE = false;
+bool oldF = false;
 
 int startsearch = 0;
 int startsearchA = 0;
@@ -246,14 +261,13 @@ BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
     return false;
 }
 BOOL WINAPI MySetCursorPos(PPOINT lpPoint) {
-        //POINT mpos;
-        //ClientToScreen(hwnd, &mpos);
-
-        X = lpPoint->x; //desktop coordinates? or hwnd?
-        Y = lpPoint->y;
-        //ScreenToClient(hwnd, &mpos); //revert so i am sure its done
-
-    return false;
+        POINT mpos;
+        mpos.x = lpPoint->x;
+		mpos.y = lpPoint->y;
+        ScreenToClient(hwnd, &mpos); //desktop to hwnd
+        X = mpos.x; 
+        Y = mpos.y;
+        return true;
 }
 BOOL WINAPI HookedClipCursor(const RECT* lpRect) {
     return true; //nonzero bool or int
@@ -721,7 +735,7 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
     BYTE* pBits = nullptr;
 
    
-
+    
     hbm24 = CreateDIBSection(hdcWindow, &bmi, DIB_RGB_COLORS, (void**)&pBits, NULL, 0);
     if (hbm24 != 0)   
     { 
@@ -825,7 +839,7 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
     }
     DeleteDC(hdcMem);
     ReleaseDC(hwnd, hdcWindow);
-
+    DeleteObject(hbm24);
     return hbm24;
     }
 // Helper: Get stick magnitude
@@ -844,7 +858,129 @@ float Clamp(float v) {
 #define ACCELERATION 2.0f      // Controls non-linear ramp (higher = more acceleration)
 
 
+void PostKeyFunction(HWND hwnd, int keytype, bool press) {
+    DWORD mykey = 0;
+	DWORD presskey = WM_KEYDOWN;
 
+    UINT scanCode = MapVirtualKey(VK_LEFT, MAPVK_VK_TO_VSC);
+    LPARAM lParam = (0x00000001 | (scanCode << 16));
+    
+    if (!press){
+		presskey = WM_KEYUP; // Key up event 
+    }
+    if (keytype == 3)
+        mykey = VK_ESCAPE;
+    if (keytype == 4)
+        mykey = VK_RETURN;
+    if (keytype == 5)
+        mykey = VK_TAB;
+    if (keytype == 6)
+        mykey = VK_SHIFT;
+    if (keytype == 7)
+        mykey = VK_CONTROL;
+    if (keytype == 8)
+        mykey = VK_SPACE;
+
+    if (keytype == 10)
+        mykey = 0x57; //W
+
+    if (keytype == 11)
+        mykey = 0x53; //S
+
+    if (keytype == 12)
+        mykey = 0x41; //A
+
+    if (keytype == 13)
+        mykey = 0x44; //D
+
+    if (keytype == 14)
+        mykey = 0x45; //E
+
+    if (keytype == 15)
+        mykey = 0x46; //F
+
+    if (keytype == 16)
+        mykey = 0x47; //G
+
+    if (keytype == 17)
+        mykey = 0x48; //H
+
+    if (keytype == 18)
+        mykey = 0x49; //I
+
+    if (keytype == 19)
+        mykey = 0x51; //Q
+
+    if (keytype == 21)
+        mykey = 0x52; //R
+
+    if (keytype == 22)
+        mykey = 0x54; //T
+
+
+
+
+    if (keytype == 20)
+        mykey = VK_OEM_PERIOD; 
+
+    if (keytype == 40)
+        mykey = VK_UP; 
+
+    if (keytype == 41)
+        mykey = VK_DOWN; 
+
+    if (keytype == 42)
+        mykey = VK_LEFT; 
+
+    if (keytype == 43)
+        mykey = VK_RIGHT; 
+
+    if (keytype == 20)
+        mykey = VK_OEM_PERIOD;
+
+
+
+    if (keytype == 51)
+        mykey = VK_F1;
+
+    if (keytype == 52)
+        mykey = VK_F2;
+
+    if (keytype == 53)
+        mykey = VK_F3;
+
+    if (keytype == 54)
+        mykey = VK_F4;
+
+    if (keytype == 55)
+        mykey = VK_F5;
+
+    if (keytype == 56)
+        mykey = VK_F6;
+
+    if (keytype == 57)
+        mykey = VK_F7;
+
+    if (keytype == 58)
+        mykey = VK_F8;
+    if (keytype == 59)
+        mykey = VK_F9;
+
+    if (keytype == 60)
+        mykey = VK_F10;
+
+    if (keytype == 61)
+        mykey = VK_F11;
+
+    if (keytype == 62)
+        mykey = VK_F12;
+
+
+
+    PostMessage(hwnd, presskey, mykey, lParam);
+    return;
+
+}
 bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
 {
     if (mode != 2)
@@ -1384,8 +1520,24 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 bool currA = (buttons & XINPUT_GAMEPAD_A) != 0;
                 bool Apressed = (buttons & XINPUT_GAMEPAD_A);
 
-                if (buttons & XINPUT_GAMEPAD_A && onoroff == true)
+
+
+
+                if (oldA == true)
                 {
+                    if (buttons & XINPUT_GAMEPAD_A && onoroff == true)
+                    {
+                        // keep posting?
+                    }
+                    else {
+                        oldA = false;
+                        PostKeyFunction(hwnd, Atype, false);
+                    }
+                }
+                else if (buttons & XINPUT_GAMEPAD_A && onoroff == true)
+                {
+                    oldA = true;
+                    PostKeyFunction(hwnd, Atype, true);
                     startsearch = startsearchA;
                     if (hbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false))
                     {
@@ -1401,22 +1553,56 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         }
                     }
                 }
-                if (buttons & XINPUT_GAMEPAD_B && onoroff == true)
+
+
+
+                if (oldB == true)
                 {
+                    if (buttons & XINPUT_GAMEPAD_B && onoroff == true)
+                    {
+                        // keep posting?
+                    }
+                    else {
+                        oldB = false;
+                        PostKeyFunction(hwnd, Btype, false);
+                    }
+                }
+                else if (buttons & XINPUT_GAMEPAD_B && onoroff == true)
+                {
+                    
+
+                    oldB = true;
+                    PostKeyFunction(hwnd, Btype, true);
                     startsearch = startsearchB;
                     if (Buttonaction("\\B", mode, numphotoB, startsearch))
-                    { 
+                    { //send key here maybe
                     }
                     else 
-                    { //error handling
+                    { 
                     }
                     if (mode == 2 && showmessage != 11)
                     {
                         numphotoB++;
                     }
+                    
                 }
-                if (buttons & XINPUT_GAMEPAD_X && onoroff == true)
+
+
+                if (oldX == true)
                 {
+                    if (buttons & XINPUT_GAMEPAD_X && onoroff == true)
+                    {
+                        // keep posting?
+                    }
+                    else {
+                        oldX = false;
+                        PostKeyFunction(hwnd, Xtype, false);
+                    }
+                }
+                else if (buttons & XINPUT_GAMEPAD_X && onoroff == true)
+                {
+                    oldX = true;
+                    PostKeyFunction(hwnd, Xtype, true);
                     startsearch = startsearchX;
                     Buttonaction("\\X", mode, numphotoX, startsearch);
                     if (mode == 2 && showmessage != 11)
@@ -1424,8 +1610,22 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         numphotoX++;
                     }
                 }
-                if (buttons & XINPUT_GAMEPAD_Y && onoroff == true)
+
+                if (oldY == true)
                 {
+                    if (buttons & XINPUT_GAMEPAD_Y && onoroff == true)
+                    {
+                        // keep posting?
+                    }
+                    else {
+                        oldY = false;
+                        PostKeyFunction(hwnd, Ytype, false);
+                    }
+                }
+                else if (buttons & XINPUT_GAMEPAD_Y && onoroff == true)
+                {
+                    oldY = true;
+                    PostKeyFunction(hwnd, Ytype, true);
                     startsearch = startsearchY;
                     Buttonaction("\\Y", mode, numphotoY, startsearch);
                     if (mode == 2 && showmessage != 11)
@@ -1433,8 +1633,21 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         numphotoY++;
                     }
                 }
-                if (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER && onoroff == true)
+                if (oldC == true)
                 {
+                    if (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER && onoroff == true)
+                    {
+                        // keep posting?
+                    }
+                    else {
+                        oldC = false;
+                        PostKeyFunction(hwnd, Ctype, false);
+                    }
+                }
+                else if (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER && onoroff == true)
+                {
+                    oldC = true;
+                    PostKeyFunction(hwnd, Ctype, true);
                     startsearch = startsearchC;
                     Buttonaction("\\C", mode, numphotoC, startsearch);
                     if (mode == 2 && showmessage != 11)
@@ -1442,8 +1655,21 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         numphotoC++;
                     }
                 }
-                if (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && onoroff == true)
+                if (oldD == true)
                 {
+                    if (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && onoroff == true)
+                    {
+                        // keep posting?
+                    }
+                    else {
+                        oldD = false;
+                        PostKeyFunction(hwnd, Dtype, false);
+                    }
+                }
+                else if (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && onoroff == true)
+                {
+                    oldD = true;
+                    PostKeyFunction(hwnd, Dtype, true);
                     startsearch = startsearchD;
                     Buttonaction("\\D", mode, numphotoD, startsearch);
                     if (mode == 2 && showmessage != 11)
@@ -1451,8 +1677,21 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         numphotoD++;
                     }
                 }
-                if (buttons & XINPUT_GAMEPAD_RIGHT_THUMB && onoroff == true)
+                if (oldE == true)
                 {
+                    if (buttons & XINPUT_GAMEPAD_RIGHT_THUMB && onoroff == true)
+                    {
+                        // keep posting?
+                    }
+                    else {
+                        oldE = false;
+                        PostKeyFunction(hwnd, Etype, false);
+                    }
+                }
+                else if (buttons & XINPUT_GAMEPAD_RIGHT_THUMB && onoroff == true)
+                {
+                    oldE = true;
+                    PostKeyFunction(hwnd, Etype, true);
                     startsearch = startsearchE;
                     Buttonaction("\\E", mode, numphotoE, startsearch);
                     if (mode == 2 && showmessage != 11)
@@ -1460,8 +1699,21 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         numphotoE++;
                     }
                 }
-                if (buttons & XINPUT_GAMEPAD_LEFT_THUMB && onoroff == true)
+                if (oldF == true)
                 {
+                    if (buttons & XINPUT_GAMEPAD_LEFT_THUMB && onoroff == true)
+                    {
+                        // keep posting?
+                    }
+                    else {
+                        oldF = false;
+                        PostKeyFunction(hwnd, Ftype, false);
+                    }
+                }
+                else if (buttons & XINPUT_GAMEPAD_LEFT_THUMB && onoroff == true)
+                {
+                    oldF = true;
+                    PostKeyFunction(hwnd, Ftype, true);
                     startsearch = startsearchF;
                     Buttonaction("\\F", mode, numphotoF, startsearch);
                     if (mode == 2 && showmessage != 11)
@@ -1563,20 +1815,169 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     //fake cursor poll
                     int Xaxis = 0;
                     int Yaxis = 0;
+					int scrollXaxis = 0;
+					int scrollYaxis = 0;    
                     int width = rect.right - rect.left;
                     int height = rect.bottom - rect.top;
-                    
+
+
+					
 					 
                     if (righthanded == 1) {
                         Xaxis = state.Gamepad.sThumbRX;
                         Yaxis = state.Gamepad.sThumbRY;
+                        scrollXaxis = state.Gamepad.sThumbLX;
+						scrollYaxis = state.Gamepad.sThumbLY;   
                     }
                     else
                     {
                         Xaxis = state.Gamepad.sThumbLX;
                         Yaxis = state.Gamepad.sThumbLY;
+						scrollXaxis = state.Gamepad.sThumbRX;   
+						scrollYaxis = state.Gamepad.sThumbRY;   
                     }
 
+
+
+                    if (scrolloutsidewindow == 2) 
+                    {
+                        if (oldscrollleftaxis == true) 
+                        {
+                            if (scrollXaxis < AxisLeftsens)
+                            {
+                               // PostKeyFunction(hwnd, 42, true);
+                            }
+                            else {
+                                oldscrollleftaxis = false;
+                                PostKeyFunction(hwnd, 42, false);
+                            }
+                        }
+                        if (scrollXaxis < AxisLeftsens) //left
+                        {
+						
+                            PostKeyFunction(hwnd, 42, true);
+                            oldscrollleftaxis = true;
+                            //keystatesend = VK_LEFT;
+                        }
+
+
+
+                        if (oldscrollrightaxis == true)
+                        {
+                            if (scrollXaxis > AxisRightsens)
+                            {
+                               // PostKeyFunction(hwnd, 43, true);
+                            }
+                            else {
+                                oldscrollrightaxis = false;
+                                PostKeyFunction(hwnd, 43, false);
+                            }
+                        }
+                        if (scrollXaxis > AxisRightsens) //right
+                        {
+                            PostKeyFunction(hwnd, 43, true);
+                            oldscrollrightaxis = true;
+                            //keystatesend = VK_RIGHT;
+
+                        }
+
+
+
+
+                        if (oldscrolldownaxis == true)
+                        {
+                            if (scrollYaxis < AxisDownsens)
+                            {
+                              //  PostKeyFunction(hwnd, 41, true);
+                            }
+                            else {
+                                oldscrolldownaxis = false;
+                                PostKeyFunction(hwnd, 41, false);
+                            }
+                        }
+                        if (scrollYaxis < AxisDownsens) //down
+                        {
+                            PostKeyFunction(hwnd, 41, true);
+                            oldscrolldownaxis = true;
+                           // keystatesend = VK_DOWN;
+                        }
+
+
+
+
+                        if (oldscrollupaxis == true)
+                        {
+                            if (scrollYaxis > AxisUpsens)
+                            {
+                               // PostKeyFunction(hwnd, 40, true);
+                            }
+                            else {
+                                oldscrollupaxis = false;
+                                PostKeyFunction(hwnd, 40, false);
+                            }
+                        }
+                        if (scrollYaxis > AxisUpsens) //up
+                        {
+                            PostKeyFunction(hwnd, 40, true);
+                            oldscrollupaxis = true;
+                        }   //keystatesend = VK_UP;
+                    }
+
+
+
+
+                    if (scrolloutsidewindow < 2 && scrollmap == false)
+                    {
+                        if (scrollXaxis < AxisLeftsens + 5000) //left
+                        {
+                            if (scrolloutsidewindow == 0)
+                                scroll.x = rect.left + 1;
+                            else
+                                scroll.x = rect.left - 1;
+                            scroll.y = rect.top + (rect.bottom - rect.top) / 2;
+
+                            scrollmap = true;
+
+                        }
+                        else if (scrollXaxis > AxisRightsens + 5000) //right
+                        {
+                            if (scrolloutsidewindow == 0)
+                                scroll.x = rect.right - 1;
+                            else
+                                scroll.x = rect.right + 1;
+                            scroll.y = rect.top + (rect.bottom - rect.top) / 2;
+
+                            scrollmap = true;
+
+                        }
+                        else if (scrollYaxis < AxisDownsens - 5000) //down
+                        {
+                            scroll.x = rect.left + (rect.right - rect.left) / 2;
+                            if (scrolloutsidewindow == 0)
+                                scroll.y = rect.bottom - 1;
+                            else
+                                scroll.y = rect.bottom + 1;
+                            scrollmap = true;
+
+
+
+
+
+                        }
+                        else if (scrollYaxis > AxisUpsens + 5000) //up
+                        {
+                            scroll.x = rect.left + (rect.right - rect.left) / 2;
+                            if (scrolloutsidewindow == 0)
+                                scroll.y = rect.top + 1;
+                            else
+                                scroll.y = rect.top - 1;
+                            scrollmap = true;
+                        }   
+
+                        else {
+                            scrollmap = false;
+                        }
+                    }
 
                     //sleeptime adjust. slow movement on low axis
                     if (Xaxis < 0) //negative
