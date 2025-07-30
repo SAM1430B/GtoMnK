@@ -1,7 +1,7 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
 #include "pch.h"
 #include <windows.h>
-#include <windowsx.h>
+//#include <windowsx.h>
 #include "MinHook.h"
 #include <Xinput.h>
 #include <tlhelp32.h>
@@ -28,16 +28,19 @@ typedef SHORT(WINAPI* GetKeyState_t)(int);
 typedef BOOL(WINAPI* ClipCursor_t)(const RECT*);
 typedef HCURSOR(WINAPI* SetCursor_t)(HCURSOR);
 
+typedef HCURSOR(WINAPI* SetRect_t)(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom);
+
 
 
 
 
 GetCursorPos_t fpGetCursorPos = nullptr;
 GetCursorPos_t fpSetCursorPos = nullptr;
-GetAsyncKeyState_t originalGetAsyncKeyState = nullptr;
-GetKeyState_t originalGetKeyState = nullptr;
-ClipCursor_t originalClipCursor = nullptr;
-SetCursor_t originalSetCursor = nullptr;
+GetAsyncKeyState_t fpGetAsyncKeyState = nullptr;
+GetKeyState_t fpGetKeyState = nullptr;
+ClipCursor_t fpClipCursor = nullptr;
+SetCursor_t fpSetCursor = nullptr;
+SetRect_t fpSetRect = nullptr;
 
 
 
@@ -70,8 +73,17 @@ int getasynckeystatehook = 0;
 int getcursorposhook = 0;
 int setcursorposhook = 0;
 int setcursorhook = 0;
+
+int ignorerect = 0;
+POINT rectignore = { 0,0 }; //for getcursorposhook
+int setrecthook = 0;
+
+int leftrect = 0;
+int toprect = 0;
+int rightrect = 0;
+int bottomrect = 0;
+
 int userealmouse = 0;
-HHOOK hMouseHook;
 
 
 
@@ -190,6 +202,25 @@ HCURSOR WINAPI HookedSetCursor(HCURSOR hcursor) {
         return hcursor;
 }
 
+
+
+
+////SetRect_t)(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom);
+BOOL WINAPI HookedSetRect(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom) {
+	xLeft = leftrect; // Set the left coordinate to Xrect  
+    yTop = toprect; // Set the top coordinate to Yrect  
+    
+    xRight = rightrect; // Set the right coordinate to Xrect + 10 
+	yBottom = bottomrect; // Set the bottom coordinate to Yrect + 10    
+ 
+    
+	bool result = fpSetRect(lprc, xLeft, yTop, xRight, yBottom);
+    return result;
+}
+
+
+
+
 SHORT WINAPI HookedGetAsyncKeyState(int vKey) 
 {
     
@@ -206,7 +237,7 @@ SHORT WINAPI HookedGetAsyncKeyState(int vKey)
     }
     else
     {
-        SHORT result = originalGetAsyncKeyState(vKey);
+        SHORT result = fpGetAsyncKeyState(vKey);
         return result;
     }
 }
@@ -226,7 +257,7 @@ SHORT WINAPI HookedGetKeyState(int vKey) {
     }
     else
     {
-        SHORT result = originalGetKeyState(vKey);
+        SHORT result = fpGetKeyState(vKey);
         return result;
     }
 }
@@ -235,16 +266,25 @@ BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
     if (lpPoint) 
     {
         POINT mpos;
-            if (scrollmap == false)
-            { 
+        if (scrollmap == false)
+        { 
+
+            if (ignorerect == 1) {
+                mpos.x = X + rectignore.x; //hwnd coordinates 0-800 on a 800x600 window
+                mpos.y = Y + rectignore.y;//hwnd coordinate s0-600 on a 800x600 window
+				lpPoint->x = mpos.x; 
+				lpPoint->y = mpos.y;    
+            }
+            else {
                 mpos.x = X; //hwnd coordinates 0-800 on a 800x600 window
                 mpos.y = Y;//hwnd coordinate s0-600 on a 800x600 window
-            ClientToScreen(hwnd, &mpos);
+                ClientToScreen(hwnd, &mpos);
 		
-            lpPoint->x = mpos.x; //desktop coordinates
-            lpPoint->y = mpos.y;
-            ScreenToClient(hwnd, &mpos); //revert so i am sure its done
+                lpPoint->x = mpos.x; //desktop coordinates
+                lpPoint->y = mpos.y;
+                ScreenToClient(hwnd, &mpos); //revert so i am sure its done
             }
+        }
             
 		else
 		{
@@ -309,18 +349,18 @@ bool Mutexlock(bool lock) {
     }
     return true;
 }
-bool IsCursorInWindow(HWND hwnd) {
-    POINT pt;
-    DWORD pos = GetMessagePos();
-    pt.x = GET_X_LPARAM(pos);
-    pt.y = GET_Y_LPARAM(pos);
+//bool IsCursorInWindow(HWND hwnd) {
+//    POINT pt;
+//    DWORD pos = GetMessagePos();
+//    pt.x = GET_X_LPARAM(pos);
+//    pt.y = GET_Y_LPARAM(pos);
     //ScreenToClient(hwnd, &pt);
 
-    RECT clientRect;
-    GetClientRect(hwnd, &clientRect);
+//    RECT clientRect;
+//    GetClientRect(hwnd, &clientRect);
 
-    return PtInRect(&clientRect, pt);
-}
+//    return PtInRect(&clientRect, pt);
+//}
 void vibrateController(int controllerId, WORD strength)
 {
     XINPUT_VIBRATION vibration = {};
@@ -728,7 +768,7 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
     bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
     bmi.bmiHeader.biWidth = width;
     bmi.bmiHeader.biHeight = -height; // top-down
-    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biPlanes = 1; 
     bmi.bmiHeader.biBitCount = 24;
     bmi.bmiHeader.biCompression = BI_RGB;
 
@@ -796,7 +836,8 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
                     { 
                          DrawIconEx(hdcWindow, 0 + X, 0 + Y, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
                     }
-                    else if ( onoroff == true){
+                    else if ( onoroff == true)
+                    {
                         for (int y = 0; y < 20; y++)
                         {
                             for (int x = 0; x < 20; x++)
@@ -812,17 +853,6 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
                             }
                         }
                     }
-
-            
-           
-                //hbm24 = NULL;
-              //  HBRUSH hBrush = CreateSolidBrush(RGB(255, 60, 2));
-                // todo: for loop get cursor bmp and fillrect each pixel. maybe cpu intensive
-             //   RECT rect = { X, Y, X + 4, Y + 4 };
-              //  RECT rect2 = { X - 1, Y +1, X + 6, Y + 4 };
-             //   FillRect(hdcWindow, &rect, hBrush);
-             //   FillRect(hdcWindow, &rect2, hBrush);
-             //   DeleteObject(hBrush);
                 GetDIBits(hdcMem, hbm24, 0, height, pixels.data(), &bmi, DIB_RGB_COLORS);
                 SelectObject(hdcMem, oldBmp);
                 DeleteDC(hdcMem);
@@ -836,12 +866,14 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
    
         // Cleanup
         SelectObject(hdcMem, oldBmp);
-    }
-    DeleteDC(hdcMem);
-    ReleaseDC(hwnd, hdcWindow);
-    DeleteObject(hbm24);
-    return hbm24;
-    }
+
+        DeleteDC(hdcMem);
+        ReleaseDC(hwnd, hdcWindow);
+        DeleteObject(hbm24);
+        return hbm24;
+        } //hbm24 not null
+
+    } //function end
 // Helper: Get stick magnitude
 float GetStickMagnitude(SHORT x, SHORT y) {
     return sqrtf(static_cast<float>(x) * x + static_cast<float>(y) * y);
@@ -917,6 +949,12 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
     if (keytype == 22)
         mykey = 0x54; //T
 
+    if (keytype == 23)
+        mykey = 0x42; //B
+
+    if (keytype == 24)
+        mykey = 0x43; //C
+
 
 
 
@@ -975,9 +1013,16 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
     if (keytype == 62)
         mykey = VK_F12;
 
+    if (keytype == 63){ //control+C
+        mykey = VK_CONTROL;
+    }
 
 
+    keystatesend = mykey;
     PostMessage(hwnd, presskey, mykey, lParam);
+    if (keytype == 63) {
+        PostMessage(hwnd, presskey, 0x43, lParam);
+    }
     return;
 
 }
@@ -1341,6 +1386,14 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     //hooks
     drawfakecursor = GetPrivateProfileInt(iniSettings.c_str(), "DrawFakeCursor", 1, iniPath.c_str());
 	userealmouse = GetPrivateProfileInt(iniSettings.c_str(), "UseRealMouse", 0, iniPath.c_str());   //scrolloutsidewindow
+
+    leftrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectLeft", 0, iniPath.c_str());
+    toprect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectTop", 0, iniPath.c_str());
+
+    rightrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectRight", 0, iniPath.c_str());
+    bottomrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectBottom", 0, iniPath.c_str());
+    ignorerect = GetPrivateProfileInt(iniSettings.c_str(), "IgnoreRect", 0, iniPath.c_str());
+
     int scrolloutsidewindow = GetPrivateProfileInt(iniSettings.c_str(), "Scrollmapfix", 1, iniPath.c_str());   //scrolloutsidewindow
     
 
@@ -1499,6 +1552,31 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
         }
         RECT rect;
         GetClientRect(hwnd, &rect);
+
+        if (ignorerect == 1)
+        {
+            RECT frameBounds;
+            HRESULT hr = DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &frameBounds, sizeof(frameBounds));
+            if (SUCCEEDED(hr)) {
+                POINT upper;
+                POINT lower;
+                upper.x = frameBounds.left;
+                upper.y = frameBounds.top;
+                lower.x = frameBounds.right;
+                lower.y = frameBounds.bottom;
+
+				rectignore.x = upper.x;  
+                rectignore.y = upper.y;
+                ScreenToClient(hwnd, &upper);
+                ScreenToClient(hwnd, &lower);
+
+                rect.left = upper.x;
+                rect.right = lower.x;
+                rect.top = upper.y;
+                rect.bottom = lower.y;
+                // These are the actual visible edges of the window
+            }
+        }
         
 
         if (hwnd != NULL)
@@ -1550,6 +1628,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         if (mode == 2 && showmessage != 11)
                         {
                             numphotoA++;
+                            Sleep(100);
                         }
                     }
                 }
@@ -1583,6 +1662,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     if (mode == 2 && showmessage != 11)
                     {
                         numphotoB++;
+                        Sleep(100);
                     }
                     
                 }
@@ -1608,6 +1688,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     if (mode == 2 && showmessage != 11)
                     {
                         numphotoX++;
+                        Sleep(100);
                     }
                 }
 
@@ -1631,6 +1712,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     if (mode == 2 && showmessage != 11)
                     {
                         numphotoY++;
+                        Sleep(100);
                     }
                 }
                 if (oldC == true)
@@ -1650,9 +1732,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     PostKeyFunction(hwnd, Ctype, true);
                     startsearch = startsearchC;
                     Buttonaction("\\C", mode, numphotoC, startsearch);
-                    if (mode == 2 && showmessage != 11)
+                    if (mode == 2 && showmessage == 0)
                     {
                         numphotoC++;
+                        Sleep(100);
                     }
                 }
                 if (oldD == true)
@@ -1675,6 +1758,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     if (mode == 2 && showmessage != 11)
                     {
                         numphotoD++;
+                        Sleep(100);
                     }
                 }
                 if (oldE == true)
@@ -1697,6 +1781,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     if (mode == 2 && showmessage != 11)
                     {
                         numphotoE++;
+                        Sleep(100);
                     }
                 }
                 if (oldF == true)
@@ -1719,6 +1804,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     if (mode == 2 && showmessage != 11)
                     {
                         numphotoF++;
+                        Sleep(100);
                     }
                 }
 
@@ -1841,7 +1927,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
                     if (scrolloutsidewindow == 2) 
                     {
-                        if (oldscrollleftaxis == true) 
+                        if (oldscrollleftaxis) 
                         {
                             if (scrollXaxis < AxisLeftsens)
                             {
@@ -1862,7 +1948,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
 
 
-                        if (oldscrollrightaxis == true)
+                        if (oldscrollrightaxis)
                         {
                             if (scrollXaxis > AxisRightsens)
                             {
@@ -1884,7 +1970,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
 
 
-                        if (oldscrolldownaxis == true)
+                        if (oldscrolldownaxis)
                         {
                             if (scrollYaxis < AxisDownsens)
                             {
@@ -1905,7 +1991,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
 
 
-                        if (oldscrollupaxis == true)
+                        if (oldscrollupaxis)
                         {
                             if (scrollYaxis > AxisUpsens)
                             {
@@ -1928,7 +2014,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
                     if (scrolloutsidewindow < 2 && scrollmap == false)
                     {
-                        if (scrollXaxis < AxisLeftsens + 5000) //left
+                        if (scrollXaxis < AxisLeftsens - 10000) //left
                         {
                             if (scrolloutsidewindow == 0)
                                 scroll.x = rect.left + 1;
@@ -1939,7 +2025,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             scrollmap = true;
 
                         }
-                        else if (scrollXaxis > AxisRightsens + 5000) //right
+                        else if (scrollXaxis > AxisRightsens + 10000) //right
                         {
                             if (scrolloutsidewindow == 0)
                                 scroll.x = rect.right - 1;
@@ -1950,7 +2036,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             scrollmap = true;
 
                         }
-                        else if (scrollYaxis < AxisDownsens - 5000) //down
+                        else if (scrollYaxis < AxisDownsens - 10000) //down
                         {
                             scroll.x = rect.left + (rect.right - rect.left) / 2;
                             if (scrolloutsidewindow == 0)
@@ -1964,7 +2050,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
 
                         }
-                        else if (scrollYaxis > AxisUpsens + 5000) //up
+                        else if (scrollYaxis > AxisUpsens + 10000) //up
                         {
                             scroll.x = rect.left + (rect.right - rect.left) / 2;
                             if (scrolloutsidewindow == 0)
@@ -2231,26 +2317,26 @@ void SetupHook() {
         MH_EnableHook(&SetCursorPos);
     }
     if (getkeystatehook == 1) {
-        MH_CreateHook(&GetAsyncKeyState, &HookedGetAsyncKeyState, reinterpret_cast<LPVOID*>(&originalGetAsyncKeyState));
+        MH_CreateHook(&GetAsyncKeyState, &HookedGetAsyncKeyState, reinterpret_cast<LPVOID*>(&fpGetAsyncKeyState));
         MH_EnableHook(&GetAsyncKeyState);
     }
 
     if (getasynckeystatehook == 1) {
-        MH_CreateHook(&GetKeyState, &HookedGetKeyState, reinterpret_cast<LPVOID*>(&originalGetKeyState));
+        MH_CreateHook(&GetKeyState, &HookedGetKeyState, reinterpret_cast<LPVOID*>(&fpGetKeyState));
         MH_EnableHook(&GetKeyState);
     }
 
     if (clipcursorhook == 1) {
-        MH_CreateHook(&ClipCursor, &HookedClipCursor, reinterpret_cast<LPVOID*>(&originalClipCursor));
+        MH_CreateHook(&ClipCursor, &HookedClipCursor, reinterpret_cast<LPVOID*>(&fpClipCursor));
         MH_EnableHook(&ClipCursor);
-    }
+    } 
+    if (setrecthook == 1) {
+        MH_CreateHook(&SetRect, &HookedSetRect, reinterpret_cast<LPVOID*>(&fpSetRect));
+        MH_EnableHook(&SetRect);
+    } 
     if (setcursorhook == 1)
     { 
-        MH_CreateHookApi(
-            L"user32", "SetCursor",
-            &HookedSetCursor,
-            reinterpret_cast<LPVOID*>(&originalSetCursor)
-        );
+        MH_CreateHook(&SetCursor, &HookedSetCursor, reinterpret_cast<LPVOID*>(&fpSetCursor));
         MH_EnableHook(&SetCursor);
     }
      //MH_EnableHook(MH_ALL_HOOKS);
@@ -2264,8 +2350,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         {
 
             //supposed to help againt crashes?
-            WaitForInputIdle(GetCurrentProcess(), 1000); //wait for input to be ready
-            DisableThreadLibraryCalls(hModule);
+           // WaitForInputIdle(GetCurrentProcess(), 1000); //wait for input to be ready
+           // DisableThreadLibraryCalls(hModule);
             g_hModule = hModule;
 
             std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
@@ -2278,7 +2364,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             getasynckeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetAsynckeystateHook", 0, iniPath.c_str());
             getcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorposHook", 0, iniPath.c_str());
             setcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorposHook", 0, iniPath.c_str());
-            setcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorHook", 0, iniPath.c_str());
+            setcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorHook", 0, iniPath.c_str()); 
+            setrecthook = GetPrivateProfileInt(iniSettings.c_str(), "SetRectHook", 1, iniPath.c_str()); 
             SetupHook();
             break;
         }
