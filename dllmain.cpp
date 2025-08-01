@@ -157,6 +157,10 @@ bool oldC = false;
 bool oldD = false;
 bool oldE = false;
 bool oldF = false;
+bool oldup = false;
+bool olddown = false;
+bool oldleft = false;
+bool oldright = false;
 
 int startsearch = 0;
 int startsearchA = 0;
@@ -179,6 +183,11 @@ int Ctype = 0;
 int Dtype = 0;
 int Etype = 0;
 int Ftype = 0;
+
+int uptype = 0;
+int downtype = 0;
+int lefttype = 0;
+int righttype = 0;
 
 
 int x = 0;
@@ -900,6 +909,17 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
     if (!press){
 		presskey = WM_KEYUP; // Key up event 
     }
+
+    //standard keys for dpad
+    if (keytype == -1)
+        mykey = VK_UP;
+    if (keytype == -2)
+        mykey = VK_DOWN;
+    if (keytype == -3)
+        mykey = VK_LEFT;
+    if (keytype == -4)
+        mykey = VK_RIGHT;
+
     if (keytype == 3)
         mykey = VK_ESCAPE;
     if (keytype == 4)
@@ -954,6 +974,18 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
 
     if (keytype == 24)
         mykey = 0x43; //C
+
+    if (keytype == 25)
+        mykey = 0x4B; //K
+
+    if (keytype == 26)
+        mykey = 0x55; //U
+
+    if (keytype == 27)
+        mykey = 0x56; //V
+
+    if (keytype == 28)
+        mykey = 0x57; //W
 
 
 
@@ -1018,8 +1050,39 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
     }
 
 
+    if (keytype == 70)
+        mykey = VK_NUMPAD0;
+
+    if (keytype == 71)
+        mykey = VK_NUMPAD1;
+
+    if (keytype == 72)
+        mykey = VK_NUMPAD2;
+
+    if (keytype == 73)
+        mykey = VK_NUMPAD3;
+
+    if (keytype == 74)
+        mykey = VK_NUMPAD4;
+
+    if (keytype == 75)
+        mykey = VK_NUMPAD5;
+
+    if (keytype == 76)
+        mykey = VK_NUMPAD6;
+
+    if (keytype == 77)
+        mykey = VK_NUMPAD7;
+
+    if (keytype == 78)
+        mykey = VK_NUMPAD8;
+
+    if (keytype == 79)
+        mykey = VK_NUMPAD9;
+
     keystatesend = mykey;
     PostMessage(hwnd, presskey, mykey, lParam);
+    PostMessage(hwnd, WM_INPUT, VK_RIGHT, lParam);
     if (keytype == 63) {
         PostMessage(hwnd, presskey, 0x43, lParam);
     }
@@ -1381,6 +1444,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     Dtype = GetPrivateProfileInt(iniSettings.c_str(), "Dinputtype", 0, iniPath.c_str());
     Etype = GetPrivateProfileInt(iniSettings.c_str(), "Einputtype", 0, iniPath.c_str());
     Ftype = GetPrivateProfileInt(iniSettings.c_str(), "Finputtype", 0, iniPath.c_str());
+
+    uptype = GetPrivateProfileInt(iniSettings.c_str(), "Upkey", -1, iniPath.c_str());
+    downtype = GetPrivateProfileInt(iniSettings.c_str(), "Downkey", -2, iniPath.c_str());
+    lefttype = GetPrivateProfileInt(iniSettings.c_str(), "Leftkey", -3, iniPath.c_str());
+    righttype = GetPrivateProfileInt(iniSettings.c_str(), "Rightkey", -4, iniPath.c_str());
+
     cursorimage = GetPrivateProfileInt(iniSettings.c_str(), "Cursortype", 1, iniPath.c_str());
 
     //hooks
@@ -1807,48 +1876,107 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         Sleep(100);
                     }
                 }
-
+ 
+                if (oldup)
+                {
+                    if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
+                    {
+                        //post keep?
+                    }
+                    else {
+                        oldup = false;
+                        PostKeyFunction(hwnd, uptype, false);
+                    }
+                }
                 if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
                 {
-
+                    
                     scroll.x = rect.left + (rect.right - rect.left) / 2;
                     if (scrolloutsidewindow == 0)
                         scroll.y = rect.top + 1;
-                    else
+                    if (scrolloutsidewindow == 1)
                         scroll.y = rect.top - 1;
                     scrollmap = true;
+                    if (scrolloutsidewindow == 2){
+                        oldup = true;
+                        PostKeyFunction(hwnd, uptype, true);
+                    }
                 }
-               else if (buttons & XINPUT_GAMEPAD_DPAD_DOWN && onoroff == true)
+                if (olddown)
+                {
+                    if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
+                    {
+                        //post keep?
+                    }
+                    else {
+                        olddown = false;
+                        PostKeyFunction(hwnd, downtype, false);
+                    }
+                }
+               if (buttons & XINPUT_GAMEPAD_DPAD_DOWN && onoroff == true)
                 {
                     
                     scroll.x = rect.left + (rect.right - rect.left) / 2;
                     if (scrolloutsidewindow == 0)
                         scroll.y = rect.bottom - 1;
-                    else
+                    if (scrolloutsidewindow == 1)
                         scroll.y = rect.bottom + 1;
                     scrollmap = true;
+                    if (scrolloutsidewindow == 2) {
+                        olddown = true;
+                        PostKeyFunction(hwnd, downtype, true);
+                    }
                 }
-                else if (buttons & XINPUT_GAMEPAD_DPAD_LEFT && onoroff == true)
+               if (oldleft)
+               {
+                   if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
+                   {
+                       //post keep?
+                   }
+                   else {
+                       oldleft = false;
+                       PostKeyFunction(hwnd, lefttype, false);
+                   }
+               }
+                if (buttons & XINPUT_GAMEPAD_DPAD_LEFT && onoroff == true)
                 {
                     if (scrolloutsidewindow == 0)
                         scroll.x = rect.left + 1;
-                    else 
+                    if (scrolloutsidewindow == 1)
                         scroll.x = rect.left - 1;
                     scroll.y = rect.top + (rect.bottom - rect.top) / 2;
 
                     scrollmap = true;
+                    if (scrolloutsidewindow == 2) {
+                        oldleft = true;
+                        PostKeyFunction(hwnd, lefttype, true);
+                    }
 
                 }
-                else if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT && onoroff == true)
+                if (oldright)
+                {
+                    if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
+                    {
+                        //post keep?
+                    }
+                    else {
+                        oldright = false;
+                        PostKeyFunction(hwnd, righttype, false);
+                    }
+                }
+                if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT && onoroff == true)
                 {
 
                     if (scrolloutsidewindow == 0)
                         scroll.x = rect.right - 1;
-                    else
+                    if (scrolloutsidewindow == 1)
                         scroll.x = rect.right + 1;
                     scroll.y = rect.top + (rect.bottom - rect.top) / 2;
-
                     scrollmap = true;
+                    if (scrolloutsidewindow == 2) {
+                        oldright = true;
+                        PostKeyFunction(hwnd, righttype, true);
+                    }
                 }
                 else
                 {
@@ -2350,7 +2478,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         {
 
             //supposed to help againt crashes?
-           // WaitForInputIdle(GetCurrentProcess(), 1000); //wait for input to be ready
+            WaitForInputIdle(GetCurrentProcess(), 1000); //wait for input to be ready
            // DisableThreadLibraryCalls(hModule);
             g_hModule = hModule;
 
