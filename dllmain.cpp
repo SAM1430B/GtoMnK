@@ -1662,6 +1662,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
             if (dwResult == ERROR_SUCCESS)
             {
+
+                fakecursor.x = X;
+                fakecursor.y = Y;
+                ClientToScreen(hwnd, &fakecursor);
                 // Controller is connected
                 WORD buttons = state.Gamepad.wButtons;
                 bool currA = (buttons & XINPUT_GAMEPAD_A) != 0;
@@ -2306,8 +2310,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 {
                     if (!leftPressed)
                     {
-                        fakecursor.x = X;
-                        fakecursor.y = Y;
+
 
                         if (abs(startdrag.x - fakecursor.x) <= 5)
                         { 
@@ -2320,13 +2323,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         else
                         { 
                            ClientToScreen(hwnd, &startdrag);
-                           ClientToScreen(hwnd, &fakecursor);
                            SendMouseClick(startdrag.x, startdrag.y, 6, 2); //4 4 move //5 release
                            Sleep(30);
                            SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
                            Sleep(20);
                            SendMouseClick(fakecursor.x, fakecursor.y, 7, 2);
-                           ScreenToClient(hwnd, &fakecursor);
                            ScreenToClient(hwnd, &startdrag);
                            leftPressedold = false;
                         }
@@ -2346,8 +2347,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 {
                     if (!rightPressed)
                     {
-                        fakecursor.x = X;
-                        fakecursor.y = Y;
+
 
                         if (abs(startdrag.x - fakecursor.x) <= 5)
                         {
@@ -2361,18 +2361,17 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             ClientToScreen(hwnd, &startdrag);
 
                             SendMouseClick(startdrag.x, startdrag.y, 3, 2); //4 4 move //5 release
-                            ClientToScreen(hwnd, &fakecursor);
                             Sleep(30);
                             SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //4 skal vere 3
                             Sleep(20);
                             SendMouseClick(fakecursor.x, fakecursor.y, 5, 2);
-                            ScreenToClient(hwnd, &fakecursor);
                             ScreenToClient(hwnd, &startdrag);
                             rightPressedold = false;
                         }
                     }
                 } //rightpress
                 } // mode above 0
+                ScreenToClient(hwnd, &fakecursor);
             } //no controller
             else {
                 showmessage = 14;
