@@ -2053,7 +2053,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
 
 
-                    POINT rect2;
                     if (scrolloutsidewindow == 2 || scrolloutsidewindow == 3)
                     {
                         
@@ -2084,10 +2083,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
 
-                                ClientToScreen(hwnd, &rect2);
                                 SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //first move center //deselect units?
-                                SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
-					            ScreenToClient(hwnd, &rect2);   
+                                SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3 
                             }
                             oldscrollleftaxis = true;
                             //keystatesend = VK_LEFT;
@@ -2119,12 +2116,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 PostKeyFunction(hwnd, 43, true);
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
-                                rect2.x = width - (width / 2);
-                                rect2.y = height - (height / 2);
-                                ClientToScreen(hwnd, &rect2);
                                 SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //first move center
                                 SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
-                                ScreenToClient(hwnd, &rect2);
                             }
                             oldscrollrightaxis = true;
                             //keystatesend = VK_RIGHT;
@@ -2159,12 +2152,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 PostKeyFunction(hwnd, 41, true);
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
-                                rect2.x = width - (width / 2);
-                                rect2.y = height - (height / 2);
-                                ClientToScreen(hwnd, &rect2);
                                 SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //first move center
                                 SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
-                                ScreenToClient(hwnd, &rect2);
                             }
                             oldscrolldownaxis = true;
                         }
@@ -2198,12 +2187,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 PostKeyFunction(hwnd, 40, true);
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
-                                rect2.x = width - (width / 2);
-                                rect2.y = height - (height / 2);
-                                ClientToScreen(hwnd, &rect2);
                                 SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //first move center
                                 SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
-                                ScreenToClient(hwnd, &rect2);
                             }
                             oldscrollupaxis = true;
                         }   
@@ -2213,11 +2198,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     //mouse right click and drag scrollfunction //scrolltype 3
 
                     if (doscrollyes) {
-                        rect2.x = width - (width / 2);
-                        rect2.y = height - (height / 2);
-                        ClientToScreen(hwnd, &rect2);
                         SendMouseClick(fakecursor.x + Xscroll, fakecursor.y - Yscroll, 8, 1); //4 skal vere 3
-                        ScreenToClient(hwnd, &rect2);
                         if (!didscroll)
                         { 
 							//MessageBox(NULL, "Scroll stopped", "Info", MB_OK | MB_ICONINFORMATION);
