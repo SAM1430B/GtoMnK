@@ -101,6 +101,12 @@ int cursorimage = 0;
 int drawfakecursor = 0;
 HICON hCursor = 0;
 
+
+//scroll type 3
+
+bool doscrollyes = false;   
+
+// 
 //beautiful cursor
 int colorfulSword[20][20] = {
 {1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -358,18 +364,6 @@ bool Mutexlock(bool lock) {
     }
     return true;
 }
-//bool IsCursorInWindow(HWND hwnd) {
-//    POINT pt;
-//    DWORD pos = GetMessagePos();
-//    pt.x = GET_X_LPARAM(pos);
-//    pt.y = GET_Y_LPARAM(pos);
-    //ScreenToClient(hwnd, &pt);
-
-//    RECT clientRect;
-//    GetClientRect(hwnd, &clientRect);
-
-//    return PtInRect(&clientRect, pt);
-//}
 void vibrateController(int controllerId, WORD strength)
 {
     XINPUT_VIBRATION vibration = {};
@@ -413,20 +407,25 @@ bool SendMouseClick(int x, int y, int z, int many) {
             PostMessage(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, clickPos);
             keystatesend = VK_LEFT;
         }
-        if (z == 5)
+        if (z == 4)
         {
             PostMessage(hwnd, WM_LBUTTONUP, 0, clickPos);
 
         }
-        else if (z == 6 || z == 8 || z == 10 || z == 11 || z == 4) //only mousemove
+        if (z == 5) {
+            PostMessage(hwnd, WM_RBUTTONDOWN, MK_RBUTTON, clickPos);
+            keystatesend = VK_RIGHT;
+        }
+        if (z == 6)
+        {
+            PostMessage(hwnd, WM_RBUTTONUP, 0, clickPos);
+
+        }
+        else if (z == 8 || z == 10 || z == 11) //only mousemove
         {
             PostMessage(hwnd, WM_MOUSEMOVE, 0, clickPos);
             //PostMessage(hwnd, WM_SETCURSOR, (WPARAM)hwnd, MAKELPARAM(HTCLIENT, WM_MOUSEMOVE));
 
-        }
-        else if (z == 4) //only mousemove
-        {
-            PostMessage(hwnd, WM_RBUTTONUP, 0, clickPos);
         }
         return true;
     }
@@ -795,13 +794,6 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
         BitBlt(hdcMem, 0, 0, width, height, hdcWindow, 0, 0, SRCCOPY);
 
         if (draw) {
-              //  CURSORINFO ci = { sizeof(CURSORINFO) };
-            //    if (IsCursorInWindow(hwnd) == true) {
-                 //       hCursor = ci.hCursor;
-                 //   }
-                    //ICONINFO iconInfo;  
-                    // 
-                // Fill bitmap with transparent background
                     RECT rect = { 0, 0, 32, 32 }; //need bmp width height
                     FillRect(hdcMem, &rect, (HBRUSH)(COLOR_WINDOW + 1));
 
@@ -1407,6 +1399,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
     pausedraw = false;
     return true;
 }
+int akkumulator = 0;    
 DWORD WINAPI ThreadFunction(LPVOID lpParam)
 {
     Sleep(2000);
@@ -1421,6 +1414,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     int AxisRightsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisRightsens", 12000, iniPath.c_str());
     int AxisUpsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisUpsens", 0, iniPath.c_str());
     int AxisDownsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisDownsens", -16049, iniPath.c_str());
+    int scrollspeed3 = GetPrivateProfileInt(iniSettings.c_str(), "Scrollspeed", 150, iniPath.c_str());
     righthanded = GetPrivateProfileInt(iniSettings.c_str(), "Righthanded", 0, iniPath.c_str());
 
     //mode
@@ -2037,6 +2031,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 					int scrollYaxis = 0;    
                     int width = rect.right - rect.left;
                     int height = rect.bottom - rect.top;
+                    int Yscroll = 0;
+                    int Xscroll = 0;
+                    bool didscroll = false;
 
 
 					
@@ -2056,24 +2053,42 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
 
 
-
-                    if (scrolloutsidewindow == 2) 
+                    POINT rect2;
+                    if (scrolloutsidewindow == 2 || scrolloutsidewindow == 3)
                     {
+                        
                         if (oldscrollleftaxis) 
                         {
-                            if (scrollXaxis < AxisLeftsens)
+                            if (scrollXaxis < AxisLeftsens) //left
                             {
+                                if (scrolloutsidewindow == 3)
+                                { //keep
+									scrollXaxis = scrollXaxis - AxisLeftsens; //zero input
+                                    doscrollyes = true; 
+                                    Xscroll = scrollXaxis / scrollspeed3; //1500
+                                    didscroll = true;
+                                }
                                // PostKeyFunction(hwnd, 42, true);
                             }
-                            else {
+                            else 
+                            { //stop
                                 oldscrollleftaxis = false;
-                                PostKeyFunction(hwnd, 42, false);
+                                if (scrolloutsidewindow == 2)
+                                    PostKeyFunction(hwnd, 42, false);
                             }
                         }
-                        if (scrollXaxis < AxisLeftsens) //left
+                        else if (scrollXaxis < AxisLeftsens) //left
                         {
-						
-                            PostKeyFunction(hwnd, 42, true);
+                            if (scrolloutsidewindow == 2)
+                                PostKeyFunction(hwnd, 42, true);
+                            if (scrolloutsidewindow == 3 && doscrollyes == false)
+                            {//start
+
+                                ClientToScreen(hwnd, &rect2);
+                                SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //first move center //deselect units?
+                                SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
+					            ScreenToClient(hwnd, &rect2);   
+                            }
                             oldscrollleftaxis = true;
                             //keystatesend = VK_LEFT;
                         }
@@ -2082,18 +2097,35 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
                         if (oldscrollrightaxis)
                         {
-                            if (scrollXaxis > AxisRightsens)
+                            if (scrollXaxis > AxisRightsens) //right
                             {
-                               // PostKeyFunction(hwnd, 43, true);
+                                if (scrolloutsidewindow == 3)
+                                { //keep
+                                    doscrollyes = true;
+									scrollXaxis = scrollXaxis - AxisRightsens; //zero input   
+                                    Xscroll = scrollXaxis / scrollspeed3;
+                                    didscroll = true;
+                                }
                             }
                             else {
                                 oldscrollrightaxis = false;
-                                PostKeyFunction(hwnd, 43, false);
+                                if (scrolloutsidewindow == 2)
+                                    PostKeyFunction(hwnd, 43, false);
                             }
                         }
-                        if (scrollXaxis > AxisRightsens) //right
+                        else if (scrollXaxis > AxisRightsens) //right
                         {
-                            PostKeyFunction(hwnd, 43, true);
+                            if (scrolloutsidewindow == 2)
+                                PostKeyFunction(hwnd, 43, true);
+                            if (scrolloutsidewindow == 3 && doscrollyes == false)
+                            {//start
+                                rect2.x = width - (width / 2);
+                                rect2.y = height - (height / 2);
+                                ClientToScreen(hwnd, &rect2);
+                                SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //first move center
+                                SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
+                                ScreenToClient(hwnd, &rect2);
+                            }
                             oldscrollrightaxis = true;
                             //keystatesend = VK_RIGHT;
 
@@ -2107,18 +2139,36 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             if (scrollYaxis < AxisDownsens)
                             {
                               //  PostKeyFunction(hwnd, 41, true);
+                                if (scrolloutsidewindow == 3)
+                                { //keep
+                                    scrollYaxis = scrollYaxis - AxisDownsens; //zero input
+                                    doscrollyes = true;
+                                    Yscroll = scrollYaxis / scrollspeed3;
+                                    didscroll = true;
+                                }
                             }
                             else {
                                 oldscrolldownaxis = false;
-                                PostKeyFunction(hwnd, 41, false);
+                                if (scrolloutsidewindow == 2)
+                                    PostKeyFunction(hwnd, 41, false);
                             }
                         }
-                        if (scrollYaxis < AxisDownsens) //down
-                        {
-                            PostKeyFunction(hwnd, 41, true);
+                        else if (scrollYaxis < AxisDownsens) //down
+                        { //start
+                            if (scrolloutsidewindow == 2)
+                                PostKeyFunction(hwnd, 41, true);
+                            if (scrolloutsidewindow == 3 && doscrollyes == false)
+                            {//start
+                                rect2.x = width - (width / 2);
+                                rect2.y = height - (height / 2);
+                                ClientToScreen(hwnd, &rect2);
+                                SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //first move center
+                                SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
+                                ScreenToClient(hwnd, &rect2);
+                            }
                             oldscrolldownaxis = true;
-                           // keystatesend = VK_DOWN;
                         }
+
 
 
 
@@ -2128,30 +2178,66 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             if (scrollYaxis > AxisUpsens)
                             {
                                // PostKeyFunction(hwnd, 40, true);
+                                if (scrolloutsidewindow == 3)
+                                { //keep
+									scrollYaxis = scrollYaxis - AxisUpsens; //zero input
+                                    doscrollyes = true;
+                                    Yscroll = scrollYaxis / scrollspeed3; //150
+                                    didscroll = true;
+                                }
                             }
                             else {
                                 oldscrollupaxis = false;
-                                PostKeyFunction(hwnd, 40, false);
+                                if (scrolloutsidewindow == 2)
+                                    PostKeyFunction(hwnd, 40, false);
                             }
                         }
-                        if (scrollYaxis > AxisUpsens) //up
+                        else if (scrollYaxis > AxisUpsens) //up
                         {
-                            PostKeyFunction(hwnd, 40, true);
+                            if (scrolloutsidewindow == 2)
+                                PostKeyFunction(hwnd, 40, true);
+                            if (scrolloutsidewindow == 3 && doscrollyes == false)
+                            {//start
+                                rect2.x = width - (width / 2);
+                                rect2.y = height - (height / 2);
+                                ClientToScreen(hwnd, &rect2);
+                                SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //first move center
+                                SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
+                                ScreenToClient(hwnd, &rect2);
+                            }
                             oldscrollupaxis = true;
-                        }   //keystatesend = VK_UP;
+                        }   
+                    }
+
+
+                    //mouse right click and drag scrollfunction //scrolltype 3
+
+                    if (doscrollyes) {
+                        rect2.x = width - (width / 2);
+                        rect2.y = height - (height / 2);
+                        ClientToScreen(hwnd, &rect2);
+                        SendMouseClick(fakecursor.x + Xscroll, fakecursor.y - Yscroll, 8, 1); //4 skal vere 3
+                        ScreenToClient(hwnd, &rect2);
+                        if (!didscroll)
+                        { 
+							//MessageBox(NULL, "Scroll stopped", "Info", MB_OK | MB_ICONINFORMATION);
+                            doscrollyes = false;
+                            SendMouseClick(fakecursor.x, fakecursor.y, 6, 2); //4 skal vere 3
+                        }
                     }
 
 
 
-
-                    if (scrolloutsidewindow < 2 && scrollmap == false)
+                    if (scrolloutsidewindow < 2 && scrollmap == false) //was 2
                     {
                         if (scrollXaxis < AxisLeftsens - 10000) //left
                         {
                             if (scrolloutsidewindow == 0)
                                 scroll.x = rect.left + 1;
-                            else
+                            if (scrolloutsidewindow == 1)
                                 scroll.x = rect.left - 1;
+                            if (scrolloutsidewindow == 3)
+                                scroll.x = (rect.left + (rect.right - rect.left) / 2) - 100;
                             scroll.y = rect.top + (rect.bottom - rect.top) / 2;
 
                             scrollmap = true;
@@ -2161,8 +2247,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         {
                             if (scrolloutsidewindow == 0)
                                 scroll.x = rect.right - 1;
-                            else
+                            if (scrolloutsidewindow == 1)
                                 scroll.x = rect.right + 1;
+                            if (scrolloutsidewindow == 3)
+                                scroll.x = (rect.left + (rect.right - rect.left) / 2) + 100;
                             scroll.y = rect.top + (rect.bottom - rect.top) / 2;
 
                             scrollmap = true;
@@ -2173,22 +2261,27 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             scroll.x = rect.left + (rect.right - rect.left) / 2;
                             if (scrolloutsidewindow == 0)
                                 scroll.y = rect.bottom - 1;
-                            else
+                            if (scrolloutsidewindow == 1)
                                 scroll.y = rect.bottom + 1;
+                            if (scrolloutsidewindow == 3)
+                                scroll.y = (rect.top + (rect.bottom - rect.top) / 2) + 100;
                             scrollmap = true;
 
 
-
-
-
                         }
+
+
+
+
                         else if (scrollYaxis > AxisUpsens + 10000) //up
                         {
                             scroll.x = rect.left + (rect.right - rect.left) / 2;
                             if (scrolloutsidewindow == 0)
                                 scroll.y = rect.top + 1;
-                            else
+                            if (scrolloutsidewindow == 1)
                                 scroll.y = rect.top - 1;
+                            if (scrolloutsidewindow == 3)
+                                scroll.y = (rect.top + (rect.bottom - rect.top) / 2) - 100;
                             scrollmap = true;
                         }   
 
@@ -2289,7 +2382,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
                     if (movedmouse == true) //fake cursor move message
                     {
-                        if (userealmouse == 0) 
+                        if (userealmouse == 0 && scrolloutsidewindow != 3)
                         {
                             SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
                         }
@@ -2323,11 +2416,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         else
                         { 
                            ClientToScreen(hwnd, &startdrag);
-                           SendMouseClick(startdrag.x, startdrag.y, 6, 2); //4 4 move //5 release
+                           SendMouseClick(startdrag.x, startdrag.y, 5, 2); //4 4 move //5 release
                            Sleep(30);
                            SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
                            Sleep(20);
-                           SendMouseClick(fakecursor.x, fakecursor.y, 7, 2);
+                           SendMouseClick(fakecursor.x, fakecursor.y, 6, 2);
                            ScreenToClient(hwnd, &startdrag);
                            leftPressedold = false;
                         }
@@ -2364,7 +2457,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             Sleep(30);
                             SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //4 skal vere 3
                             Sleep(20);
-                            SendMouseClick(fakecursor.x, fakecursor.y, 5, 2);
+                            SendMouseClick(fakecursor.x, fakecursor.y, 4, 2);
                             ScreenToClient(hwnd, &startdrag);
                             rightPressedold = false;
                         }
