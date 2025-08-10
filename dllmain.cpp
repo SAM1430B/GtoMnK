@@ -66,6 +66,7 @@ int message = 0;
 
 
 //hooks
+bool hooksinited = false;   
 int keystatesend = 0; //key to send
 int clipcursorhook = 0;
 int getkeystatehook = 0;
@@ -212,8 +213,12 @@ int knappsovetid = 100;
 int samekey = 0;
 int samekeyA = 0;
 
+
+
 HCURSOR WINAPI HookedSetCursor(HCURSOR hcursor) {
-		hCursor = hcursor; // Store the cursor handle   
+		hCursor = hcursor; // Store the cursor handle  
+
+        hcursor = fpSetCursor(hcursor);
         return hcursor;
 }
 
@@ -364,6 +369,50 @@ bool Mutexlock(bool lock) {
     }
     return true;
 }
+
+void SetupHook() {
+    MH_Initialize();
+
+
+
+    //each of there hooks have a high chance of crashing the game
+
+    if (getcursorposhook == 1) {
+        MH_CreateHookApi(L"user32", "GetCursorPos", &MyGetCursorPos, reinterpret_cast<LPVOID*>(&fpGetCursorPos));
+        MH_EnableHook(&GetCursorPos);
+    }
+    if (setcursorposhook == 1) {
+        MH_CreateHookApi(L"user32", "SetCursorPos", &MySetCursorPos, reinterpret_cast<LPVOID*>(&fpSetCursorPos));
+        MH_EnableHook(&SetCursorPos);
+    }
+    if (getkeystatehook == 1) {
+        MH_CreateHook(&GetAsyncKeyState, &HookedGetAsyncKeyState, reinterpret_cast<LPVOID*>(&fpGetAsyncKeyState));
+        MH_EnableHook(&GetAsyncKeyState);
+    }
+
+    if (getasynckeystatehook == 1) {
+        MH_CreateHook(&GetKeyState, &HookedGetKeyState, reinterpret_cast<LPVOID*>(&fpGetKeyState));
+        MH_EnableHook(&GetKeyState);
+    }
+
+    if (clipcursorhook == 1) {
+        MH_CreateHook(&ClipCursor, &HookedClipCursor, reinterpret_cast<LPVOID*>(&fpClipCursor));
+        MH_EnableHook(&ClipCursor);
+    }
+    if (setrecthook == 1) {
+        MH_CreateHook(&SetRect, &HookedSetRect, reinterpret_cast<LPVOID*>(&fpSetRect));
+        MH_EnableHook(&SetRect);
+    }
+    if (setcursorhook == 1)
+    {
+        MH_CreateHook(&SetCursor, &HookedSetCursor, reinterpret_cast<LPVOID*>(&fpSetCursor));
+        MH_EnableHook(&SetCursor);
+    }
+    hooksinited = true;
+    //MH_EnableHook(MH_ALL_HOOKS);
+}
+
+
 void vibrateController(int controllerId, WORD strength)
 {
     XINPUT_VIBRATION vibration = {};
@@ -2064,7 +2113,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 { //keep
 									scrollXaxis = scrollXaxis - AxisLeftsens; //zero input
                                     doscrollyes = true; 
-                                    Xscroll = scrollXaxis / scrollspeed3; //1500
+                                    Xscroll = scrollXaxis / scrollspeed3;
                                     didscroll = true;
                                 }
                                // PostKeyFunction(hwnd, 42, true);
@@ -2083,7 +2132,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
 
-                                SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //first move center //deselect units?
+                                SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); 
                                 SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3 
                             }
                             oldscrollleftaxis = true;
@@ -2116,14 +2165,13 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 PostKeyFunction(hwnd, 43, true);
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
-                                SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //first move center
+                                SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); 
                                 SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
                             }
                             oldscrollrightaxis = true;
                             //keystatesend = VK_RIGHT;
 
                         }
-
 
 
 
@@ -2152,7 +2200,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 PostKeyFunction(hwnd, 41, true);
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
-                                SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //first move center
+                                SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); 
                                 SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
                             }
                             oldscrolldownaxis = true;
@@ -2187,7 +2235,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 PostKeyFunction(hwnd, 40, true);
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
-                                SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //first move center
+                                SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); 
                                 SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
                             }
                             oldscrollupaxis = true;
@@ -2195,7 +2243,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
 
 
-                    //mouse right click and drag scrollfunction //scrolltype 3
+                    //mouse left click and drag scrollfunction //scrolltype 3
 
                     if (doscrollyes) {
                         SendMouseClick(fakecursor.x + Xscroll, fakecursor.y - Yscroll, 8, 1); //4 skal vere 3
@@ -2318,7 +2366,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     { 
                         if (Xaxis < -25000)
                             Xaxis = -25000;
-                        if (X >= (std::abs(Xaxis) / (700 + horsens)) + 14)
+                        if (X >= (std::abs(Xaxis) / (700 + horsens)) + 1)
                         { 
                           //  sovetid = sens - (std::abs(Xaxis) / 450);
                         X = X - (std::abs(Xaxis) / (700 + horsens)) + (std::abs(AxisLeftsens) / (700 + horsens)); //1500
@@ -2329,7 +2377,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     {
                         if (Xaxis > 25000)
                             Xaxis = 25000;
-                        if (X <= width - (Xaxis / (500 + horsens)) - 16)
+                        if (X <= width - (Xaxis / (500 + horsens)) - 1)
                         {
                           //  sovetid = sens - (Xaxis / 450);
                             X = X + (Xaxis / (500 + horsens)) - (AxisRightsens / (500 + horsens)); //1500
@@ -2343,7 +2391,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     {
                         if (Yaxis > 25000)
                             Yaxis = 25000;
-                        if (Y >= (std::abs(Yaxis) / (900 + versens)) + 18)
+                        if (Y >= (std::abs(Yaxis) / (900 + versens)) + 1)
                         {
                           //  sovetid = sens - (std::abs(Yaxis) / 450);
                             Y = Y - (std::abs(Yaxis) / (900 + versens)) + (AxisUpsens / (900 + versens)); //2000
@@ -2354,7 +2402,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     { //my controller is not calibrated maybe
                         if (Yaxis < -25000)
                             Yaxis = -25000;
-                        if (Y <= height - (std::abs(Yaxis) / (900 + versens)) - 18)
+                        if (Y <= height - (std::abs(Yaxis) / (900 + versens)) - 1)
                         {
                            // sovetid = sens - (std::abs(Yaxis) / 450); // Loop poll rate
                             Y = Y + (std::abs(Yaxis) / (900 + versens)) - (std::abs(AxisDownsens) / (900 + versens)); // Y movement rate //1700
@@ -2363,7 +2411,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
                     if (movedmouse == true) //fake cursor move message
                     {
-                        if (userealmouse == 0 && scrolloutsidewindow != 3)
+                        if (userealmouse == 0)
                         {
                             SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
                         }
@@ -2379,6 +2427,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                      startdrag.y = Y;
                     }
                      leftPressedold = true;
+
                 }
                 if (leftPressedold)
                 {
@@ -2416,6 +2465,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         startdrag.y = Y;
                     }
                     rightPressedold = true;
+                    if (hooksinited == false)
+                    SetupHook();
+                        
                 }
                 if (rightPressedold)
                 {
@@ -2501,47 +2553,7 @@ void RemoveHook() {
     MH_DisableHook(MH_ALL_HOOKS);
     MH_Uninitialize();
 }
-void SetupHook() {
-    MH_Initialize();
 
-    CreateThread(nullptr, 0,
-        (LPTHREAD_START_ROUTINE)ThreadFunction, g_hModule, 0, 0); //GetModuleHandle(0)
-
-    //each of there hooks have a high chance of crashing the game
-
-    if (getcursorposhook == 1) {
-        MH_CreateHookApi(L"user32", "GetCursorPos", &MyGetCursorPos, reinterpret_cast<LPVOID*>(&fpGetCursorPos));
-        MH_EnableHook(&GetCursorPos);
-    }
-    if (setcursorposhook == 1) {
-        MH_CreateHookApi(L"user32", "SetCursorPos", &MySetCursorPos, reinterpret_cast<LPVOID*>(&fpSetCursorPos));
-        MH_EnableHook(&SetCursorPos);
-    }
-    if (getkeystatehook == 1) {
-        MH_CreateHook(&GetAsyncKeyState, &HookedGetAsyncKeyState, reinterpret_cast<LPVOID*>(&fpGetAsyncKeyState));
-        MH_EnableHook(&GetAsyncKeyState);
-    }
-
-    if (getasynckeystatehook == 1) {
-        MH_CreateHook(&GetKeyState, &HookedGetKeyState, reinterpret_cast<LPVOID*>(&fpGetKeyState));
-        MH_EnableHook(&GetKeyState);
-    }
-
-    if (clipcursorhook == 1) {
-        MH_CreateHook(&ClipCursor, &HookedClipCursor, reinterpret_cast<LPVOID*>(&fpClipCursor));
-        MH_EnableHook(&ClipCursor);
-    } 
-    if (setrecthook == 1) {
-        MH_CreateHook(&SetRect, &HookedSetRect, reinterpret_cast<LPVOID*>(&fpSetRect));
-        MH_EnableHook(&SetRect);
-    } 
-    if (setcursorhook == 1)
-    { 
-        MH_CreateHook(&SetCursor, &HookedSetCursor, reinterpret_cast<LPVOID*>(&fpSetCursor));
-        MH_EnableHook(&SetCursor);
-    }
-     //MH_EnableHook(MH_ALL_HOOKS);
-}
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) 
 {
@@ -2552,6 +2564,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             //supposed to help againt crashes?
             WaitForInputIdle(GetCurrentProcess(), 1000); //wait for input to be ready
+
            // DisableThreadLibraryCalls(hModule);
             g_hModule = hModule;
 
@@ -2567,7 +2580,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             setcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorposHook", 0, iniPath.c_str());
             setcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorHook", 0, iniPath.c_str()); 
             setrecthook = GetPrivateProfileInt(iniSettings.c_str(), "SetRectHook", 1, iniPath.c_str()); 
-            SetupHook();
+            
+            CreateThread(nullptr, 0,
+                (LPTHREAD_START_ROUTINE)ThreadFunction, g_hModule, 0, 0); //GetModuleHandle(0)
+
             break;
         }
         case DLL_PROCESS_DETACH:
