@@ -2425,35 +2425,43 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                      //save coordinates
                      startdrag.x = X;
                      startdrag.y = Y;
-                    }
                      leftPressedold = true;
+                     if (userealmouse == 0)
+                     
+                         SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
+                     
+                    }
+                     
 
                 }
                 if (leftPressedold)
                 {
                     if (!leftPressed)
                     {
-
-
-                        if (abs(startdrag.x - fakecursor.x) <= 5)
-                        { 
-                            ClientToScreen(hwnd, &startdrag);
-                                 SendMouseClick(startdrag.x, startdrag.y, 2, 3 ); //4 4 move //5 release
-                            
-                            ScreenToClient(hwnd, &startdrag);
-                            leftPressedold = false;
-                        }
+                        if (userealmouse == 0)
+                            SendMouseClick(fakecursor.x, fakecursor.y, 6, 2);
                         else
-                        { 
-                           ClientToScreen(hwnd, &startdrag);
-                           SendMouseClick(startdrag.x, startdrag.y, 5, 2); //4 4 move //5 release
-                           Sleep(30);
-                           SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
-                           Sleep(20);
-                           SendMouseClick(fakecursor.x, fakecursor.y, 6, 2);
-                           ScreenToClient(hwnd, &startdrag);
-                           leftPressedold = false;
+                        {
+
+                            if (abs(startdrag.x - fakecursor.x) <= 5)
+                            {
+                                ClientToScreen(hwnd, &startdrag);
+                                SendMouseClick(startdrag.x, startdrag.y, 2, 3); //4 4 move //5 release
+                                ScreenToClient(hwnd, &startdrag);
+                            }
+                            else
+                            {
+                                ClientToScreen(hwnd, &startdrag);
+                                SendMouseClick(startdrag.x, startdrag.y, 5, 2); //4 4 move //5 release
+                                Sleep(30);
+                                SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
+                                Sleep(20);
+                                SendMouseClick(fakecursor.x, fakecursor.y, 6, 2);
+                                ScreenToClient(hwnd, &startdrag);
+                                
+                            }
                         }
+                        leftPressedold = false;
                     }   
                 }
                 if (rightPressed)
@@ -2461,12 +2469,18 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     if (rightPressedold == false)
                     {
                         //save coordinates
+                        //start
+                        if (hooksinited == false)
+                            SetupHook();
                         startdrag.x = X;
                         startdrag.y = Y;
+                        rightPressedold = true;
+                        if (userealmouse == 0)
+                        {
+                            SendMouseClick(fakecursor.x, fakecursor.y, 3, 2); //4 skal vere 3
+						}
                     }
-                    rightPressedold = true;
-                    if (hooksinited == false)
-                    SetupHook();
+
                         
                 }
                 if (rightPressedold)
@@ -2474,26 +2488,28 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     if (!rightPressed)
                     {
 
-
-                        if (abs(startdrag.x - fakecursor.x) <= 5)
-                        {
-                            ClientToScreen(hwnd, &startdrag);
-                            SendMouseClick(startdrag.x, startdrag.y, 1, 3); //4 4 move //5 release
-                            ScreenToClient(hwnd, &startdrag);
-                            rightPressedold = false;
-                        }
-                        else
-                        {
-                            ClientToScreen(hwnd, &startdrag);
-
-                            SendMouseClick(startdrag.x, startdrag.y, 3, 2); //4 4 move //5 release
-                            Sleep(30);
-                            SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //4 skal vere 3
-                            Sleep(20);
+                        if (userealmouse == 0) 
                             SendMouseClick(fakecursor.x, fakecursor.y, 4, 2);
-                            ScreenToClient(hwnd, &startdrag);
-                            rightPressedold = false;
+                        else
+                        { 
+                            if (abs(startdrag.x - fakecursor.x) <= 5)
+                            {
+                                ClientToScreen(hwnd, &startdrag);
+                                SendMouseClick(startdrag.x, startdrag.y, 1, 3); //4 4 move //5 release
+                                ScreenToClient(hwnd, &startdrag);
+                            }
+                            else
+                            {
+                                ClientToScreen(hwnd, &startdrag);
+                                SendMouseClick(startdrag.x, startdrag.y, 3, 2); //4 4 move //5 release
+                                Sleep(30);
+                                SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); //4 skal vere 3
+                                Sleep(20);
+                                SendMouseClick(fakecursor.x, fakecursor.y, 4, 2);
+                                ScreenToClient(hwnd, &startdrag);
+                            }
                         }
+                        rightPressedold = false;
                     }
                 } //rightpress
                 } // mode above 0
