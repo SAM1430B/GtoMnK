@@ -91,11 +91,14 @@ int OldX = 0;
 int OldY = 0;
 int ydrag;
 int xdrag;
+int Xoffset = 0; //offset for cursor    
+int Yoffset = 0;
 bool scrollmap = false;
 bool pausedraw = false;
 int cursorimage = 0;
 int drawfakecursor = 0;
 HICON hCursor = 0;
+DWORD lastClickTime;
 
 //bmp search
 bool foundit = false;
@@ -477,6 +480,19 @@ bool SendMouseClick(int x, int y, int z, int many) {
             PostMessage(hwnd, WM_RBUTTONUP, 0, clickPos);
 
         }
+        if (z == 20 || z == 21) //WM_LBUTTONDBLCLK
+        {
+            WPARAM wParam = 0;
+            if (z == 20)
+                wParam = MAKEWPARAM(0, -120); 
+            if (z == 21)
+                wParam = MAKEWPARAM(0, 120);
+            PostMessage(hwnd, WM_MOUSEWHEEL, wParam, clickPos);
+        }
+        if (z == 30) //WM_LBUTTONDBLCLK
+        {
+            PostMessage(hwnd, WM_LBUTTONDBLCLK, 0, clickPos);
+        }
         else if (z == 8 || z == 10 || z == 11) //only mousemove
         {
             PostMessage(hwnd, WM_MOUSEMOVE, 0, clickPos);
@@ -848,7 +864,11 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
                     }
                     else if (hCursor != 0 && onoroff == true)
                     { 
-                         DrawIconEx(hdcWindow, 0 + X, 0 + Y, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
+                        if (X - Xoffset < 0 || Y - Yoffset < 0)
+                            DrawIconEx(hdcWindow, 0 + X, 0 + Y, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
+                        else 
+							DrawIconEx(hdcWindow, X - Xoffset, Y - Yoffset, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
+                         
                     }
                     else if ( onoroff == true)
                     {
@@ -1462,6 +1482,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     int scrollspeed3 = GetPrivateProfileInt(iniSettings.c_str(), "Scrollspeed", 150, iniPath.c_str());
     righthanded = GetPrivateProfileInt(iniSettings.c_str(), "Righthanded", 0, iniPath.c_str());
 
+    Xoffset = GetPrivateProfileInt(iniSettings.c_str(), "Xoffset", 0, iniPath.c_str());
+    Yoffset = GetPrivateProfileInt(iniSettings.c_str(), "Yoffset", 0, iniPath.c_str());
+
     //mode
     int InitialMode = GetPrivateProfileInt(iniSettings.c_str(), "Initial Mode", 1, iniPath.c_str());
     int Modechange = GetPrivateProfileInt(iniSettings.c_str(), "Allow modechange", 1, iniPath.c_str());
@@ -1471,6 +1494,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     int versens = GetPrivateProfileInt(iniSettings.c_str(), "Vsensitivity", 500, iniPath.c_str()); //unused
     int sendfocus = GetPrivateProfileInt(iniSettings.c_str(), "Sendfocus", 0, iniPath.c_str());
     int responsetime = GetPrivateProfileInt(iniSettings.c_str(), "Responsetime", 0, iniPath.c_str());
+    int doubleclicks = GetPrivateProfileInt(iniSettings.c_str(), "Doubleclicks", 0, iniPath.c_str());
     getmouseonkey = GetPrivateProfileInt(iniSettings.c_str(), "GetMouseOnKey", 0, iniPath.c_str()); //unused
 
     //clicknotmove 2
@@ -1788,6 +1812,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 }
 
 
+
                 if (oldX == true)
                 {
                     if (buttons & XINPUT_GAMEPAD_X && onoroff == true)
@@ -1816,6 +1841,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
                 }
 
+
+
                 if (oldY == true)
                 {
                     if (buttons & XINPUT_GAMEPAD_Y && onoroff == true)
@@ -1843,6 +1870,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         PostKeyFunction(hwnd, Ytype, true);
                     }
                 }
+
+
+
                 if (oldC == true)
                 {
                     if (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER && onoroff == true)
@@ -1870,6 +1900,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         Sleep(500);
                     }
                 }
+
+
+
                 if (oldD == true)
                 {
                     if (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && onoroff == true)
@@ -1897,6 +1930,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         Sleep(500);
                     }
                 }
+
+
+
+
                 if (oldE == true)
                 {
                     if (buttons & XINPUT_GAMEPAD_RIGHT_THUMB && onoroff == true)
@@ -1924,6 +1961,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         Sleep(500);
                     }
                 }
+
+
+
                 if (oldF == true)
                 {
                     if (buttons & XINPUT_GAMEPAD_LEFT_THUMB && onoroff == true)
@@ -1952,6 +1992,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
                 }
  
+
+
+
                 if (oldup)
                 {
                     if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
@@ -1963,7 +2006,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         PostKeyFunction(hwnd, uptype, false);
                     }
                 }
-                if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
+                else if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
                 {
                     
                     scroll.x = rect.left + (rect.right - rect.left) / 2;
@@ -1976,10 +2019,22 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         oldup = true;
                         PostKeyFunction(hwnd, uptype, true);
                     }
+                    if (scrolloutsidewindow == 3) {
+                        oldright = true;
+                        scrollmap = false;
+                        ClientToScreen(hwnd, &fakecursor); //double
+                        SendMouseClick(fakecursor.x, fakecursor.y, 20, 1);
+                        ScreenToClient(hwnd, &fakecursor);
+                        
+                    }
                 }
-                if (olddown)
+
+
+
+
+                else if (olddown)
                 {
-                    if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
+                    if (buttons & XINPUT_GAMEPAD_DPAD_DOWN && onoroff == true)
                     {
                         //post keep?
                     }
@@ -1988,7 +2043,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         PostKeyFunction(hwnd, downtype, false);
                     }
                 }
-               if (buttons & XINPUT_GAMEPAD_DPAD_DOWN && onoroff == true)
+               else if (buttons & XINPUT_GAMEPAD_DPAD_DOWN && onoroff == true)
                 {
                     
                     scroll.x = rect.left + (rect.right - rect.left) / 2;
@@ -2001,10 +2056,23 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         olddown = true;
                         PostKeyFunction(hwnd, downtype, true);
                     }
+                    if (scrolloutsidewindow == 3) {
+                        oldright = true;
+                        scrollmap = false;
+                        ClientToScreen(hwnd, &fakecursor); //double
+                        SendMouseClick(fakecursor.x, fakecursor.y, 21, 1);
+                        ScreenToClient(hwnd, &fakecursor);
+                        
+                    }
                 }
-               if (oldleft)
+
+
+
+
+
+               else if (oldleft)
                {
-                   if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
+                   if (buttons & XINPUT_GAMEPAD_DPAD_LEFT && onoroff == true)
                    {
                        //post keep?
                    }
@@ -2013,7 +2081,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                        PostKeyFunction(hwnd, lefttype, false);
                    }
                }
-                if (buttons & XINPUT_GAMEPAD_DPAD_LEFT && onoroff == true)
+               else if (buttons & XINPUT_GAMEPAD_DPAD_LEFT && onoroff == true)
                 {
                     if (scrolloutsidewindow == 0)
                         scroll.x = rect.left + 1;
@@ -2028,9 +2096,14 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
 
                 }
-                if (oldright)
+
+
+
+
+
+                else if (oldright)
                 {
-                    if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
+                    if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT && onoroff == true)
                     {
                         //post keep?
                     }
@@ -2039,9 +2112,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         PostKeyFunction(hwnd, righttype, false);
                     }
                 }
-                if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT && onoroff == true)
+                else if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT && onoroff == true)
                 {
-
                     if (scrolloutsidewindow == 0)
                         scroll.x = rect.right - 1;
                     if (scrolloutsidewindow == 1)
@@ -2057,6 +2129,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 {
                     scrollmap = false;
                 }
+
+
+
 
                 if (buttons & XINPUT_GAMEPAD_START && showmessage == 0)
                 {
@@ -2466,8 +2541,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 {
                     if (!leftPressed)
                     {
-                        if (userealmouse == 0)
-                            SendMouseClick(fakecursor.x, fakecursor.y, 6, 2);
+                        if (userealmouse == 0) {
+                            
+
+                                SendMouseClick(fakecursor.x, fakecursor.y, 6, 2); //double click
+                           
+                        }
                         else
                         {
 
@@ -2505,7 +2584,18 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         rightPressedold = true;
                         if (userealmouse == 0)
                         {
-                            SendMouseClick(fakecursor.x, fakecursor.y, 3, 2); //4 skal vere 3
+                            DWORD currentTime = GetTickCount();
+                            if (currentTime - lastClickTime < GetDoubleClickTime() && movedmouse == false && doubleclicks == 1)
+                            {
+                                SendMouseClick(fakecursor.x, fakecursor.y, 30, 2); //4 skal vere 3
+                                
+                            }
+                            else 
+                            {
+                                SendMouseClick(fakecursor.x, fakecursor.y, 3, 2); //4 skal vere 3
+                                lastClickTime = currentTime;
+                            }
+                            
 						}
                     }
 
@@ -2624,7 +2714,18 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             setcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorposHook", 0, iniPath.c_str());
             setcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorHook", 0, iniPath.c_str()); 
             setrecthook = GetPrivateProfileInt(iniSettings.c_str(), "SetRectHook", 1, iniPath.c_str()); 
-            
+            int hooksoninit = GetPrivateProfileInt(iniSettings.c_str(), "hooksoninit", 1, iniPath.c_str());
+            if (hooksoninit)
+                {
+                if (MH_Initialize() != MH_OK) {
+                    MessageBox(NULL, "Failed to initialize MinHook", "Error", MB_OK | MB_ICONERROR);
+                }
+                else {
+                    SetupHook();
+
+                }
+                
+			}
             CreateThread(nullptr, 0,
                 (LPTHREAD_START_ROUTINE)ThreadFunction, g_hModule, 0, 0); //GetModuleHandle(0)
 
