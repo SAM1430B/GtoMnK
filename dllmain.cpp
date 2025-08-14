@@ -105,7 +105,7 @@ bool foundit = false;
 
 
 //scroll type 3
-
+int tick = 0;
 bool doscrollyes = false;   
 
 // 
@@ -330,14 +330,11 @@ BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
     }
     return false;
 }
+POINT mpos;
 BOOL WINAPI MySetCursorPos(PPOINT lpPoint) {
-        POINT mpos;
-        mpos.x = lpPoint->x;
-		mpos.y = lpPoint->y;
-        ScreenToClient(hwnd, &mpos); //desktop to hwnd
-        X = mpos.x; 
-        Y = mpos.y;
-        return true;
+        
+//fixme!
+		return fpSetCursorPos(lpPoint); // Call the original SetCursorPos function
 }
 BOOL WINAPI HookedClipCursor(const RECT* lpRect) {
     return true; //nonzero bool or int
@@ -392,7 +389,7 @@ void SetupHook() {
         MH_EnableHook(&GetCursorPos);
     }
     if (setcursorposhook == 1) {
-        MH_CreateHookApi(L"user32", "SetCursorPos", &MySetCursorPos, reinterpret_cast<LPVOID*>(&fpSetCursorPos));
+        MH_CreateHook(&SetCursorPos, &MySetCursorPos, reinterpret_cast<LPVOID*>(&fpSetCursorPos));
         MH_EnableHook(&SetCursorPos);
     }
     if (getkeystatehook == 1) {
@@ -1495,6 +1492,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     int sendfocus = GetPrivateProfileInt(iniSettings.c_str(), "Sendfocus", 0, iniPath.c_str());
     int responsetime = GetPrivateProfileInt(iniSettings.c_str(), "Responsetime", 0, iniPath.c_str());
     int doubleclicks = GetPrivateProfileInt(iniSettings.c_str(), "Doubleclicks", 0, iniPath.c_str());
+    int scrollenddelay = GetPrivateProfileInt(iniSettings.c_str(), "DelayEndScroll", 50, iniPath.c_str());
     getmouseonkey = GetPrivateProfileInt(iniSettings.c_str(), "GetMouseOnKey", 0, iniPath.c_str()); //unused
 
     //clicknotmove 2
@@ -2216,7 +2214,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 { //keep
 									scrollXaxis = scrollXaxis - AxisLeftsens; //zero input
                                     doscrollyes = true; 
-                                    Xscroll = scrollXaxis / scrollspeed3;
+                                    Xscroll = + scrollXaxis / scrollspeed3;
                                     didscroll = true;
                                 }
                                // PostKeyFunction(hwnd, 42, true);
@@ -2234,7 +2232,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 PostKeyFunction(hwnd, 42, true);
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
-
+                                tick = 0;
                                 SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); 
                                 SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3 
                             }
@@ -2268,6 +2266,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 PostKeyFunction(hwnd, 43, true);
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
+                                tick = 0;
                                 SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); 
                                 SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
                             }
@@ -2303,6 +2302,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 PostKeyFunction(hwnd, 41, true);
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
+                                tick = 0;
                                 SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); 
                                 SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
                             }
@@ -2322,6 +2322,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 { //keep
 									scrollYaxis = scrollYaxis - AxisUpsens; //zero input
                                     doscrollyes = true;
+                                    
                                     Yscroll = scrollYaxis / scrollspeed3; //150
                                     didscroll = true;
                                 }
@@ -2338,6 +2339,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 PostKeyFunction(hwnd, 40, true);
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
+                                tick = 0;
                                 SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); 
                                 SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
                             }
@@ -2350,7 +2352,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
                     if (doscrollyes) {
                         SendMouseClick(fakecursor.x + Xscroll, fakecursor.y - Yscroll, 8, 1); //4 skal vere 3
-                        if (!didscroll)
+                        if (!didscroll && tick == scrollenddelay)
                         { 
 							//MessageBox(NULL, "Scroll stopped", "Info", MB_OK | MB_ICONINFORMATION);
                             doscrollyes = false;
@@ -2593,8 +2595,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             else 
                             {
                                 SendMouseClick(fakecursor.x, fakecursor.y, 3, 2); //4 skal vere 3
-                                lastClickTime = currentTime;
+                                
                             }
+                            lastClickTime = currentTime;
                             
 						}
                     }
@@ -2668,7 +2671,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
             }
         }
-
+        //ticks for scroll end delay
+        if (tick < scrollenddelay)
+            tick++;
         if (mode == 0)
             Sleep(10);
         if (mode > 0) {
