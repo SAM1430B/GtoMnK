@@ -381,7 +381,6 @@ void SetupHook() {
     MH_Initialize();
 
 
-
     //each of there hooks have a high chance of crashing the game
 
     if (getcursorposhook == 1) {
@@ -396,12 +395,10 @@ void SetupHook() {
         MH_CreateHook(&GetAsyncKeyState, &HookedGetAsyncKeyState, reinterpret_cast<LPVOID*>(&fpGetAsyncKeyState));
         MH_EnableHook(&GetAsyncKeyState);
     }
-
     if (getasynckeystatehook == 1) {
         MH_CreateHook(&GetKeyState, &HookedGetKeyState, reinterpret_cast<LPVOID*>(&fpGetKeyState));
         MH_EnableHook(&GetKeyState);
     }
-
     if (clipcursorhook == 1) {
         MH_CreateHook(&ClipCursor, &HookedClipCursor, reinterpret_cast<LPVOID*>(&fpClipCursor));
         MH_EnableHook(&ClipCursor);
@@ -415,6 +412,7 @@ void SetupHook() {
         MH_CreateHook(&SetCursor, &HookedSetCursor, reinterpret_cast<LPVOID*>(&fpSetCursor));
         MH_EnableHook(&SetCursor);
     }
+    MessageBox(NULL, "Bmp + last setcursor. done", "other search", MB_OK | MB_ICONINFORMATION);
     hooksinited = true;
     //MH_EnableHook(MH_ALL_HOOKS);
 }
@@ -1250,9 +1248,14 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                         }
                         if (movenotclick == false) 
                         {
+                            X = pt.x;
+                            Y = pt.y;
                             ClientToScreen(hwnd, &pt);
                             SendMouseClick(pt.x, pt.y, 8, 1);
-                            SendMouseClick(pt.x, pt.y, 1, 3);
+                            Sleep(10);
+                            SendMouseClick(pt.x, pt.y, 3, 2);
+                            Sleep(10);
+                            SendMouseClick(pt.x, pt.y, 4, 2);
                             ScreenToClient(hwnd, &pt);
                         }
                         else
@@ -1263,10 +1266,11 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                         }
                         if (clicknotmove == true)
                         {
-                            Sleep(50);
-                            X = fakecursor.x;
-                            Y = fakecursor.y;
-                            SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
+                         //   Sleep(10); //crashed game
+                         // fixme!
+                         //   X = fakecursor.x;
+                         //   Y = fakecursor.y;
+                           // SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
 
                         }
                         foundit = true;
@@ -1409,9 +1413,14 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                             }
                             if (movenotclick == false)
                             { 
+                                X = pt.x;
+                                Y = pt.y;
                                 ClientToScreen(hwnd, &pt);
                                 SendMouseClick(pt.x, pt.y, 8, 1);
-                                SendMouseClick(pt.x, pt.y, 1, 3);
+                                Sleep(10);
+                                SendMouseClick(pt.x, pt.y, 3, 2);
+                                Sleep(10);
+                                SendMouseClick(pt.x, pt.y, 4, 2);
                                 ScreenToClient(hwnd, &pt);
                             }
                             else
@@ -1422,10 +1431,11 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                             }
                             if (clicknotmove == true)
                             {
-								Sleep(50);  
-                                X = fakecursor.x;
-                                Y = fakecursor.y;
-                                SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
+                                //fixme!!
+								//Sleep(2);  
+                               // X = fakecursor.x;
+                               // Y = fakecursor.y;
+                               // SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
 
                             }
                             foundit = true;
@@ -2702,7 +2712,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         {
 
             //supposed to help againt crashes?
-            WaitForInputIdle(GetCurrentProcess(), 1000); //wait for input to be ready
+            
 
            // DisableThreadLibraryCalls(hModule);
             g_hModule = hModule;
@@ -2718,10 +2728,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             getcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorposHook", 0, iniPath.c_str());
             setcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorposHook", 0, iniPath.c_str());
             setcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorHook", 0, iniPath.c_str()); 
-            setrecthook = GetPrivateProfileInt(iniSettings.c_str(), "SetRectHook", 1, iniPath.c_str()); 
+            setrecthook = GetPrivateProfileInt(iniSettings.c_str(), "SetRectHook", 0, iniPath.c_str()); 
             int hooksoninit = GetPrivateProfileInt(iniSettings.c_str(), "hooksoninit", 1, iniPath.c_str());
             if (hooksoninit)
                 {
+               // WaitForInputIdle(GetCurrentProcess(), 1000); //wait for input to be ready
+               // DisableThreadLibraryCalls(hModule);
                 if (MH_Initialize() != MH_OK) {
                     MessageBox(NULL, "Failed to initialize MinHook", "Error", MB_OK | MB_ICONERROR);
                 }
