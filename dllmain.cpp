@@ -981,6 +981,9 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
     if (keytype == 8)
         mykey = VK_SPACE;
 
+    if (keytype == 9)
+        mykey = 0x4D; //M
+
     if (keytype == 10)
         mykey = 0x57; //W
 
@@ -1011,6 +1014,9 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
     if (keytype == 19)
         mykey = 0x51; //Q
 
+    if (keytype == 20)
+        mykey = VK_OEM_PERIOD;
+
     if (keytype == 21)
         mykey = 0x52; //R
 
@@ -1035,11 +1041,35 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
     if (keytype == 28)
         mykey = 0x57; //W
 
+    if (keytype == 30)
+        mykey = 0x30; //0
 
+    if (keytype == 31)
+        mykey = 0x31; //1
 
+    if (keytype == 32)
+        mykey = 0x32; //2
 
-    if (keytype == 20)
-        mykey = VK_OEM_PERIOD; 
+    if (keytype == 33)
+        mykey = 0x33; //3
+
+    if (keytype == 34)
+        mykey = 0x34; //4
+
+    if (keytype == 35)
+        mykey = 0x35; //5
+
+    if (keytype == 36)
+        mykey = 0x36; //6
+
+    if (keytype == 37)
+        mykey = 0x37; //7
+
+    if (keytype == 38)
+        mykey = 0x38; //8
+
+    if (keytype == 39)
+        mykey = 0x39; //9
 
     if (keytype == 40)
         mykey = VK_UP; 
@@ -1052,6 +1082,12 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
 
     if (keytype == 43)
         mykey = VK_RIGHT; 
+
+    if (keytype == 44)
+        mykey = 0x58; //X
+
+    if (keytype == 45)
+        mykey = 0x5A; //Z
 
     if (keytype == 20)
         mykey = VK_OEM_PERIOD;
@@ -2126,7 +2162,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     scroll.y = rect.top + (rect.bottom - rect.top) / 2;
 
                     scrollmap = true;
-                    if (scrolloutsidewindow == 2) {
+                    if (scrolloutsidewindow == 2 || scrolloutsidewindow == 4) {
                         oldleft = true;
                         PostKeyFunction(hwnd, lefttype, true);
                     }
@@ -2156,7 +2192,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         scroll.x = rect.right + 1;
                     scroll.y = rect.top + (rect.bottom - rect.top) / 2;
                     scrollmap = true;
-                    if (scrolloutsidewindow == 2) {
+                    if (scrolloutsidewindow == 2 || scrolloutsidewindow == 4) {
                         oldright = true;
                         PostKeyFunction(hwnd, righttype, true);
                     }
