@@ -20,15 +20,16 @@
 
 HMODULE g_hModule = nullptr;
 
-typedef UINT(WINAPI* GetCursorPos_t)(LPPOINT lpPoint);
-typedef UINT(WINAPI* SetCursorPos_t)(LPPOINT lpPoint);
+typedef BOOL(WINAPI* GetCursorPos_t)(LPPOINT lpPoint);
+typedef BOOL(WINAPI* SetCursorPos_t)(int X, int Y);
 
-typedef SHORT(WINAPI* GetAsyncKeyState_t)(int);
-typedef SHORT(WINAPI* GetKeyState_t)(int);
+typedef SHORT(WINAPI* GetAsyncKeyState_t)(int vKey);
+typedef SHORT(WINAPI* GetKeyState_t)(int nVirtKey);
 typedef BOOL(WINAPI* ClipCursor_t)(const RECT*);
-typedef HCURSOR(WINAPI* SetCursor_t)(HCURSOR);
+typedef HCURSOR(WINAPI* SetCursor_t)(HCURSOR hCursor);
 
-typedef HCURSOR(WINAPI* SetRect_t)(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom);
+typedef BOOL(WINAPI* SetRect_t)(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom);
+typedef BOOL(WINAPI* AdjustWindowRect_t)(LPRECT lprc, DWORD  dwStyle, BOOL bMenu);
 
 
 
@@ -41,6 +42,7 @@ GetKeyState_t fpGetKeyState = nullptr;
 ClipCursor_t fpClipCursor = nullptr;
 SetCursor_t fpSetCursor = nullptr;
 SetRect_t fpSetRect = nullptr;
+AdjustWindowRect_t fpAdjustWindowRect = nullptr;
 
 
 
@@ -85,8 +87,8 @@ int userealmouse = 0;
 
 //fake cursor
 int controllerID = 0;
-int X = 20;
-int Y = 20;
+int Xf = 20;
+int Yf = 20;
 int OldX = 0;
 int OldY = 0;
 int ydrag;
@@ -248,10 +250,20 @@ BOOL WINAPI HookedSetRect(LPRECT lprc, int xLeft, int yTop, int xRight, int yBot
     return result;
 }
 
+BOOL WINAPI HookedAdjustWindowRect(LPRECT lprc, DWORD  dwStyle, BOOL bMenu) {
+    lprc->top = toprect; // Set the left coordinate to Xrect  
+    lprc->bottom = bottomrect; // Set the left coordinate to Xrect  
+    lprc->left = leftrect; // Set the left coordinate to Xrect  
+    lprc->right = rightrect; // Set the left coordinate to Xrect  
+
+    bool result = fpAdjustWindowRect(lprc, dwStyle, bMenu);
+    return result;
+}
 
 
 
-SHORT WINAPI HookedGetAsyncKeyState(int vKey) 
+
+SHORT WINAPI HookedGetAsyncKeyState(int vKey)
 {
     
     if (samekeyA == vKey) {
@@ -273,21 +285,21 @@ SHORT WINAPI HookedGetAsyncKeyState(int vKey)
 }
 
 // Hooked GetKeyState
-SHORT WINAPI HookedGetKeyState(int vKey) {
-    if (samekey == vKey) {
+SHORT WINAPI HookedGetKeyState(int nVirtKey) {
+    if (samekey == nVirtKey) {
         return 8001;
         //8001 on hold key. but this may not work
     }
     else samekey = 0;
 
-    if (vKey == keystatesend)
+    if (nVirtKey == keystatesend)
     {
-        samekey = vKey;
+        samekey = nVirtKey;
         return 8000; //8001 ?
     }
     else
     {
-        SHORT result = fpGetKeyState(vKey);
+        SHORT result = fpGetKeyState(nVirtKey);
         return result;
     }
 }
@@ -300,14 +312,14 @@ BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
         { 
 
             if (ignorerect == 1) {
-                mpos.x = X + rectignore.x; //hwnd coordinates 0-800 on a 800x600 window
-                mpos.y = Y + rectignore.y;//hwnd coordinate s0-600 on a 800x600 window
+                mpos.x = Xf + rectignore.x; //hwnd coordinates 0-800 on a 800x600 window
+                mpos.y = Yf + rectignore.y;//hwnd coordinate s0-600 on a 800x600 window
 				lpPoint->x = mpos.x; 
 				lpPoint->y = mpos.y;    
             }
             else {
-                mpos.x = X; //hwnd coordinates 0-800 on a 800x600 window
-                mpos.y = Y;//hwnd coordinate s0-600 on a 800x600 window
+                mpos.x = Xf; //hwnd coordinates 0-800 on a 800x600 window
+                mpos.y = Yf;//hwnd coordinate s0-600 on a 800x600 window
                 ClientToScreen(hwnd, &mpos);
 		
                 lpPoint->x = mpos.x; //desktop coordinates
@@ -331,10 +343,13 @@ BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
     return false;
 }
 POINT mpos;
-BOOL WINAPI MySetCursorPos(PPOINT lpPoint) {
-        
-//fixme!
-		return fpSetCursorPos(lpPoint); // Call the original SetCursorPos function
+BOOL WINAPI MySetCursorPos(int X, int Y) {
+    Xf = X; // Update the global X coordinate
+    Yf = Y; // Update the global Y coordinate
+   // movedmouse = true;
+    //crash fixme!
+  //  Sleep(20);
+    return true; //fpSetCursorPos(lpPoint); // Call the original SetCursorPos function
 }
 BOOL WINAPI HookedClipCursor(const RECT* lpRect) {
     return true; //nonzero bool or int
@@ -406,6 +421,9 @@ void SetupHook() {
     if (setrecthook == 1) {
         MH_CreateHook(&SetRect, &HookedSetRect, reinterpret_cast<LPVOID*>(&fpSetRect));
         MH_EnableHook(&SetRect);
+
+        MH_CreateHook(&AdjustWindowRect, &HookedAdjustWindowRect, reinterpret_cast<LPVOID*>(&fpAdjustWindowRect));
+        MH_EnableHook(&AdjustWindowRect);
     }
     if (setcursorhook == 1)
     {
@@ -823,46 +841,46 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
 
                     if (showmessage == 1)
                     {
-                        TextOut(hdcWindow, X, Y, TEXT("BMP MODE"), 8);
-                        TextOut(hdcWindow, X, Y + 17, TEXT("only mapping searches"), 21);
+                        TextOut(hdcWindow, Xf, Yf, TEXT("BMP MODE"), 8);
+                        TextOut(hdcWindow, Xf, Yf + 17, TEXT("only mapping searches"), 21);
                     }
                     else if (showmessage == 2)
                     {
-                        TextOut(hdcWindow, X, Y, TEXT("CURSOR MODE"), 11);
-                        TextOut(hdcWindow, X, Y + 17, TEXT("mapping searches + cursor"), 25);
+                        TextOut(hdcWindow, Xf, Yf, TEXT("CURSOR MODE"), 11);
+                        TextOut(hdcWindow, Xf, Yf + 17, TEXT("mapping searches + cursor"), 25);
                     }
                     else if (showmessage == 3)
                     {
-                        TextOut(hdcWindow, X, Y, TEXT("EDIT MODE"), 9);
-                        TextOut(hdcWindow, X, Y + 15, TEXT("tap a button to bind it to coordinate"), 37);
-                        TextOut(hdcWindow, X, Y + 30, TEXT("A,B,X,Y,R2,R3,L2,L3 can be mapped"), 32);
+                        TextOut(hdcWindow, Xf, Yf, TEXT("EDIT MODE"), 9);
+                        TextOut(hdcWindow, Xf, Yf + 15, TEXT("tap a button to bind it to coordinate"), 37);
+                        TextOut(hdcWindow, Xf, Yf + 30, TEXT("A,B,X,Y,R2,R3,L2,L3 can be mapped"), 32);
                     }
                     else if (showmessage == 10)
                     {
-                        TextOut(hdcWindow, X, Y, TEXT("BUTTON MAPPED"), 13);
+                        TextOut(hdcWindow, Xf, Yf, TEXT("BUTTON MAPPED"), 13);
                     }
                     else if (showmessage == 11)
                     {
-                        TextOut(hdcWindow, X, Y, TEXT("WAIT FOR MESSAGE EXPIRE!"), 24);
+                        TextOut(hdcWindow, Xf, Yf, TEXT("WAIT FOR MESSAGE EXPIRE!"), 24);
                     }
                     else if (showmessage == 12)
                     {
-                        TextOut(hdcWindow, X, Y, TEXT("DISCONNECTED!"), 14);
+                        TextOut(hdcWindow, Xf, Yf, TEXT("DISCONNECTED!"), 14);
                     }
                     else if (showmessage == 69)
                     {
-                        TextOut(hdcWindow, X, Y, TEXT("SHUTTING DOWN"), 13);
+                        TextOut(hdcWindow, Xf, Yf, TEXT("SHUTTING DOWN"), 13);
                     }
                     else if (showmessage == 70)
                     {
-                        TextOut(hdcWindow, X, Y, TEXT("STARTING!"), 10);
+                        TextOut(hdcWindow, Xf, Yf, TEXT("STARTING!"), 10);
                     }
                     else if (hCursor != 0 && onoroff == true)
                     { 
-                        if (X - Xoffset < 0 || Y - Yoffset < 0)
-                            DrawIconEx(hdcWindow, 0 + X, 0 + Y, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
+                        if (Xf - Xoffset < 0 || Yf - Yoffset < 0)
+                            DrawIconEx(hdcWindow, 0 + Xf, 0 + Yf, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
                         else 
-							DrawIconEx(hdcWindow, X - Xoffset, Y - Yoffset, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
+							DrawIconEx(hdcWindow, Xf - Xoffset, Yf - Yoffset, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
                          
                     }
                     else if ( onoroff == true)
@@ -875,7 +893,7 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
                                 if (val != 0)
                                 {
                                     HBRUSH hBrush = CreateSolidBrush(colors[val]);
-                                    RECT rect = { X + x , Y + y , X + x + 1, Y + y + 1 };
+                                    RECT rect = { Xf + x , Yf + y , Xf + x + 1, Yf + y + 1 };
                                     FillRect(hdcWindow, &rect, hBrush);
                                     DeleteObject(hBrush);
                                 }
@@ -1243,13 +1261,13 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                         // else return false;
                         if ( clicknotmove == false)
                         { 
-                            X = pt.x;
-                            Y = pt.y;
+                            Xf = pt.x;
+                            Yf = pt.y;
                         }
                         if (movenotclick == false) 
                         {
-                            X = pt.x;
-                            Y = pt.y;
+                            Xf = pt.x;
+                            Yf = pt.y;
                             ClientToScreen(hwnd, &pt);
                             SendMouseClick(pt.x, pt.y, 8, 1);
                             Sleep(10);
@@ -1407,14 +1425,14 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                            // Y = pt.y;
                             if (clicknotmove == false)
                             {
-                                X = pt.x;
-                                Y = pt.y;
+                                Xf = pt.x;
+                                Yf = pt.y;
                                // MessageBox(NULL, "some kind of error", "found image", MB_OK | MB_ICONINFORMATION);
                             }
                             if (movenotclick == false)
                             { 
-                                X = pt.x;
-                                Y = pt.y;
+                                Xf = pt.x;
+                                Yf = pt.y;
                                 ClientToScreen(hwnd, &pt);
                                 SendMouseClick(pt.x, pt.y, 8, 1);
                                 Sleep(10);
@@ -1461,7 +1479,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
         Sleep(100); //to make sure red flicker expired
         std::string path = UGetExecutableFolder() + key + std::to_string(serchnum) + ".bmp";
         std::wstring wpath(path.begin(), path.end());
-        SaveWindow10x10BMP(hwnd, wpath.c_str(), X, Y);
+        SaveWindow10x10BMP(hwnd, wpath.c_str(), Xf, Yf);
        // MessageBox(NULL, "Mapped spot!", key, MB_OK | MB_ICONINFORMATION);
         showmessage = 10;
         return true;
@@ -1744,8 +1762,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
             if (dwResult == ERROR_SUCCESS)
             {
 
-                fakecursor.x = X;
-                fakecursor.y = Y;
+                fakecursor.x = Xf;
+                fakecursor.y = Yf;
                 ClientToScreen(hwnd, &fakecursor);
                 // Controller is connected
                 WORD buttons = state.Gamepad.wButtons;
@@ -2476,15 +2494,15 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         else calcsleep = 0;
                     }
 
-                    OldX = X;
+                    OldX = Xf;
                     if (Xaxis < AxisLeftsens) //strange values. but tested many before choosing this
                     { 
                         if (Xaxis < -25000)
                             Xaxis = -25000;
-                        if (X >= (std::abs(Xaxis) / (700 + horsens)) + 1)
+                        if (Xf >= (std::abs(Xaxis) / (700 + horsens)) + 1)
                         { 
                           //  sovetid = sens - (std::abs(Xaxis) / 450);
-                        X = X - (std::abs(Xaxis) / (700 + horsens)) + (std::abs(AxisLeftsens) / (700 + horsens)); //1500
+                        Xf = Xf - (std::abs(Xaxis) / (700 + horsens)) + (std::abs(AxisLeftsens) / (700 + horsens)); //1500
                         movedmouse = true;
                         }
                     }
@@ -2492,10 +2510,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     {
                         if (Xaxis > 25000)
                             Xaxis = 25000;
-                        if (X <= width - (Xaxis / (500 + horsens)) - 1)
+                        if (Xf <= width - (Xaxis / (500 + horsens)) - 1)
                         {
                           //  sovetid = sens - (Xaxis / 450);
-                            X = X + (Xaxis / (500 + horsens)) - (AxisRightsens / (500 + horsens)); //1500
+                            Xf = Xf + (Xaxis / (500 + horsens)) - (AxisRightsens / (500 + horsens)); //1500
                             movedmouse = true;
                         }
                     }
@@ -2506,10 +2524,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     {
                         if (Yaxis > 25000)
                             Yaxis = 25000;
-                        if (Y >= (std::abs(Yaxis) / (900 + versens)) + 1)
+                        if (Yf >= (std::abs(Yaxis) / (900 + versens)) + 1)
                         {
                           //  sovetid = sens - (std::abs(Yaxis) / 450);
-                            Y = Y - (std::abs(Yaxis) / (900 + versens)) + (AxisUpsens / (900 + versens)); //2000
+                            Yf = Yf - (std::abs(Yaxis) / (900 + versens)) + (AxisUpsens / (900 + versens)); //2000
                             movedmouse = true;
                         }
                     }
@@ -2517,10 +2535,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     { //my controller is not calibrated maybe
                         if (Yaxis < -25000)
                             Yaxis = -25000;
-                        if (Y <= height - (std::abs(Yaxis) / (900 + versens)) - 1)
+                        if (Yf <= height - (std::abs(Yaxis) / (900 + versens)) - 1)
                         {
                            // sovetid = sens - (std::abs(Yaxis) / 450); // Loop poll rate
-                            Y = Y + (std::abs(Yaxis) / (900 + versens)) - (std::abs(AxisDownsens) / (900 + versens)); // Y movement rate //1700
+                            Yf = Yf + (std::abs(Yaxis) / (900 + versens)) - (std::abs(AxisDownsens) / (900 + versens)); // Y movement rate //1700
                             movedmouse = true;
                         }
                     }
@@ -2538,8 +2556,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     if (leftPressedold == false)
                     {
                      //save coordinates
-                     startdrag.x = X;
-                     startdrag.y = Y;
+                     startdrag.x = Xf;
+                     startdrag.y = Yf;
                      leftPressedold = true;
                      if (userealmouse == 0)
                      
@@ -2591,8 +2609,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         //start
                         if (hooksinited == false)
                             SetupHook();
-                        startdrag.x = X;
-                        startdrag.y = Y;
+                        startdrag.x = Xf;
+                        startdrag.y = Yf;
                         rightPressedold = true;
                         if (userealmouse == 0)
                         {
