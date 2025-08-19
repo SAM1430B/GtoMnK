@@ -344,8 +344,18 @@ BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
 }
 POINT mpos;
 BOOL WINAPI MySetCursorPos(int X, int Y) {
-    Xf = X; // Update the global X coordinate
-    Yf = Y; // Update the global Y coordinate
+    POINT point;
+    point.x = X;
+    point.y = Y;
+    char buffer[256];
+    
+
+    ScreenToClient(hwnd, &point);
+    sprintf_s(buffer, "X: %d Y: %d", point.x, point.y);
+    Xf = point.x; // Update the global X coordinate
+    Yf = point.y; // Update the global Y coordinate
+
+	//MessageBoxA(NULL, buffer, "Info", MB_OK | MB_ICONINFORMATION);
    // movedmouse = true;
     //crash fixme!
   //  Sleep(20);
@@ -2045,8 +2055,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         oldup = true;
                         PostKeyFunction(hwnd, uptype, true);
                     }
-                    if (scrolloutsidewindow == 3) {
-                        oldright = true;
+                    if (scrolloutsidewindow >= 3) {
+                        oldup = true;
                         scrollmap = false;
                         ClientToScreen(hwnd, &fakecursor); //double
                         SendMouseClick(fakecursor.x, fakecursor.y, 20, 1);
@@ -2082,8 +2092,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         olddown = true;
                         PostKeyFunction(hwnd, downtype, true);
                     }
-                    if (scrolloutsidewindow == 3) {
-                        oldright = true;
+                    if (scrolloutsidewindow >= 3) {
+                        olddown = true;
                         scrollmap = false;
                         ClientToScreen(hwnd, &fakecursor); //double
                         SendMouseClick(fakecursor.x, fakecursor.y, 21, 1);
@@ -2231,7 +2241,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     }
 
 
-                    if (scrolloutsidewindow == 2 || scrolloutsidewindow == 3)
+                    if (scrolloutsidewindow == 2 || scrolloutsidewindow == 3 || scrolloutsidewindow == 4)
                     {
                         
                         if (oldscrollleftaxis) 
@@ -2252,12 +2262,16 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 oldscrollleftaxis = false;
                                 if (scrolloutsidewindow == 2)
                                     PostKeyFunction(hwnd, 42, false);
+                                if (scrolloutsidewindow == 4)
+                                    PostKeyFunction(hwnd, 12, false);
                             }
                         }
                         else if (scrollXaxis < AxisLeftsens) //left
                         {
                             if (scrolloutsidewindow == 2)
                                 PostKeyFunction(hwnd, 42, true);
+                            if (scrolloutsidewindow == 4)
+                                PostKeyFunction(hwnd, 12, true);
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
                                 tick = 0;
@@ -2286,12 +2300,16 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 oldscrollrightaxis = false;
                                 if (scrolloutsidewindow == 2)
                                     PostKeyFunction(hwnd, 43, false);
+                                if (scrolloutsidewindow == 4)
+                                    PostKeyFunction(hwnd, 13, false);
                             }
                         }
                         else if (scrollXaxis > AxisRightsens) //right
                         {
                             if (scrolloutsidewindow == 2)
                                 PostKeyFunction(hwnd, 43, true);
+                            if (scrolloutsidewindow == 4)
+                                PostKeyFunction(hwnd, 13, true);
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
                                 tick = 0;
@@ -2322,12 +2340,16 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 oldscrolldownaxis = false;
                                 if (scrolloutsidewindow == 2)
                                     PostKeyFunction(hwnd, 41, false);
+                                if (scrolloutsidewindow == 4)
+                                    PostKeyFunction(hwnd, 11, false);
                             }
                         }
                         else if (scrollYaxis < AxisDownsens) //down
                         { //start
                             if (scrolloutsidewindow == 2)
                                 PostKeyFunction(hwnd, 41, true);
+                            if (scrolloutsidewindow == 4)
+                                PostKeyFunction(hwnd, 11, true);
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
                                 tick = 0;
@@ -2359,12 +2381,16 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 oldscrollupaxis = false;
                                 if (scrolloutsidewindow == 2)
                                     PostKeyFunction(hwnd, 40, false);
+                                if (scrolloutsidewindow == 4)
+                                    PostKeyFunction(hwnd, 10, false);
                             }
                         }
                         else if (scrollYaxis > AxisUpsens) //up
                         {
                             if (scrolloutsidewindow == 2)
                                 PostKeyFunction(hwnd, 40, true);
+                            if (scrolloutsidewindow == 4)
+                                PostKeyFunction(hwnd, 10, true);
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
                                 tick = 0;
