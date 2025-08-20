@@ -1,6 +1,10 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
+#define NOMINMAX
+
 #include "pch.h"
+#include <cmath>
 #include <windows.h>
+#include <algorithm>
 //#include <windowsx.h>
 #include "MinHook.h"
 #include <Xinput.h>
@@ -942,10 +946,74 @@ float Clamp(float v) {
     if (v > 1.0f) return 1.0f;
     return v;
 }
-#define DEADZONE 8000
-#define MAX_SPEED 30.0f        // Maximum pixels per poll
-#define ACCELERATION 2.0f      // Controls non-linear ramp (higher = more acceleration)
+// #define DEADZONE 8000
+// #define MAX_SPEED 30.0f        // Maximum pixels per poll
+// #define ACCELERATION 2.0f      // Controls non-linear ramp (higher = more acceleration)
 
+const float radial_deadzone = 0.10f; // Circular/Radial Deadzone (0.0 to 0.3)
+const float axial_deadzone = 0.00f; // Square/Axial Deadzone (0.0 to 0.3)
+const float max_threshold = 0.03f; // Max Input Threshold, an "outer deadzone" (0.0 to 0.15)
+const float curve_slope = 0.16f; // The linear portion of the response curve (0.0 to 1.0)
+const float curve_exponent = 5.00f; // The exponential portion of the curve (1.0 to 10.0)
+const float sensitivity = 20.00f; // Base sensitivity / max speed (1.0 to 30.0)
+const float accel_multiplier = 1.90f; // Look Acceleration Multiplier (1.0 to 3.0)
+
+POINT CalculateUltimateCursorMove(
+    SHORT stickX, SHORT stickY,
+    float c_deadzone,
+    float s_deadzone,
+    float max_threshold,
+    float curve_slope,
+    float curve_exponent,
+    float sensitivity,
+    float accel_multiplier
+) {
+    static double mouseDeltaAccumulatorX = 0.0;
+    static double mouseDeltaAccumulatorY = 0.0;
+
+    double normX = static_cast<double>(stickX) / 32767.0;
+    double normY = static_cast<double>(stickY) / 32767.0;
+
+    double magnitude = std::sqrt(normX * normX + normY * normY);
+    if (magnitude < c_deadzone) {
+        return { 0, 0 }; // Inside circular deadzone
+    }
+    if (std::abs(normX) < s_deadzone) {
+        normX = 0.0; // Inside axial deadzone for X
+    }
+    if (std::abs(normY) < s_deadzone) {
+        normY = 0.0; // Inside axial deadzone for Y
+    }
+    magnitude = std::sqrt(normX * normX + normY * normY);
+    if (magnitude < 1e-6) {
+        return { 0, 0 };
+    }
+
+    double effectiveRange = 1.0 - max_threshold - c_deadzone;
+    if (effectiveRange < 1e-6) effectiveRange = 1.0;
+
+    double remappedMagnitude = (magnitude - c_deadzone) / effectiveRange;
+    remappedMagnitude = (std::max)(0.0, (std::min)(1.0, remappedMagnitude));
+
+    double curvedMagnitude = curve_slope * remappedMagnitude + (1.0 - curve_slope) * std::pow(remappedMagnitude, curve_exponent);
+
+    double finalSpeed = sensitivity * accel_multiplier;
+
+    double dirX = normX / magnitude;
+    double dirY = normY / magnitude;
+    double finalMouseDeltaX = dirX * curvedMagnitude * finalSpeed;
+    double finalMouseDeltaY = dirY * curvedMagnitude * finalSpeed;
+
+    mouseDeltaAccumulatorX += finalMouseDeltaX;
+    mouseDeltaAccumulatorY += finalMouseDeltaY;
+    LONG integerDeltaX = static_cast<LONG>(mouseDeltaAccumulatorX);
+    LONG integerDeltaY = static_cast<LONG>(mouseDeltaAccumulatorY);
+
+    mouseDeltaAccumulatorX -= integerDeltaX;
+    mouseDeltaAccumulatorY -= integerDeltaY;
+
+    return { integerDeltaX, -integerDeltaY };
+}
 
 void PostKeyFunction(HWND hwnd, int keytype, bool press) {
     DWORD mykey = 0;
@@ -1486,7 +1554,7 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
                                 Sleep(10);
                                 SendMouseClick(pt.x, pt.y, 4, 2);
                                 ScreenToClient(hwnd, &pt);
-                            }
+                            } 
                             else
                             {
                                 ClientToScreen(hwnd, &pt);
@@ -2556,54 +2624,24 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         else calcsleep = 0;
                     }
 
-                    OldX = Xf;
-                    if (Xaxis < AxisLeftsens) //strange values. but tested many before choosing this
-                    { 
-                        if (Xaxis < -25000)
-                            Xaxis = -25000;
-                        if (Xf >= (std::abs(Xaxis) / (700 + horsens)) + 1)
-                        { 
-                          //  sovetid = sens - (std::abs(Xaxis) / 450);
-                        Xf = Xf - (std::abs(Xaxis) / (700 + horsens)) + (std::abs(AxisLeftsens) / (700 + horsens)); //1500
+                    POINT delta = CalculateUltimateCursorMove(
+                        Xaxis, Yaxis,
+                        radial_deadzone, axial_deadzone, max_threshold,
+                        curve_slope, curve_exponent,
+                        sensitivity, accel_multiplier
+                    );
+
+                    if (Xf < rect.left) Xf = rect.left;
+                    if (Xf > rect.right) Xf = rect.right;
+                    if (Yf < rect.top) Yf = rect.top;
+                    if (Yf > rect.bottom) Yf = rect.bottom;
+                    if (delta.x != 0 || delta.y != 0) {
+                        Xf += delta.x;
+                        Yf += delta.y;
                         movedmouse = true;
-                        }
                     }
-                    else if (Xaxis > AxisRightsens) //strange values. but tested many before choosing this
-                    {
-                        if (Xaxis > 25000)
-                            Xaxis = 25000;
-                        if (Xf <= width - (Xaxis / (500 + horsens)) - 1)
-                        {
-                          //  sovetid = sens - (Xaxis / 450);
-                            Xf = Xf + (Xaxis / (500 + horsens)) - (AxisRightsens / (500 + horsens)); //1500
-                            movedmouse = true;
-                        }
-                    }
-                    int accumulater = std::abs(Xaxis) + std::abs(Yaxis);
-                     
-                    /////////////////////
-                    if (Yaxis > AxisUpsens) //strange values. but tested many before choosing this
-                    {
-                        if (Yaxis > 25000)
-                            Yaxis = 25000;
-                        if (Yf >= (std::abs(Yaxis) / (900 + versens)) + 1)
-                        {
-                          //  sovetid = sens - (std::abs(Yaxis) / 450);
-                            Yf = Yf - (std::abs(Yaxis) / (900 + versens)) + (AxisUpsens / (900 + versens)); //2000
-                            movedmouse = true;
-                        }
-                    }
-                    else  if (Yaxis < AxisDownsens) //strange values. but tested many before choosing this
-                    { //my controller is not calibrated maybe
-                        if (Yaxis < -25000)
-                            Yaxis = -25000;
-                        if (Yf <= height - (std::abs(Yaxis) / (900 + versens)) - 1)
-                        {
-                           // sovetid = sens - (std::abs(Yaxis) / 450); // Loop poll rate
-                            Yf = Yf + (std::abs(Yaxis) / (900 + versens)) - (std::abs(AxisDownsens) / (900 + versens)); // Y movement rate //1700
-                            movedmouse = true;
-                        }
-                    }
+
+
                     if (movedmouse == true) //fake cursor move message
                     {
                         if (userealmouse == 0)
@@ -2626,8 +2664,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                          SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
                      
                     }
-                     
-
                 }
                 if (leftPressedold)
                 {
