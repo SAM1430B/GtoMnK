@@ -101,8 +101,9 @@ int Xoffset = 0; //offset for cursor
 int Yoffset = 0;
 bool scrollmap = false;
 bool pausedraw = false;
-int cursorimage = 0;
+bool gotcursoryet = false;
 int drawfakecursor = 0;
+int alwaysdrawcursor = 0; //always draw cursor even if setcursor set cursor NULL
 HICON hCursor = 0;
 DWORD lastClickTime;
 
@@ -528,7 +529,7 @@ bool SendMouseClick(int x, int y, int z, int many) {
         }
         return true;
     }
-    if (z == 1 || z == 2 || z == 3 || z == 6 || z == 10)
+    else if (z == 1 || z == 2 || z == 3 || z == 6 || z == 10)
     {
         if (Mutexlock(true)) {
 
@@ -718,7 +719,7 @@ bool Save24BitBMP(const wchar_t* filename, const BYTE* pixels, int width, int he
     return true;
 }
 
-bool IsTriggerPressed(BYTE triggerValue, BYTE threshold = 30) {
+bool IsTriggerPressed(BYTE triggerValue, BYTE threshold = 25000) {
     return triggerValue > threshold;
 }
 bool LoadBMP24Bit(const wchar_t* filename, std::vector<BYTE>& pixels, int& width, int& height, int& stride) {
@@ -891,13 +892,14 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
                     }
                     else if (hCursor != 0 && onoroff == true)
                     { 
+                        gotcursoryet = true;
                         if (Xf - Xoffset < 0 || Yf - Yoffset < 0)
                             DrawIconEx(hdcWindow, 0 + Xf, 0 + Yf, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
                         else 
 							DrawIconEx(hdcWindow, Xf - Xoffset, Yf - Yoffset, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
                          
                     }
-                    else if ( onoroff == true)
+                    else if ( onoroff == true && (alwaysdrawcursor == 1 || gotcursoryet == false))
                     {
                         for (int y = 0; y < 20; y++)
                         {
@@ -949,14 +951,13 @@ float Clamp(float v) {
 // #define DEADZONE 8000
 // #define MAX_SPEED 30.0f        // Maximum pixels per poll
 // #define ACCELERATION 2.0f      // Controls non-linear ramp (higher = more acceleration)
-
-const float radial_deadzone = 0.10f; // Circular/Radial Deadzone (0.0 to 0.3)
-const float axial_deadzone = 0.00f; // Square/Axial Deadzone (0.0 to 0.3)
+float radial_deadzone = 0.10f; // Circular/Radial Deadzone (0.0 to 0.3)
+float axial_deadzone = 0.00f; // Square/Axial Deadzone (0.0 to 0.3)
 const float max_threshold = 0.03f; // Max Input Threshold, an "outer deadzone" (0.0 to 0.15)
 const float curve_slope = 0.16f; // The linear portion of the response curve (0.0 to 1.0)
 const float curve_exponent = 5.00f; // The exponential portion of the curve (1.0 to 10.0)
-const float sensitivity = 20.00f; // Base sensitivity / max speed (1.0 to 30.0)
-const float accel_multiplier = 1.90f; // Look Acceleration Multiplier (1.0 to 3.0)
+float sensitivity = 20.00f; // Base sensitivity / max speed (1.0 to 30.0)
+float accel_multiplier = 1.90f; // Look Acceleration Multiplier (1.0 to 3.0)
 
 POINT CalculateUltimateCursorMove(
     SHORT stickX, SHORT stickY,
@@ -1607,19 +1608,32 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
 DWORD WINAPI ThreadFunction(LPVOID lpParam)
 {
     Sleep(2000);
+    char buffer[256];
 
     // settings reporting
     std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
     std::string iniSettings = "Settings";
 
     //controller settings
-    controllerID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", 0, iniPath.c_str()); //simple test if settings read but write it wont work.
+    controllerID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", -9999, iniPath.c_str()); //simple test if settings read but write it wont work.
     int AxisLeftsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisLeftsens", -7849, iniPath.c_str());
     int AxisRightsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisRightsens", 12000, iniPath.c_str());
     int AxisUpsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisUpsens", 0, iniPath.c_str());
     int AxisDownsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisDownsens", -16049, iniPath.c_str());
     int scrollspeed3 = GetPrivateProfileInt(iniSettings.c_str(), "Scrollspeed", 150, iniPath.c_str());
     righthanded = GetPrivateProfileInt(iniSettings.c_str(), "Righthanded", 0, iniPath.c_str());
+
+    GetPrivateProfileString(iniSettings.c_str(), "Radial_Deadzone", "0.2", buffer, sizeof(buffer), iniPath.c_str());
+    radial_deadzone = std::stof(buffer); //sensitivity
+
+    GetPrivateProfileString(iniSettings.c_str(), "Axial_Deadzone", "0.0", buffer, sizeof(buffer), iniPath.c_str());
+    axial_deadzone = std::stof(buffer); //sensitivity
+
+    GetPrivateProfileString(iniSettings.c_str(), "Sensitivity", "20.0", buffer, sizeof(buffer), iniPath.c_str());
+    sensitivity = std::stof(buffer); //sensitivity //accel_multiplier
+
+    GetPrivateProfileString(iniSettings.c_str(), "Accel_Multiplier", "1.7", buffer, sizeof(buffer), iniPath.c_str());
+    accel_multiplier = std::stof(buffer);
 
     Xoffset = GetPrivateProfileInt(iniSettings.c_str(), "Xoffset", 0, iniPath.c_str());
     Yoffset = GetPrivateProfileInt(iniSettings.c_str(), "Yoffset", 0, iniPath.c_str());
@@ -1628,14 +1642,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     int InitialMode = GetPrivateProfileInt(iniSettings.c_str(), "Initial Mode", 1, iniPath.c_str());
     int Modechange = GetPrivateProfileInt(iniSettings.c_str(), "Allow modechange", 1, iniPath.c_str());
 
-
-    int horsens = GetPrivateProfileInt(iniSettings.c_str(), "Hsensitivity", 500, iniPath.c_str());
-    int versens = GetPrivateProfileInt(iniSettings.c_str(), "Vsensitivity", 500, iniPath.c_str()); //unused
     int sendfocus = GetPrivateProfileInt(iniSettings.c_str(), "Sendfocus", 0, iniPath.c_str());
     int responsetime = GetPrivateProfileInt(iniSettings.c_str(), "Responsetime", 0, iniPath.c_str());
     int doubleclicks = GetPrivateProfileInt(iniSettings.c_str(), "Doubleclicks", 0, iniPath.c_str());
     int scrollenddelay = GetPrivateProfileInt(iniSettings.c_str(), "DelayEndScroll", 50, iniPath.c_str());
-    getmouseonkey = GetPrivateProfileInt(iniSettings.c_str(), "GetMouseOnKey", 0, iniPath.c_str()); //unused
+    int quickMW = GetPrivateProfileInt(iniSettings.c_str(), "MouseWheelContinous", 0, iniPath.c_str());
 
     //clicknotmove 2
     //movenotclick 1
@@ -1662,17 +1673,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     lefttype = GetPrivateProfileInt(iniSettings.c_str(), "Leftkey", -3, iniPath.c_str());
     righttype = GetPrivateProfileInt(iniSettings.c_str(), "Rightkey", -4, iniPath.c_str());
 
-    cursorimage = GetPrivateProfileInt(iniSettings.c_str(), "Cursortype", 1, iniPath.c_str());
-
     //hooks
     drawfakecursor = GetPrivateProfileInt(iniSettings.c_str(), "DrawFakeCursor", 1, iniPath.c_str());
+    alwaysdrawcursor = GetPrivateProfileInt(iniSettings.c_str(), "DrawFakeCursorAlways", 1, iniPath.c_str());
 	userealmouse = GetPrivateProfileInt(iniSettings.c_str(), "UseRealMouse", 0, iniPath.c_str());   //scrolloutsidewindow
-
-    leftrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectLeft", 0, iniPath.c_str());
-    toprect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectTop", 0, iniPath.c_str());
-
-    rightrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectRight", 0, iniPath.c_str());
-    bottomrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectBottom", 0, iniPath.c_str());
     ignorerect = GetPrivateProfileInt(iniSettings.c_str(), "IgnoreRect", 0, iniPath.c_str());
 
     int scrolloutsidewindow = GetPrivateProfileInt(iniSettings.c_str(), "Scrollmapfix", 1, iniPath.c_str());   //scrolloutsidewindow
@@ -1690,6 +1694,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     int numphotoE = -1;
     int numphotoF = -1;
 
+    if (controllerID == -9999)
+    {
+        MessageBoxA(NULL, "Warning. Settings file Xinput.ini not read. All settings standard. Or maybe ControllerID is missing from ini", "Error", MB_OK | MB_ICONERROR);
+		controllerID = 0; //default controller  
+
+	}
     HBITMAP hbmdsktop = NULL;
 
     //image numeration
@@ -2140,6 +2150,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
                     {
                         //post keep?
+                        if (scrolloutsidewindow >= 3 && quickMW == 1) {
+                            ClientToScreen(hwnd, &fakecursor); //double
+                            SendMouseClick(fakecursor.x, fakecursor.y, 20, 1);
+                            ScreenToClient(hwnd, &fakecursor);
+                        }
                     }
                     else {
                         oldup = false;
@@ -2177,6 +2192,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     if (buttons & XINPUT_GAMEPAD_DPAD_DOWN && onoroff == true)
                     {
                         //post keep?
+                        if (scrolloutsidewindow >= 3 && quickMW == 1) {
+                            ClientToScreen(hwnd, &fakecursor); //double
+                            SendMouseClick(fakecursor.x, fakecursor.y, 21, 1);
+                            ScreenToClient(hwnd, &fakecursor);
+                        }
                     }
                     else {
                         olddown = false;
@@ -2646,7 +2666,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     {
                         if (userealmouse == 0)
                         {
-                            SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
+                          //  if ( !leftPressed && !rightPressed)
+                                SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
+                         //   else if (leftPressed && !rightPressed)
+                          //      SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
                         }
                     }
               
@@ -2660,9 +2683,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                      startdrag.y = Yf;
                      leftPressedold = true;
                      if (userealmouse == 0)
-                     
                          SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
-                     
                     }
                 }
                 if (leftPressedold)
@@ -2805,7 +2826,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
         if (mode > 0) {
            // Sleep(sovetid); //15-80 //ini value
             if (movedmouse == true)
-                Sleep(4 + responsetime - calcsleep); //max 3. 0-2 on slow movement
+                Sleep(1 + responsetime ); //max 3. 0-2 on slow movement - calcsleep
             else Sleep(2); //max 3. 0-2 on slow movement
         }
 
@@ -2844,7 +2865,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             getcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorposHook", 0, iniPath.c_str());
             setcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorposHook", 0, iniPath.c_str());
             setcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorHook", 0, iniPath.c_str()); 
+
             setrecthook = GetPrivateProfileInt(iniSettings.c_str(), "SetRectHook", 0, iniPath.c_str()); 
+            leftrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectLeft", 0, iniPath.c_str());
+            toprect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectTop", 0, iniPath.c_str());
+            rightrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectRight", 800, iniPath.c_str());
+            bottomrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectBottom", 600, iniPath.c_str());
+
             int hooksoninit = GetPrivateProfileInt(iniSettings.c_str(), "hooksoninit", 1, iniPath.c_str());
             if (hooksoninit)
                 {
