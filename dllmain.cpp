@@ -1,8 +1,9 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
-#define NOMINMAX
+
 
 #include "pch.h"
 #include <cmath>
+#define NOMINMAX
 #include <windows.h>
 #include <algorithm>
 //#include <windowsx.h>
@@ -408,8 +409,10 @@ bool Mutexlock(bool lock) {
 }
 
 void SetupHook() {
-    MH_Initialize();
-
+    if (MH_Initialize() != MH_OK) {
+        MessageBox(NULL, "Failed to initialize MinHook", "Error", MB_OK | MB_ICONERROR);
+        return;
+    }
 
     //each of there hooks have a high chance of crashing the game
 
@@ -719,7 +722,8 @@ bool Save24BitBMP(const wchar_t* filename, const BYTE* pixels, int width, int he
     return true;
 }
 
-bool IsTriggerPressed(BYTE triggerValue, BYTE threshold = 25000) {
+bool IsTriggerPressed(BYTE triggerValue) {
+    BYTE threshold = 175;
     return triggerValue > threshold;
 }
 bool LoadBMP24Bit(const wchar_t* filename, std::vector<BYTE>& pixels, int& width, int& height, int& stride) {
@@ -880,7 +884,7 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
                     }
                     else if (showmessage == 12)
                     {
-                        TextOut(hdcWindow, Xf, Yf, TEXT("DISCONNECTED!"), 14);
+                        TextOut(hdcWindow, 20, 20, TEXT("DISCONNECTED!"), 14); //14
                     }
                     else if (showmessage == 69)
                     {
@@ -1850,23 +1854,20 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
             RECT frameBounds;
             HRESULT hr = DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &frameBounds, sizeof(frameBounds));
             if (SUCCEEDED(hr)) {
+                // These are the actual visible edges of the window in client coordinates
                 POINT upper;
-                POINT lower;
                 upper.x = frameBounds.left;
                 upper.y = frameBounds.top;
-                lower.x = frameBounds.right;
-                lower.y = frameBounds.bottom;
 
+				//used in getcursrorpos
 				rectignore.x = upper.x;  
                 rectignore.y = upper.y;
-                ScreenToClient(hwnd, &upper);
-                ScreenToClient(hwnd, &lower);
 
-                rect.left = upper.x;
-                rect.right = lower.x;
-                rect.top = upper.y;
-                rect.bottom = lower.y;
-                // These are the actual visible edges of the window
+                rect.right = frameBounds.right - frameBounds.left;
+                rect.bottom = frameBounds.bottom - frameBounds.top;
+                rect.left = 0;
+                rect.top = 0;
+                
             }
         }
         
@@ -1894,7 +1895,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 bool currA = (buttons & XINPUT_GAMEPAD_A) != 0;
                 bool Apressed = (buttons & XINPUT_GAMEPAD_A);
 
-
+                if (showmessage == 12) //was disconnected?
+                {
+                    showmessage = 0;
+				}
 
 
                 if (oldA == true)
@@ -2651,22 +2655,24 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         sensitivity, accel_multiplier
                     );
 
-                    if (Xf < rect.left) Xf = rect.left;
-                    if (Xf > rect.right) Xf = rect.right;
-                    if (Yf < rect.top) Yf = rect.top;
-                    if (Yf > rect.bottom) Yf = rect.bottom;
+
                     if (delta.x != 0 || delta.y != 0) {
                         Xf += delta.x;
                         Yf += delta.y;
                         movedmouse = true;
                     }
-
+                    if (Xf < rect.left) Xf = rect.left;
+                    if (Xf > rect.right) Xf = rect.right;
+                    if (Yf < rect.top) Yf = rect.top;
+                    if (Yf > rect.bottom) Yf = rect.bottom;
 
                     if (movedmouse == true) //fake cursor move message
                     {
                         if (userealmouse == 0)
                         {
                           //  if ( !leftPressed && !rightPressed)
+                                //fakecursor.x = Xf;
+                                //fakecursor.y = Yf;
                                 SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
                          //   else if (leftPressed && !rightPressed)
                           //      SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
@@ -2682,7 +2688,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                      startdrag.x = Xf;
                      startdrag.y = Yf;
                      leftPressedold = true;
-                     if (userealmouse == 0)
+                     if (userealmouse == 0 && scrolloutsidewindow == 3)
+                     {
+                         SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
+                         SendMouseClick(fakecursor.x, fakecursor.y, 6, 2); //double click
+                     }
+                     else if (userealmouse == 0)
                          SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
                     }
                 }
@@ -2733,7 +2744,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         rightPressedold = true;
                         if (userealmouse == 0)
                         {
-                            DWORD currentTime = GetTickCount();
+                            DWORD currentTime = GetTickCount64();
                             if (currentTime - lastClickTime < GetDoubleClickTime() && movedmouse == false && doubleclicks == 1)
                             {
                                 SendMouseClick(fakecursor.x, fakecursor.y, 30, 2); //4 skal vere 3
@@ -2784,11 +2795,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 ScreenToClient(hwnd, &fakecursor);
             } //no controller
             else {
-                showmessage = 14;
+                showmessage = 12;
+				//MessageBoxA(NULL, "Controller not connected", "Error", MB_OK | MB_ICONERROR);
+               // CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw message
             }
-            if (drawfakecursor == 1)
+            if (drawfakecursor == 1 || showmessage != 0)
                 CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw fake cursor
-            //MessageBox(NULL, "failed to load bmp:", "Message Box", MB_OK | MB_ICONINFORMATION);
         } // no hwnd
         if (knappsovetid > 20)
         {
@@ -2797,7 +2809,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
             
 		}
 
-        if (showmessage != 0)
+        if (showmessage != 0 && showmessage != 12)
         {
             counter++;
             if (counter > 500)
@@ -2847,7 +2859,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     {
         case DLL_PROCESS_ATTACH:
         {
-
             //supposed to help againt crashes?
             
 
@@ -2877,13 +2888,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 {
                // WaitForInputIdle(GetCurrentProcess(), 1000); //wait for input to be ready
                // DisableThreadLibraryCalls(hModule);
-                if (MH_Initialize() != MH_OK) {
-                    MessageBox(NULL, "Failed to initialize MinHook", "Error", MB_OK | MB_ICONERROR);
-                }
-                else {
-                    SetupHook();
 
-                }
+                
+                SetupHook();
+
+                
                 
 			}
             CreateThread(nullptr, 0,
