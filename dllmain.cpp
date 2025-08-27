@@ -1,4 +1,5 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
+#define _CRT_SECURE_NO_WARNINGS // For debug
 #define NOMINMAX
 
 #include "pch.h"
@@ -17,6 +18,29 @@
 #include <string>
 #include <cstdlib> // For strtoul
 #include <dwmapi.h>
+
+//\\ For debugging
+#include <fstream>
+#include <mutex>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+std::ofstream g_logFile;
+std::mutex g_logMutex;
+void InitializeLogger();
+void ShutdownLogger();
+void Log(const char* format, ...);
+
+#ifdef _DEBUG
+#define LOG(...) Log(__VA_ARGS__)
+#define INIT_LOGGER() InitializeLogger()
+#define SHUTDOWN_LOGGER() ShutdownLogger()
+#else
+#define LOG(...)
+#define INIT_LOGGER()
+#define SHUTDOWN_LOGGER()
+#endif
+//\\ For debugging end
 #pragma comment(lib, "dwmapi.lib")
 
 
@@ -230,7 +254,24 @@ int knappsovetid = 100;
 int samekey = 0;
 int samekeyA = 0;
 
+// For debugging
+std::string getShortenedPath_Manual(const std::string& fullPath)
+{
+    const char separator = '\\';
+    size_t last_separator_pos = fullPath.find_last_of(separator);
+    if (last_separator_pos == std::string::npos) {
+        return fullPath;
+    }
+    size_t second_last_separator_pos = fullPath.find_last_of(separator, last_separator_pos - 1);
 
+    if (second_last_separator_pos == std::string::npos) {
+        // Only one separator found (e.g., "C:\Xinput.ini"). Return the original path.
+        return fullPath;
+    }
+    std::string shortened = fullPath.substr(second_last_separator_pos + 1);
+
+    return "...\\" + shortened;
+}
 
 HCURSOR WINAPI HookedSetCursor(HCURSOR hcursor) {
 		hCursor = hcursor; // Store the cursor handle  
@@ -408,46 +449,179 @@ bool Mutexlock(bool lock) {
 }
 
 void SetupHook() {
-    MH_Initialize();
 
+    LOG("--- Setting up API hooks ---");
 
-    //each of there hooks have a high chance of crashing the game
+    MH_STATUS status;
 
     if (getcursorposhook == 1) {
-        MH_CreateHookApi(L"user32", "GetCursorPos", &MyGetCursorPos, reinterpret_cast<LPVOID*>(&fpGetCursorPos));
-        MH_EnableHook(&GetCursorPos);
+        LOG("Attempting to hook GetCursorPos...");
+        status = MH_CreateHookApi(L"user32", "GetCursorPos", &MyGetCursorPos, reinterpret_cast<LPVOID*>(&fpGetCursorPos));
+        if (status == MH_OK) {
+            LOG("  -> Create hook: SUCCESS.");
+            status = MH_EnableHook(&GetCursorPos);
+            if (status == MH_OK) {
+                LOG("  -> Enable hook: SUCCESS.");
+            }
+            else {
+                LOG("  -> Enable hook: FAILED - %s", MH_StatusToString(status));
+            }
+        }
+        else {
+            LOG("  -> Create hook: FAILED - %s", MH_StatusToString(status));
+        }
     }
-    if (setcursorposhook == 1) {
-        MH_CreateHook(&SetCursorPos, &MySetCursorPos, reinterpret_cast<LPVOID*>(&fpSetCursorPos));
-        MH_EnableHook(&SetCursorPos);
+    else {
+        LOG("Hook for GetCursorPos skipped (disabled in INI).");
     }
-    if (getkeystatehook == 1) {
-        MH_CreateHook(&GetAsyncKeyState, &HookedGetAsyncKeyState, reinterpret_cast<LPVOID*>(&fpGetAsyncKeyState));
-        MH_EnableHook(&GetAsyncKeyState);
-    }
-    if (getasynckeystatehook == 1) {
-        MH_CreateHook(&GetKeyState, &HookedGetKeyState, reinterpret_cast<LPVOID*>(&fpGetKeyState));
-        MH_EnableHook(&GetKeyState);
-    }
-    if (clipcursorhook == 1) {
-        MH_CreateHook(&ClipCursor, &HookedClipCursor, reinterpret_cast<LPVOID*>(&fpClipCursor));
-        MH_EnableHook(&ClipCursor);
-    }
-    if (setrecthook == 1) {
-        MH_CreateHook(&SetRect, &HookedSetRect, reinterpret_cast<LPVOID*>(&fpSetRect));
-        MH_EnableHook(&SetRect);
 
-        MH_CreateHook(&AdjustWindowRect, &HookedAdjustWindowRect, reinterpret_cast<LPVOID*>(&fpAdjustWindowRect));
-        MH_EnableHook(&AdjustWindowRect);
+    if (setcursorposhook == 1) {
+        LOG("Attempting to hook SetCursorPos...");
+        status = MH_CreateHook(&SetCursorPos, &MySetCursorPos, reinterpret_cast<LPVOID*>(&fpSetCursorPos));
+        if (status == MH_OK) {
+            LOG("  -> Create hook: SUCCESS.");
+            status = MH_EnableHook(&SetCursorPos);
+            if (status == MH_OK) {
+                LOG("  -> Enable hook: SUCCESS.");
+            }
+            else {
+                LOG("  -> Enable hook: FAILED - %s", MH_StatusToString(status));
+            }
+        }
+        else {
+            LOG("  -> Create hook: FAILED - %s", MH_StatusToString(status));
+        }
     }
+    else {
+        LOG("Hook for SetCursorPos skipped (disabled in INI).");
+    }
+
+    if (getkeystatehook == 1) {
+        LOG("Attempting to hook GetAsyncKeyState...");
+        status = MH_CreateHook(&GetAsyncKeyState, &HookedGetAsyncKeyState, reinterpret_cast<LPVOID*>(&fpGetAsyncKeyState));
+        if (status == MH_OK) {
+            LOG("  -> Create hook: SUCCESS.");
+            status = MH_EnableHook(&GetAsyncKeyState);
+            if (status == MH_OK) {
+                LOG("  -> Enable hook: SUCCESS.");
+            }
+            else {
+                LOG("  -> Enable hook: FAILED - %s", MH_StatusToString(status));
+            }
+        }
+        else {
+            LOG("  -> Create hook: FAILED - %s", MH_StatusToString(status));
+        }
+    }
+    else {
+        LOG("Hook for GetAsyncKeyState skipped (disabled in INI).");
+    }
+
+    if (getasynckeystatehook == 1) {
+        LOG("Attempting to hook GetKeyState...");
+        status = MH_CreateHook(&GetKeyState, &HookedGetKeyState, reinterpret_cast<LPVOID*>(&fpGetKeyState));
+        if (status == MH_OK) {
+            LOG("  -> Create hook: SUCCESS.");
+            status = MH_EnableHook(&GetKeyState);
+            if (status == MH_OK) {
+                LOG("  -> Enable hook: SUCCESS.");
+            }
+            else {
+                LOG("  -> Enable hook: FAILED - %s", MH_StatusToString(status));
+            }
+        }
+        else {
+            LOG("  -> Create hook: FAILED - %s", MH_StatusToString(status));
+        }
+    }
+    else {
+        LOG("Hook for GetKeyState skipped (disabled in INI).");
+    }
+
+    if (clipcursorhook == 1) {
+        LOG("Attempting to hook ClipCursor...");
+        status = MH_CreateHook(&ClipCursor, &HookedClipCursor, reinterpret_cast<LPVOID*>(&fpClipCursor));
+        if (status == MH_OK) {
+            LOG("  -> Create hook: SUCCESS.");
+            status = MH_EnableHook(&ClipCursor);
+            if (status == MH_OK) {
+                LOG("  -> Enable hook: SUCCESS.");
+            }
+            else {
+                LOG("  -> Enable hook: FAILED - %s", MH_StatusToString(status));
+            }
+        }
+        else {
+            LOG("  -> Create hook: FAILED - %s", MH_StatusToString(status));
+        }
+    }
+    else {
+        LOG("Hook for ClipCursor skipped (disabled in INI).");
+    }
+
+    if (setrecthook == 1)
+    {
+        LOG("Attempting to hook SetRect...");
+        status = MH_CreateHook(&SetRect, &HookedSetRect, reinterpret_cast<LPVOID*>(&fpSetRect));
+        if (status == MH_OK) {
+            LOG("  -> Create hook for SetRect: SUCCESS.");
+            status = MH_EnableHook(&SetRect);
+            if (status == MH_OK) {
+                LOG("  -> Enable hook for SetRect: SUCCESS.");
+            }
+            else {
+                LOG("  -> Enable hook for SetRect: FAILED - %s", MH_StatusToString(status));
+            }
+        }
+        else {
+            LOG("  -> Create hook for SetRect: FAILED - %s", MH_StatusToString(status));
+        }
+
+        LOG("Attempting to hook AdjustWindowRect...");
+        status = MH_CreateHook(&AdjustWindowRect, &HookedAdjustWindowRect, reinterpret_cast<LPVOID*>(&fpAdjustWindowRect));
+        if (status == MH_OK) {
+            LOG("  -> Create hook for AdjustWindowRect: SUCCESS.");
+            status = MH_EnableHook(&AdjustWindowRect);
+            if (status == MH_OK) {
+                LOG("  -> Enable hook for AdjustWindowRect: SUCCESS.");
+            }
+            else {
+                LOG("  -> Enable hook for AdjustWindowRect: FAILED - %s", MH_StatusToString(status));
+            }
+        }
+        else {
+            LOG("  -> Create hook for AdjustWindowRect: FAILED - %s", MH_StatusToString(status));
+        }
+    }
+    else
+    {
+        LOG("Hooks for SetRect/AdjustWindowRect skipped (disabled in INI).");
+    }
+
     if (setcursorhook == 1)
     {
-        MH_CreateHook(&SetCursor, &HookedSetCursor, reinterpret_cast<LPVOID*>(&fpSetCursor));
-        MH_EnableHook(&SetCursor);
+        LOG("Attempting to hook SetCursor...");
+        status = MH_CreateHook(&SetCursor, &HookedSetCursor, reinterpret_cast<LPVOID*>(&fpSetCursor));
+        if (status == MH_OK) {
+            LOG("  -> Create hook: SUCCESS.");
+            status = MH_EnableHook(&SetCursor);
+            if (status == MH_OK) {
+                LOG("  -> Enable hook: SUCCESS.");
+            }
+            else {
+                LOG("  -> Enable hook: FAILED - %s", MH_StatusToString(status));
+            }
+        }
+        else {
+            LOG("  -> Create hook: FAILED - %s", MH_StatusToString(status));
+        }
     }
-    //MessageBox(NULL, "Bmp + last setcursor. done", "other search", MB_OK | MB_ICONINFORMATION);
+    else {
+        LOG("Hook for SetCursor skipped (disabled in INI).");
+    }
+
     hooksinited = true;
-    //MH_EnableHook(MH_ALL_HOOKS);
+    LOG("--- Hook setup finished ---");
 }
 
 
@@ -1607,11 +1781,13 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
 //int akkumulator = 0;    
 DWORD WINAPI ThreadFunction(LPVOID lpParam)
 {
+    LOG("ThreadFunction started.");
     Sleep(2000);
     char buffer[256];
 
     // settings reporting
     std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
+    LOG("Reading settings from: %s", getShortenedPath_Manual(iniPath).c_str());
     std::string iniSettings = "Settings";
 
     //controller settings
@@ -2834,6 +3010,46 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     } //loop end but endless
     return 0;
 }
+
+//\\ For debugging
+void InitializeLogger() {
+    std::string logFilePath = UGetExecutableFolder() + "\\ScreenshotInput_Log.txt";
+    g_logFile.open(logFilePath, std::ios_base::out | std::ios_base::app);
+    if (!g_logFile.is_open()) {
+        MessageBox(NULL, "Failed to open log file!", "Logging Error", MB_OK | MB_ICONERROR);
+    }
+}
+
+void ShutdownLogger() {
+    if (g_logFile.is_open()) {
+        g_logFile.close();
+    }
+}
+
+void Log(const char* format, ...) {
+    std::lock_guard<std::mutex> lock(g_logMutex);
+    if (!g_logFile.is_open()) return;
+
+    // Get the current time for the timestamp
+    auto now = std::chrono::system_clock::now();
+    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+    struct tm time_info;
+    errno_t err = localtime_s(&time_info, &in_time_t);
+
+    g_logFile << "[";
+    if (err == 0) {
+        g_logFile << std::put_time(&time_info, "%T");
+    }
+    g_logFile << "] ";
+    char buffer[1024];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+    g_logFile << buffer << std::endl;
+}
+//\\ For debugging end
+
 //DWORD WINAPI ThreadFunction(LPVOID lpParam)
 void RemoveHook() {
     MH_DisableHook(MH_ALL_HOOKS);
@@ -2849,7 +3065,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         {
 
             //supposed to help againt crashes?
-            
+            INIT_LOGGER();
+            LOG("==========================================Start logging==========================================");
+            LOG("DLL Attached. Process ID: %lu", GetCurrentProcessId());
 
            // DisableThreadLibraryCalls(hModule);
             g_hModule = hModule;
@@ -2878,25 +3096,42 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                // WaitForInputIdle(GetCurrentProcess(), 1000); //wait for input to be ready
                // DisableThreadLibraryCalls(hModule);
                 if (MH_Initialize() != MH_OK) {
+                    LOG("FATAL: MH_Initialize() failed!");
                     MessageBox(NULL, "Failed to initialize MinHook", "Error", MB_OK | MB_ICONERROR);
                 }
                 else {
+                    LOG("Attempting to Setup the Hooks...");
                     SetupHook();
 
                 }
                 
 			}
-            CreateThread(nullptr, 0,
-                (LPTHREAD_START_ROUTINE)ThreadFunction, g_hModule, 0, 0); //GetModuleHandle(0)
+            LOG("Attempting to create the main thread...");
+            HANDLE hThread = CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)ThreadFunction, g_hModule, 0, 0);
+
+            if (hThread == NULL)
+            {
+                DWORD lastError = GetLastError();
+                LOG("FATAL: CreateThread failed! GetLastError() = %lu", lastError);
+                MessageBox(NULL, "CreateThread failed!", "Error", MB_OK | MB_ICONERROR);
+            }
+            else
+            {
+                LOG("Successfully created main thread with Handle: 0x%p", hThread);
+                CloseHandle(hThread);
+            }
 
             break;
         }
         case DLL_PROCESS_DETACH:
         {
+            LOG("DLL Detaching.");
             RemoveHook();
-            exit(0);
+            LOG("Hooks removed.");
+            SHUTDOWN_LOGGER();
+            //exit(0);
             break;
         }
     }
-    return true;
+    return TRUE;
 }
