@@ -7,7 +7,31 @@
 #ifndef PCH_H
 #define PCH_H
 
-// add headers that you want to pre-compile here
-#include "framework.h"
+// Windows Headers
+#define NOMINMAX
+#include <windows.h>
 
-#endif //PCH_H
+// Standard C++ Headers
+#include <iostream>
+#include <vector>
+#include <string>
+#include <fstream>
+#include <mutex>
+#include <chrono>
+#include <iomanip>
+#include <cmath>
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+
+// Other Libraries
+#include <Xinput.h>
+#include <dwmapi.h>
+#include <psapi.h>
+#include <tchar.h>
+#include <tlhelp32.h>
+
+// Project-specific
+#include "MinHook.h"
+
+#endif
