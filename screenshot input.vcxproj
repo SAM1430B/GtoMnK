@@ -147,15 +147,16 @@
   <ItemGroup>
     <ClInclude Include="framework.h" />
     <ClInclude Include="Hooks.h" />
+    <ClInclude Include="Input.h" />
     <ClInclude Include="Keyboard.h" />
     <ClInclude Include="Logging.h" />
     <ClInclude Include="Mouse.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="ScreenshotInteract.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="Hooks.cpp" />
+    <ClCompile Include="Input.cpp" />
     <ClCompile Include="Keyboard.cpp" />
     <ClCompile Include="Logging.cpp" />
     <ClCompile Include="Mouse.cpp" />
@@ -165,7 +166,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="ScreenshotInteract.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

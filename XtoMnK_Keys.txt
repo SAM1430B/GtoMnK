@@ -1,0 +1,116 @@
+##Mouse Actions (Negative Numbers)
+
+--These codes simulate mouse inputs.
+Code	Action	                Description
+-1	    Left Mouse Button	        -The primary mouse click. Gains double-click if enabled.
+-2	    Right Mouse Button	        -The secondary mouse click.
+-3	    Middle Mouse Button	        -The scroll wheel click.
+-4	    Mouse Button 4 (X1)	        -The "Back" side button on many mice.
+-5	    Mouse Button 5 (X2)	        -The "Forward" side button on many mice.
+-6	    Scroll Wheel Up	            -Simulates one "tick" of scrolling up. Is a single event, not held.
+-7	    Scroll Wheel Down	        -Simulates one "tick" of scrolling down. Is a single event, not held.
+
+
+##Keyboard Actions:
+
+
+--Special & Modifier Keys
+Code	Key         	Description
+1	    Escape	            -Esc key
+2	    Enter	            -The main Enter key
+3	    Tab	                -The Tab key
+4	    Shift (Generic)     -Use this for combos, like 4+25 for Shift+A.
+5	    Left Shift	        -The specific Left Shift key
+6	    Right Shift	        -The specific Right Shift key
+7	    Ctrl (Generic)      -Use this for combos, like 7+25 for Ctrl+A.
+8	    Left Ctrl	        -The specific Left Ctrl key
+9	    Right Ctrl  	    -The specific Right Ctrl key
+10	    Alt (Generic)	    -Use this for combos, like 10+61 for Alt+F1.
+11	    Left Alt	        -The specific Left Alt key
+12	    Right Alt	        -The specific Right Alt key
+13	    Spacebar            -The Spacebar
+14	    Arrow Up	
+15	    Arrow Down	
+16	    Arrow Left	
+17	    Arrow Right	
+18	    Backspace	
+19	    Delete	
+20	    Insert	
+21	    End	
+22	    Home	
+23	    Page Up	
+24	    Page Down	
+
+
+--Alphabet
+25	A	    38	N
+26	B	    39	O
+27	C	    40	P
+28	D	    41	Q
+29	E	    42	R
+30	F	    43	S
+31	G	    44	T
+32	H	    45	U
+33	I	    46	V
+34	J	    47	W
+35	K	    48	X
+36	L	    49	Y
+37	M	    50	Z
+
+--Top Row Numbers
+Code	Key
+51	    0
+52	    1
+53	    2
+54	    3
+55	    4
+56	    5
+57	    6
+58	    7
+59	    8
+60	    9
+
+--Function Keys
+Code	Key
+61	    F1
+62	    F2
+63	    F3
+64	    F4
+65	    F5
+66	    F6
+67	    F7
+68	    F8
+69	    F9
+70	    F10
+71	    F11
+72	    F12
+
+--Numpad Keys
+Code	Key	            Description
+73	    Numpad 0	
+74	    Numpad 1	
+75	    Numpad 2	
+76	    Numpad 3	
+77	    Numpad 4	
+78	    Numpad 5	
+79	    Numpad 6	
+80	    Numpad 7	
+81	    Numpad 8	
+82	    Numpad 9	
+83	    Numpad +	    -Add
+84	    Numpad -	    -Subtract
+85	    Numpad *	    -Multiply
+86	    Numpad /	    -Divide
+87	    Numpad .	    -Decimal
+88	    Numpad Enter
+
+91	    Numpad INSERT
+92	    Numpad END
+93	    Numpad DOWN
+94	    Numpad Page Down
+95	    Numpad LEFT
+96	    Numpad RIGHT
+97	    Numpad HOME
+98	    Numpad UP
+99	    Numpad Page Up
+100	    Numpad DELETE
