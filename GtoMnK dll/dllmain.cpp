@@ -7,7 +7,7 @@
 #include "InputState.h"
 #include <map>
 
-using namespace ScreenshotInput;
+using namespace GtoMnK;
 
 #pragma comment(lib, "Xinput9_1_0.lib")
 

@@ -2,7 +2,7 @@
 #include <string>
 #include "InputState.h"
 
-namespace ScreenshotInput {
+namespace GtoMnK {
 
     enum class SendMethod {
         PostMessage,

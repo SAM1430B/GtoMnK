@@ -1,7 +1,7 @@
 #pragma once
 #include "pch.h"
 
-namespace ScreenshotInput {
+namespace GtoMnK {
 
     // Typedefs for original function pointers
     typedef BOOL(WINAPI* GetCursorPos_t)(LPPOINT lpPoint);

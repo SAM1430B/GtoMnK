@@ -4,7 +4,7 @@
 #include <mutex>
 #include <string>
 
-namespace ScreenshotInput {
+namespace GtoMnK {
 
     class Logging {
     public:
@@ -21,9 +21,9 @@ namespace ScreenshotInput {
 }
 
 #ifdef _DEBUG
-#define INIT_LOGGER()     ScreenshotInput::Logging::InitializeLogger()
-#define SHUTDOWN_LOGGER() ScreenshotInput::Logging::ShutdownLogger()
-#define LOG(...)          ScreenshotInput::Logging::Log(__VA_ARGS__)
+#define INIT_LOGGER()     GtoMnK::Logging::InitializeLogger()
+#define SHUTDOWN_LOGGER() GtoMnK::Logging::ShutdownLogger()
+#define LOG(...)          GtoMnK::Logging::Log(__VA_ARGS__)
 
 #else
 #define INIT_LOGGER()

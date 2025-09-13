@@ -8,7 +8,7 @@
 extern int leftrect, toprect, rightrect, bottomrect;
 extern int clipcursorhook, getkeystatehook, getasynckeystatehook, getcursorposhook, setcursorposhook, setcursorhook, setrecthook;
 
-namespace ScreenshotInput {
+namespace GtoMnK {
 
     // Initialize static function pointers
     GetCursorPos_t Hooks::fpGetCursorPos = nullptr;

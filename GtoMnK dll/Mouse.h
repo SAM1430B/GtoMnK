@@ -1,7 +1,7 @@
 #pragma once
 #include "pch.h"
 
-namespace ScreenshotInput {
+namespace GtoMnK {
 
     class Mouse {
     public:

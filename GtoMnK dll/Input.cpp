@@ -7,11 +7,11 @@
 #include "InputState.h"
 
 extern HWND hwnd;
-extern ScreenshotInput::SendMethod g_SendMethod;
+extern GtoMnK::SendMethod g_SendMethod;
 extern int keystatesend;
 extern bool g_EnableMouseDoubleClick;
 
-namespace ScreenshotInput {
+namespace GtoMnK {
     namespace Input {
 
         static bool isLMB_Down = false, isRMB_Down = false, isMMB_Down = false, isX1B_Down = false, isX2B_Down = false;

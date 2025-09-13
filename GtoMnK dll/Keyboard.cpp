@@ -2,7 +2,7 @@
 #include "Keyboard.h"
 #include "Hooks.h"
 
-namespace ScreenshotInput {
+namespace GtoMnK {
 
     // Initialize static members
     int Keyboard::keystatesend = 0;

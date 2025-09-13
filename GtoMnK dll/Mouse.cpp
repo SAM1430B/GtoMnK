@@ -8,7 +8,7 @@ extern int ignorerect;
 extern POINT rectignore;
 extern HANDLE hMutex;
 
-namespace ScreenshotInput {
+namespace GtoMnK {
 
     int Mouse::Xf = 20;
     int Mouse::Yf = 20;

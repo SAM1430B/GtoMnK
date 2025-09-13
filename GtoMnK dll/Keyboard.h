@@ -1,7 +1,7 @@
 #pragma once
 #include "pch.h"
 
-namespace ScreenshotInput {
+namespace GtoMnK {
 
     class Keyboard {
     public:

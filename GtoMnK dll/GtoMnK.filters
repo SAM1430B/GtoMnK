@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\Files">
+      <UniqueIdentifier>{fa81d6e2-2911-499e-a317-9ca65dc5eadf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -22,22 +25,22 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Hooks.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Keyboard.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Logging.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Mouse.h">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Files</Filter>
     </ClInclude>
     <ClInclude Include="Input.h">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Files</Filter>
     </ClInclude>
     <ClInclude Include="InputState.h">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Keyboard.h">
+      <Filter>Source Files\Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Logging.h">
+      <Filter>Source Files\Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Mouse.h">
+      <Filter>Source Files\Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -48,19 +51,19 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Hooks.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Keyboard.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Logging.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Mouse.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Files</Filter>
     </ClCompile>
     <ClCompile Include="Input.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Keyboard.cpp">
+      <Filter>Source Files\Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Logging.cpp">
+      <Filter>Source Files\Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Mouse.cpp">
+      <Filter>Source Files\Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

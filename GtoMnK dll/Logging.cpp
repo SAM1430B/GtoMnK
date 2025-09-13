@@ -6,7 +6,7 @@
 
 #include <cstdarg>
 
-namespace ScreenshotInput {
+namespace GtoMnK {
 
     std::ofstream Logging::g_logFile;
     std::mutex Logging::g_logMutex;
@@ -20,7 +20,7 @@ namespace ScreenshotInput {
     }
 
     void Logging::InitializeLogger() {
-        std::string logFilePath = UGetExecutableFolder() + "\\ScreenshotInput_Log.txt";
+        std::string logFilePath = UGetExecutableFolder() + "\\GtoMnK_Log.txt";
         g_logFile.open(logFilePath, std::ios_base::out | std::ios_base::app);
         if (!g_logFile.is_open()) {
             MessageBoxA(NULL, "Failed to open log file!", "Logging Error", MB_OK | MB_ICONERROR);
