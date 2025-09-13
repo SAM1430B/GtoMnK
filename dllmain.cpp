@@ -4,10 +4,28 @@
 #include "Mouse.h"
 #include "Keyboard.h"
 #include "Input.h"
+#include "InputState.h"
+#include <map>
 
 using namespace ScreenshotInput;
 
 #pragma comment(lib, "Xinput9_1_0.lib")
+
+const size_t NO_ACTION = static_cast<size_t>(-1);
+
+struct ButtonState {
+    bool isPhysicallyPressed = false;
+    ULONGLONG pressTime = 0;
+    size_t activeActionIndex = NO_ACTION;
+    bool pressActionFired = false;
+    std::vector<Action> actions;
+    std::string heldActionString = "0";
+};
+
+enum CustomInputID {
+    CUSTOM_ID_LT = 0x10000,
+    CUSTOM_ID_RT,
+};
 
 HMODULE g_hModule = nullptr;
 HWND hwnd = nullptr;
@@ -20,14 +38,7 @@ int mode = 1; // Default to Cursor Mode
 int controllerID = 0;
 int keystatesend = 0;
 
-bool oldA = false, oldB = false, oldX = false, oldY = false;
-bool oldRB = false, oldLB = false, oldRSB = false, oldLSB = false;
-bool oldD_UP = false, oldD_DOWN = false, oldD_LEFT = false, oldD_RIGHT = false;
-bool oldLSU = false, oldLSD = false, oldLSL = false, oldLSR = false; // Left Stick
-bool oldRSU = false, oldRSD = false, oldRSL = false, oldRSR = false; // Right Stick
-bool oldStart = false;
-bool oldBack = false;
-bool oldLT = false, oldRT = false;
+std::map<UINT, ButtonState> buttonStates;
 
 // Drawing & cursor state
 bool pausedraw = false;
@@ -37,6 +48,7 @@ SendMethod g_SendMethod = SendMethod::PostMessage;
 
 bool g_EnableMouseDoubleClick = false;
 BYTE g_TriggerThreshold = 175;
+float stick_as_button_deadzone;
 
 std::string A_Action, B_Action, X_Action, Y_Action;
 std::string RB_Action, LB_Action, RSB_Action, LSB_Action;
@@ -46,6 +58,9 @@ std::string RSU_Action, RSD_Action, RSL_Action, RSR_Action;
 std::string Start_Action;
 std::string Back_Action;
 std::string LT_Action, RT_Action;
+
+bool oldLSU = false, oldLSD = false, oldLSL = false, oldLSR = false;
+bool oldRSU = false, oldRSD = false, oldRSL = false, oldRSR = false;
 
 bool scrollmap = false;
 POINT scroll = { 0, 0 };
@@ -59,8 +74,6 @@ int leftrect, toprect, rightrect, bottomrect;
 // Controller
 int righthanded, Xoffset, Yoffset;
 float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, accel_multiplier;
-// Button Actions
-float stick_as_button_deadzone;
 // General
 int userealmouse, ignorerect, drawfakecursor, alwaysdrawcursor, doubleclicks, scrolloutsidewindow, responsetime, quickMW, scrollenddelay;
 bool hooksinited = false;
@@ -88,6 +101,7 @@ HWND GetMainWindowHandle(DWORD targetPID) {
     return data.hwnd;
 }
 
+// UGetExecutableFolder_main is for getting the executable folder path
 std::string UGetExecutableFolder_main() {
     char path[MAX_PATH];
     GetModuleFileNameA(NULL, path, MAX_PATH);
@@ -96,6 +110,7 @@ std::string UGetExecutableFolder_main() {
     return exePath.substr(0, lastSlash);
 }
 
+// getShortenedPath_Manual is for shortening the path
 std::string getShortenedPath_Manual(const std::string& fullPath)
 {
     const char separator = '\\';
@@ -150,34 +165,53 @@ void LoadIniSettings() {
     g_EnableMouseDoubleClick = GetPrivateProfileIntA("KeyMapping", "EnableMouseDoubleClick", 0, iniPath.c_str()) == 1;
     g_TriggerThreshold = (BYTE)GetPrivateProfileIntA("KeyMapping", "TriggerThreshold", 175, iniPath.c_str());
     GetPrivateProfileStringA("KeyMapping", "StickAsButtonDeadzone", "0.25", buffer, sizeof(buffer), iniPath.c_str()); stick_as_button_deadzone = std::stof(buffer);
-    GetPrivateProfileStringA("KeyMapping", "A", "0", buffer, sizeof(buffer), iniPath.c_str()); A_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "B", "0", buffer, sizeof(buffer), iniPath.c_str()); B_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "X", "0", buffer, sizeof(buffer), iniPath.c_str()); X_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "Y", "0", buffer, sizeof(buffer), iniPath.c_str()); Y_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "RB", "0", buffer, sizeof(buffer), iniPath.c_str()); RB_Action = buffer; // R Shoulder
-    GetPrivateProfileStringA("KeyMapping", "LB", "0", buffer, sizeof(buffer), iniPath.c_str()); LB_Action = buffer; // L Shoulder
-    GetPrivateProfileStringA("KeyMapping", "RSB", "0", buffer, sizeof(buffer), iniPath.c_str()); RSB_Action = buffer; // R Thumb
-    GetPrivateProfileStringA("KeyMapping", "LSB", "0", buffer, sizeof(buffer), iniPath.c_str()); LSB_Action = buffer; // L Thumb
 
-    GetPrivateProfileStringA("KeyMapping", "D_UP", "0", buffer, sizeof(buffer), iniPath.c_str()); D_UP_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "D_DOWN", "0", buffer, sizeof(buffer), iniPath.c_str()); D_DOWN_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "D_LEFT", "0", buffer, sizeof(buffer), iniPath.c_str()); D_LEFT_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "D_RIGHT", "0", buffer, sizeof(buffer), iniPath.c_str()); D_RIGHT_Action = buffer;
-
+    GetPrivateProfileStringA("KeyMapping", "A", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[XINPUT_GAMEPAD_A].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "B", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[XINPUT_GAMEPAD_B].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "X", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[XINPUT_GAMEPAD_X].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "Y", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[XINPUT_GAMEPAD_Y].actions = Input::ParseActionString(buffer);
+    // Shoulder Buttons & Thumbs
+    GetPrivateProfileStringA("KeyMapping", "RB", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[XINPUT_GAMEPAD_RIGHT_SHOULDER].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "LB", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[XINPUT_GAMEPAD_LEFT_SHOULDER].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "RSB", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[XINPUT_GAMEPAD_RIGHT_THUMB].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "LSB", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[XINPUT_GAMEPAD_LEFT_THUMB].actions = Input::ParseActionString(buffer);
+    // D-Pad
+    GetPrivateProfileStringA("KeyMapping", "D_UP", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[XINPUT_GAMEPAD_DPAD_UP].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "D_DOWN", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[XINPUT_GAMEPAD_DPAD_DOWN].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "D_LEFT", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[XINPUT_GAMEPAD_DPAD_LEFT].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "D_RIGHT", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[XINPUT_GAMEPAD_DPAD_RIGHT].actions = Input::ParseActionString(buffer);
+	// Start & Back
+    GetPrivateProfileStringA("KeyMapping", "Start", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[XINPUT_GAMEPAD_START].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "Back", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[XINPUT_GAMEPAD_BACK].actions = Input::ParseActionString(buffer);
+    // Left Stick
     GetPrivateProfileStringA("KeyMapping", "LSU", "0", buffer, sizeof(buffer), iniPath.c_str()); LSU_Action = buffer;
     GetPrivateProfileStringA("KeyMapping", "LSD", "0", buffer, sizeof(buffer), iniPath.c_str()); LSD_Action = buffer;
     GetPrivateProfileStringA("KeyMapping", "LSL", "0", buffer, sizeof(buffer), iniPath.c_str()); LSL_Action = buffer;
     GetPrivateProfileStringA("KeyMapping", "LSR", "0", buffer, sizeof(buffer), iniPath.c_str()); LSR_Action = buffer;
-
+    // Right Stick
     GetPrivateProfileStringA("KeyMapping", "RSU", "0", buffer, sizeof(buffer), iniPath.c_str()); RSU_Action = buffer;
     GetPrivateProfileStringA("KeyMapping", "RSD", "0", buffer, sizeof(buffer), iniPath.c_str()); RSD_Action = buffer;
     GetPrivateProfileStringA("KeyMapping", "RSL", "0", buffer, sizeof(buffer), iniPath.c_str()); RSL_Action = buffer;
     GetPrivateProfileStringA("KeyMapping", "RSR", "0", buffer, sizeof(buffer), iniPath.c_str()); RSR_Action = buffer;
-
-    GetPrivateProfileStringA("KeyMapping", "Start", "10", buffer, sizeof(buffer), iniPath.c_str()); Start_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "Back", "0", buffer, sizeof(buffer), iniPath.c_str()); Back_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "RT", "1", buffer, sizeof(buffer), iniPath.c_str()); RT_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "LT", "2", buffer, sizeof(buffer), iniPath.c_str()); LT_Action = buffer;
+    // Triggers
+    GetPrivateProfileStringA("KeyMapping", "LT", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[CUSTOM_ID_LT].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "RT", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[CUSTOM_ID_RT].actions = Input::ParseActionString(buffer);
 }
 
 
@@ -239,6 +273,82 @@ void DrawOverlay() {
     ReleaseDC(hwnd, hdcWindow);
 }
 
+void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
+    ButtonState& bs = buttonStates[buttonFlag];
+
+    if (!bs.isPhysicallyPressed && isCurrentlyPressed) {
+        bs.isPhysicallyPressed = true;
+        bs.pressTime = GetTickCount64();
+        bs.activeActionIndex = NO_ACTION;
+        bs.pressActionFired = false;
+
+        if (!bs.actions.empty() && bs.actions[0].holdDurationMs == 0) {
+            bs.activeActionIndex = 0;
+            const Action& tapAction = bs.actions[0];
+
+            if (!tapAction.onRelease) {
+                Input::SendAction(tapAction.actionString, true);
+                bs.heldActionString = tapAction.actionString;
+                bs.pressActionFired = true;
+            }
+        }
+        return;
+    }
+
+    if (bs.isPhysicallyPressed && isCurrentlyPressed) {
+        ULONGLONG holdTime = GetTickCount64() - bs.pressTime;
+
+        size_t newActionIndex = NO_ACTION;
+        for (size_t i = 0; i < bs.actions.size(); ++i) {
+            if (holdTime >= bs.actions[i].holdDurationMs) {
+                newActionIndex = i;
+            }
+        }
+
+        if (newActionIndex != -1 && newActionIndex != bs.activeActionIndex) {
+            if (!bs.heldActionString.empty() && bs.heldActionString != "0") {
+                Input::SendAction(bs.heldActionString, false);
+            }
+
+            bs.activeActionIndex = newActionIndex;
+            bs.pressActionFired = false;
+            bs.heldActionString = "0";
+
+            const Action& newActiveAction = bs.actions[bs.activeActionIndex];
+            if (!newActiveAction.onRelease) {
+                Input::SendAction(newActiveAction.actionString, true); // Send KeyDown
+                bs.heldActionString = newActiveAction.actionString;    // Remember the new held key
+                bs.pressActionFired = true;
+            }
+        }
+        return;
+    }
+
+    if (bs.isPhysicallyPressed && !isCurrentlyPressed) {
+        bs.isPhysicallyPressed = false;
+
+        if (bs.activeActionIndex != NO_ACTION && bs.actions[bs.activeActionIndex].onRelease) {
+            const Action& finalAction = bs.actions[bs.activeActionIndex];
+            Input::SendAction(finalAction.actionString, true);
+            Input::SendAction(finalAction.actionString, false);
+        }
+
+        if (!bs.heldActionString.empty() && bs.heldActionString != "0") {
+            Input::SendAction(bs.heldActionString, false);
+        }
+
+        bs.activeActionIndex = NO_ACTION;
+        bs.pressActionFired = false;
+        bs.heldActionString = "0";
+        return;
+    }
+}
+
+void ProcessTrigger(UINT triggerID, BYTE triggerValue) {
+    bool isPressed = IsTriggerPressed(triggerValue);
+    ProcessButton(triggerID, isPressed);
+}
+
 DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     LOG("ThreadFunction started.");
     Sleep(2000);
@@ -247,7 +357,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     hooksinited = true;
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
 
-    DWORD lastMoveTime = 0;
+    ULONGLONG lastMoveTime = 0;
     const DWORD MOVE_UPDATE_INTERVAL = 8;
 
     while (loop) {
@@ -264,44 +374,28 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         XINPUT_STATE state;
         if (XInputGetState(controllerID, &state) == ERROR_SUCCESS) {
             if (showmessage == 12) showmessage = 0; // "disconnected" message on reconnect
-            WORD buttons = state.Gamepad.wButtons;
 
-            // BUTTON PRESS/RELEASE
-            if (!oldA && (buttons & XINPUT_GAMEPAD_A) && onoroff) { oldA = true; Input::SendAction(A_Action, true); }
-            else if (oldA && !(buttons & XINPUT_GAMEPAD_A)) { oldA = false; Input::SendAction(A_Action, false); }
+            // Buttons
+            ProcessButton(XINPUT_GAMEPAD_A, (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) != 0);
+            ProcessButton(XINPUT_GAMEPAD_B, (state.Gamepad.wButtons & XINPUT_GAMEPAD_B) != 0);
+            ProcessButton(XINPUT_GAMEPAD_X, (state.Gamepad.wButtons & XINPUT_GAMEPAD_X) != 0);
+            ProcessButton(XINPUT_GAMEPAD_Y, (state.Gamepad.wButtons & XINPUT_GAMEPAD_Y) != 0);
+            ProcessButton(XINPUT_GAMEPAD_RIGHT_SHOULDER, (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0);
+            ProcessButton(XINPUT_GAMEPAD_LEFT_SHOULDER, (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0);
+            ProcessButton(XINPUT_GAMEPAD_RIGHT_THUMB, (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) != 0);
+            ProcessButton(XINPUT_GAMEPAD_LEFT_THUMB, (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) != 0);
+            ProcessButton(XINPUT_GAMEPAD_DPAD_UP, (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) != 0);
+            ProcessButton(XINPUT_GAMEPAD_DPAD_DOWN, (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0);
+            ProcessButton(XINPUT_GAMEPAD_DPAD_LEFT, (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) != 0);
+            ProcessButton(XINPUT_GAMEPAD_DPAD_RIGHT, (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0);
+            ProcessButton(XINPUT_GAMEPAD_START, (state.Gamepad.wButtons & XINPUT_GAMEPAD_START) != 0);
+            ProcessButton(XINPUT_GAMEPAD_BACK, (state.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) != 0);
 
-            if (!oldB && (buttons & XINPUT_GAMEPAD_B) && onoroff) { oldB = true; Input::SendAction(B_Action, true); }
-            else if (oldB && !(buttons & XINPUT_GAMEPAD_B)) { oldB = false; Input::SendAction(B_Action, false); }
+            // Triggers
+            ProcessTrigger(CUSTOM_ID_LT, state.Gamepad.bLeftTrigger);
+            ProcessTrigger(CUSTOM_ID_RT, state.Gamepad.bRightTrigger);
 
-            if (!oldX && (buttons & XINPUT_GAMEPAD_X) && onoroff) { oldX = true; Input::SendAction(X_Action, true); }
-            else if (oldX && !(buttons & XINPUT_GAMEPAD_X)) { oldX = false; Input::SendAction(X_Action, false); }
-
-            if (!oldY && (buttons & XINPUT_GAMEPAD_Y) && onoroff) { oldY = true; Input::SendAction(Y_Action, true); }
-            else if (oldY && !(buttons & XINPUT_GAMEPAD_Y)) { oldY = false; Input::SendAction(Y_Action, false); }
-
-            if (!oldRB && (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER) && onoroff) { oldRB = true; Input::SendAction(RB_Action, true); }
-            else if (oldRB && !(buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER)) { oldRB = false; Input::SendAction(RB_Action, false); }
-
-            if (!oldLB && (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER) && onoroff) { oldLB = true; Input::SendAction(LB_Action, true); }
-            else if (oldLB && !(buttons & XINPUT_GAMEPAD_LEFT_SHOULDER)) { oldLB = false; Input::SendAction(LB_Action, false); }
-
-            if (!oldRSB && (buttons & XINPUT_GAMEPAD_RIGHT_THUMB) && onoroff) { oldRSB = true; Input::SendAction(RSB_Action, true); }
-            else if (oldRSB && !(buttons & XINPUT_GAMEPAD_RIGHT_THUMB)) { oldRSB = false; Input::SendAction(RSB_Action, false); }
-
-            if (!oldLSB && (buttons & XINPUT_GAMEPAD_LEFT_THUMB) && onoroff) { oldLSB = true; Input::SendAction(LSB_Action, true); }
-            else if (oldLSB && !(buttons & XINPUT_GAMEPAD_LEFT_THUMB)) { oldLSB = false; Input::SendAction(LSB_Action, false); }
-
-            // --- D-PAD LOGIC (Uses new variable names) ---
-            if (!oldD_UP && (buttons & XINPUT_GAMEPAD_DPAD_UP) && onoroff) { oldD_UP = true; Input::SendAction(D_UP_Action, true); }
-            else if (oldD_UP && !(buttons & XINPUT_GAMEPAD_DPAD_UP)) { oldD_UP = false; Input::SendAction(D_UP_Action, false); }
-            if (!oldD_DOWN && (buttons & XINPUT_GAMEPAD_DPAD_DOWN) && onoroff) { oldD_DOWN = true; Input::SendAction(D_DOWN_Action, true); }
-            else if (oldD_DOWN && !(buttons & XINPUT_GAMEPAD_DPAD_DOWN)) { oldD_DOWN = false; Input::SendAction(D_DOWN_Action, false); }
-            if (!oldD_LEFT && (buttons & XINPUT_GAMEPAD_DPAD_LEFT) && onoroff) { oldD_LEFT = true; Input::SendAction(D_LEFT_Action, true); }
-			else if (oldD_LEFT && !(buttons & XINPUT_GAMEPAD_DPAD_LEFT)) { oldD_LEFT = false; Input::SendAction(D_LEFT_Action, false); }
-            if (!oldD_RIGHT && (buttons & XINPUT_GAMEPAD_DPAD_RIGHT) && onoroff) { oldD_RIGHT = true; Input::SendAction(D_RIGHT_Action, true); }
-			else if (oldD_RIGHT && !(buttons & XINPUT_GAMEPAD_DPAD_RIGHT)) { oldD_RIGHT = false; Input::SendAction(D_RIGHT_Action, false); }
-
-            // ANALOG STICKS AS BUTTONS
+            // Analog Sticks (as buttons)
             // Left Stick
             if (onoroff && (mode == 0 || (mode == 1 && righthanded == 1))) {
                 float normLX = static_cast<float>(state.Gamepad.sThumbLX) / 32767.0f;
@@ -309,7 +403,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                 float magnitudeL = sqrt(normLX * normLX + normLY * normLY);
 
                 bool isLSU = false, isLSD = false, isLSL = false, isLSR = false;
-
                 if (magnitudeL > stick_as_button_deadzone) {
                     float angleDeg = atan2(normLY, normLX) * 180.0f / 3.1415926535f;
                     if (angleDeg < 0) angleDeg += 360.0f;
@@ -323,11 +416,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                 if (!oldLSU && isLSU) { oldLSU = true; Input::SendAction(LSU_Action, true); }
                 else if (oldLSU && !isLSU) { oldLSU = false; Input::SendAction(LSU_Action, false); }
                 if (!oldLSD && isLSD) { oldLSD = true; Input::SendAction(LSD_Action, true); }
-				else if (oldLSD && !isLSD) { oldLSD = false; Input::SendAction(LSD_Action, false); }
-				if (!oldLSL && isLSL) { oldLSL = true; Input::SendAction(LSL_Action, true); }
-				else if (oldLSL && !isLSL) { oldLSL = false; Input::SendAction(LSL_Action, false); }
-				if (!oldLSR && isLSR) { oldLSR = true; Input::SendAction(LSR_Action, true); }
-				else if (oldLSR && !isLSR) { oldLSR = false; Input::SendAction(LSR_Action, false); }
+                else if (oldLSD && !isLSD) { oldLSD = false; Input::SendAction(LSD_Action, false); }
+                if (!oldLSL && isLSL) { oldLSL = true; Input::SendAction(LSL_Action, true); }
+                else if (oldLSL && !isLSL) { oldLSL = false; Input::SendAction(LSL_Action, false); }
+                if (!oldLSR && isLSR) { oldLSR = true; Input::SendAction(LSR_Action, true); }
+                else if (oldLSR && !isLSR) { oldLSR = false; Input::SendAction(LSR_Action, false); }
             }
 
             // Right Stick
@@ -337,7 +430,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                 float magnitudeR = sqrt(normRX * normRX + normRY * normRY);
 
                 bool isRSU = false, isRSD = false, isRSL = false, isRSR = false;
-
                 if (magnitudeR > stick_as_button_deadzone) {
                     float angleDeg = atan2(normRY, normRX) * 180.0f / 3.1415926535f;
                     if (angleDeg < 0) angleDeg += 360.0f;
@@ -350,21 +442,13 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
 
                 if (!oldRSU && isRSU) { oldRSU = true; Input::SendAction(RSU_Action, true); }
                 else if (oldRSU && !isRSU) { oldRSU = false; Input::SendAction(RSU_Action, false); }
-				if (!oldRSD && isRSD) { oldRSD = true; Input::SendAction(RSD_Action, true); }
-				else if (oldRSD && !isRSD) { oldRSD = false; Input::SendAction(RSD_Action, false); }
+                if (!oldRSD && isRSD) { oldRSD = true; Input::SendAction(RSD_Action, true); }
+                else if (oldRSD && !isRSD) { oldRSD = false; Input::SendAction(RSD_Action, false); }
                 if (!oldRSL && isRSL) { oldRSL = true; Input::SendAction(RSL_Action, true); }
-				else if (oldRSL && !isRSL) { oldRSL = false; Input::SendAction(RSL_Action, false); }
+                else if (oldRSL && !isRSL) { oldRSL = false; Input::SendAction(RSL_Action, false); }
                 if (!oldRSR && isRSR) { oldRSR = true; Input::SendAction(RSR_Action, true); }
                 else if (oldRSR && !isRSR) { oldRSR = false; Input::SendAction(RSR_Action, false); }
-			}
-
-			// START BUTTON
-            if (!oldStart && (buttons & XINPUT_GAMEPAD_START) && onoroff) { oldStart = true; Input::SendAction(Start_Action, true); }
-            else if (oldStart && !(buttons & XINPUT_GAMEPAD_START)) { oldStart = false; Input::SendAction(Start_Action, false); }
-
-            // BACK Button
-            if (!oldBack && (buttons & XINPUT_GAMEPAD_BACK) && onoroff) { oldBack = true; Input::SendAction(Back_Action, true); }
-            else if (oldBack && !(buttons & XINPUT_GAMEPAD_BACK)) { oldBack = false; Input::SendAction(Back_Action, false); }
+            }
 
 			// CURSOR MOVEMENT
             if (mode == 1 && onoroff) {
@@ -387,7 +471,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                     Mouse::Yf = std::max((LONG)rect.top, std::min((LONG)Mouse::Yf, (LONG)rect.bottom));
                     movedmouse = true;
 
-                    DWORD currentTime = GetTickCount64();
+                    ULONGLONG currentTime = GetTickCount64();
                     if (currentTime - lastMoveTime > MOVE_UPDATE_INTERVAL) {
                         lastMoveTime = currentTime;
                         POINT screenPos = { (LONG)Mouse::Xf, (LONG)Mouse::Yf };
@@ -395,15 +479,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                         Input::SendAction(screenPos.x, screenPos.y);
                     }
                 }
-
-                // Trigger
-                bool rightPressed = IsTriggerPressed(state.Gamepad.bRightTrigger);
-                if (rightPressed && !oldRT) { oldRT = true; Input::SendAction(RT_Action, true); }
-                else if (!rightPressed && oldRT) { oldRT = false; Input::SendAction(RT_Action, false); }
-
-                bool leftPressed = IsTriggerPressed(state.Gamepad.bLeftTrigger);
-                if (leftPressed && !oldLT) { oldLT = true; Input::SendAction(LT_Action, true); }
-                else if (!leftPressed && oldLT) { oldLT = false; Input::SendAction(LT_Action, false); }
             }
         }
         else {

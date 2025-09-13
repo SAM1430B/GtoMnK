@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream>
 #include <map>
+#include "InputState.h"
 
 extern HWND hwnd;
 extern ScreenshotInput::SendMethod g_SendMethod;
@@ -107,11 +108,11 @@ namespace ScreenshotInput {
         }
 
         void DispatchAction(int actionCode, bool press) {
-            static DWORD lastLeftClickTime = 0;
+            static ULONGLONG lastLeftClickTime = 0;
             // Mouse left click double click
 			// TODO: Support for right/middle and (X1/X2 ?) double click
             if (actionCode == 1 && g_EnableMouseDoubleClick && press) {
-                DWORD currentTime = GetTickCount64();
+                ULONGLONG currentTime = GetTickCount64();
                 if (currentTime - lastLeftClickTime < GetDoubleClickTime()) {
                     actionCode = 8;
                     lastLeftClickTime = 0;
@@ -182,8 +183,6 @@ namespace ScreenshotInput {
                 if (actionCode == 99) vkCode = VK_PRIOR;      // Numpad 9
                 if (actionCode == 100) vkCode = VK_DELETE;    // Numpad .
 
-                // --- Step 2: Determine if the key is "Extended" ---
-                // This block checks the actionCode to see if it belongs to an extended key.
                 if ((actionCode >= 14 && actionCode <= 17) || // Dedicated Arrow Keys
                     (actionCode >= 19 && actionCode <= 24) || // Insert, Del, Home, End, PgUp, PgDn
                     actionCode == 9 ||  // Right Control
@@ -199,26 +198,6 @@ namespace ScreenshotInput {
             }
             else {
                 if (isMouseAction) SendInputMouse(actionCode, press); else SendInputKey(vkCode, press, isExtended);
-            }
-        }
-
-        void SendAction(const std::string& actionString, bool press) {
-            if (actionString.empty() || actionString == "0") return;
-
-            if (actionString.find('+') == std::string::npos) {
-                try { DispatchAction(std::stoi(actionString), press); }
-                catch (...) {}
-            }
-            else {
-                std::vector<int> keycodes;
-                std::stringstream ss(actionString);
-                std::string part;
-                while (std::getline(ss, part, '+')) {
-                    try { keycodes.push_back(std::stoi(part)); }
-                    catch (...) {}
-                }
-                if (press) { for (int code : keycodes) DispatchAction(code, true); }
-                else { for (auto it = keycodes.rbegin(); it != keycodes.rend(); ++it) DispatchAction(*it, false); }
             }
         }
 
@@ -243,6 +222,53 @@ namespace ScreenshotInput {
                 input.mi.dy = static_cast<LONG>((screenY / screenHeight) * 65535.0f);
                 SendInput(1, &input, sizeof(INPUT));
             }
+        }
+
+        std::vector<Action> ParseActionString(const std::string& fullString) {
+            std::vector<Action> parsedActions;
+            if (fullString.empty() || fullString == "0") {
+                return parsedActions;
+            }
+
+            std::stringstream ss(fullString);
+            std::string part;
+            while (std::getline(ss, part, '+')) {
+                if (part.empty()) continue;
+
+                Action newAction;
+
+                size_t firstDigitPos = 0;
+                bool foundDigit = false;
+                for (size_t i = 0; i < part.length(); ++i) {
+                    if (part[i] == '*') {
+                        newAction.holdDurationMs += 500;
+                    }
+                    else if (part[i] == '^') {
+                        newAction.onRelease = true;
+                    }
+                    else if (isdigit(part[i]) || part[i] == '-') {
+                        firstDigitPos = i;
+                        foundDigit = true;
+                        break;
+                    }
+                }
+
+                if (foundDigit) {
+                    newAction.actionString = part.substr(firstDigitPos);
+                    parsedActions.push_back(newAction);
+                }
+            }
+
+            std::sort(parsedActions.begin(), parsedActions.end(), [](const Action& a, const Action& b) {
+                return a.holdDurationMs < b.holdDurationMs;
+                });
+
+            return parsedActions;
+        }
+
+        void SendAction(const std::string& actionString, bool press) {
+            try { DispatchAction(std::stoi(actionString), press); }
+            catch (...) {}
         }
 
     }
