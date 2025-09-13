@@ -203,6 +203,12 @@ copy "$(SolutionDir)include\MinHook\MinHook.x64.dll" "$(TargetDir)"</Command>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="GtoMnK.ini" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="GtoMnK_Keys.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

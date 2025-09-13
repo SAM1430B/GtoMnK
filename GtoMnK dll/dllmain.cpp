@@ -129,7 +129,7 @@ std::string getShortenedPath_Manual(const std::string& fullPath)
 }
 
 void LoadIniSettings() {
-    std::string iniPath = UGetExecutableFolder_main() + "\\XtoMnK.ini";
+    std::string iniPath = UGetExecutableFolder_main() + "\\GtoMnK.ini";
     LOG("Reading settings from: %s", getShortenedPath_Manual(iniPath).c_str());
 
     // [Hooks]
@@ -145,32 +145,32 @@ void LoadIniSettings() {
     g_SendMethod = (method == 1) ? SendMethod::SendInput : SendMethod::PostMessage;
     LOG("Using SendMethod: %s", (g_SendMethod == SendMethod::SendInput) ? "SendInput" : "PostMessage");
     controllerID = GetPrivateProfileIntA("Settings", "Controllerid", 0, iniPath.c_str());
-    mode = GetPrivateProfileIntA("Settings", "Initial Mode", 1, iniPath.c_str());
+    mode = GetPrivateProfileIntA("Settings", "Mode", 1, iniPath.c_str());
     drawfakecursor = GetPrivateProfileIntA("Settings", "DrawFakeCursor", 1, iniPath.c_str());
     alwaysdrawcursor = GetPrivateProfileIntA("Settings", "DrawFakeCursorAlways", 0, iniPath.c_str());
     responsetime = GetPrivateProfileIntA("Settings", "Responsetime", 0, iniPath.c_str());
 
     char buffer[256];
     // [StickToMouse]
-    righthanded = GetPrivateProfileIntA("StickToMouse", "Righthanded", 0, iniPath.c_str());
-    GetPrivateProfileStringA("StickToMouse", "Sensitivity", "15.0", buffer, sizeof(buffer), iniPath.c_str()); sensitivity = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Accel_Multiplier", "1.7", buffer, sizeof(buffer), iniPath.c_str()); accel_multiplier = std::stof(buffer);
+    righthanded = GetPrivateProfileIntA("StickToMouse", "Righthanded", 2, iniPath.c_str());
+    GetPrivateProfileStringA("StickToMouse", "Sensitivity", "1.45", buffer, sizeof(buffer), iniPath.c_str()); sensitivity = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Accel_Multiplier", "3.0", buffer, sizeof(buffer), iniPath.c_str()); accel_multiplier = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Radial_Deadzone", "0.1", buffer, sizeof(buffer), iniPath.c_str()); radial_deadzone = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Axial_Deadzone", "0.0", buffer, sizeof(buffer), iniPath.c_str()); axial_deadzone = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Max_Threshold", "0.03", buffer, sizeof(buffer), iniPath.c_str()); max_threshold = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Curve_Slope", "0.16", buffer, sizeof(buffer), iniPath.c_str()); curve_slope = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Curve_Exponent", "5.0", buffer, sizeof(buffer), iniPath.c_str()); curve_exponent = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Max_Threshold", "0.01", buffer, sizeof(buffer), iniPath.c_str()); max_threshold = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Curve_Slope", "0.30", buffer, sizeof(buffer), iniPath.c_str()); curve_slope = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Curve_Exponent", "6.50", buffer, sizeof(buffer), iniPath.c_str()); curve_exponent = std::stof(buffer);
 
     // [KeyMapping] Section
     g_EnableMouseDoubleClick = GetPrivateProfileIntA("KeyMapping", "EnableMouseDoubleClick", 0, iniPath.c_str()) == 1;
     g_TriggerThreshold = (BYTE)GetPrivateProfileIntA("KeyMapping", "TriggerThreshold", 175, iniPath.c_str());
     GetPrivateProfileStringA("KeyMapping", "StickAsButtonDeadzone", "0.25", buffer, sizeof(buffer), iniPath.c_str()); stick_as_button_deadzone = std::stof(buffer);
 
-    GetPrivateProfileStringA("KeyMapping", "A", "0", buffer, sizeof(buffer), iniPath.c_str());
+    GetPrivateProfileStringA("KeyMapping", "A", "13", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_A].actions = Input::ParseActionString(buffer);
     GetPrivateProfileStringA("KeyMapping", "B", "0", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_B].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "X", "0", buffer, sizeof(buffer), iniPath.c_str());
+    GetPrivateProfileStringA("KeyMapping", "X", "42", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_X].actions = Input::ParseActionString(buffer);
     GetPrivateProfileStringA("KeyMapping", "Y", "0", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_Y].actions = Input::ParseActionString(buffer);
@@ -181,36 +181,36 @@ void LoadIniSettings() {
     buttonStates[XINPUT_GAMEPAD_LEFT_SHOULDER].actions = Input::ParseActionString(buffer);
     GetPrivateProfileStringA("KeyMapping", "RSB", "0", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_RIGHT_THUMB].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "LSB", "0", buffer, sizeof(buffer), iniPath.c_str());
+    GetPrivateProfileStringA("KeyMapping", "LSB", "4", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_LEFT_THUMB].actions = Input::ParseActionString(buffer);
     // D-Pad
-    GetPrivateProfileStringA("KeyMapping", "D_UP", "0", buffer, sizeof(buffer), iniPath.c_str());
+    GetPrivateProfileStringA("KeyMapping", "D_UP", "14", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_DPAD_UP].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "D_DOWN", "0", buffer, sizeof(buffer), iniPath.c_str());
+    GetPrivateProfileStringA("KeyMapping", "D_DOWN", "15", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_DPAD_DOWN].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "D_LEFT", "0", buffer, sizeof(buffer), iniPath.c_str());
+    GetPrivateProfileStringA("KeyMapping", "D_LEFT", "16", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_DPAD_LEFT].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "D_RIGHT", "0", buffer, sizeof(buffer), iniPath.c_str());
+    GetPrivateProfileStringA("KeyMapping", "D_RIGHT", "17", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_DPAD_RIGHT].actions = Input::ParseActionString(buffer);
 	// Start & Back
-    GetPrivateProfileStringA("KeyMapping", "Start", "0", buffer, sizeof(buffer), iniPath.c_str());
+    GetPrivateProfileStringA("KeyMapping", "Start", "1", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_START].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "Back", "0", buffer, sizeof(buffer), iniPath.c_str());
+    GetPrivateProfileStringA("KeyMapping", "Back", "3", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_BACK].actions = Input::ParseActionString(buffer);
     // Left Stick
-    GetPrivateProfileStringA("KeyMapping", "LSU", "0", buffer, sizeof(buffer), iniPath.c_str()); LSU_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "LSD", "0", buffer, sizeof(buffer), iniPath.c_str()); LSD_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "LSL", "0", buffer, sizeof(buffer), iniPath.c_str()); LSL_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "LSR", "0", buffer, sizeof(buffer), iniPath.c_str()); LSR_Action = buffer;
+    GetPrivateProfileStringA("KeyMapping", "LSU", "47", buffer, sizeof(buffer), iniPath.c_str()); LSU_Action = buffer;
+    GetPrivateProfileStringA("KeyMapping", "LSD", "43", buffer, sizeof(buffer), iniPath.c_str()); LSD_Action = buffer;
+    GetPrivateProfileStringA("KeyMapping", "LSL", "25", buffer, sizeof(buffer), iniPath.c_str()); LSL_Action = buffer;
+    GetPrivateProfileStringA("KeyMapping", "LSR", "28", buffer, sizeof(buffer), iniPath.c_str()); LSR_Action = buffer;
     // Right Stick
     GetPrivateProfileStringA("KeyMapping", "RSU", "0", buffer, sizeof(buffer), iniPath.c_str()); RSU_Action = buffer;
     GetPrivateProfileStringA("KeyMapping", "RSD", "0", buffer, sizeof(buffer), iniPath.c_str()); RSD_Action = buffer;
     GetPrivateProfileStringA("KeyMapping", "RSL", "0", buffer, sizeof(buffer), iniPath.c_str()); RSL_Action = buffer;
     GetPrivateProfileStringA("KeyMapping", "RSR", "0", buffer, sizeof(buffer), iniPath.c_str()); RSR_Action = buffer;
     // Triggers
-    GetPrivateProfileStringA("KeyMapping", "LT", "0", buffer, sizeof(buffer), iniPath.c_str());
+    GetPrivateProfileStringA("KeyMapping", "LT", "-2", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[CUSTOM_ID_LT].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "RT", "0", buffer, sizeof(buffer), iniPath.c_str());
+    GetPrivateProfileStringA("KeyMapping", "RT", "-1", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[CUSTOM_ID_RT].actions = Input::ParseActionString(buffer);
 }
 
@@ -237,7 +237,7 @@ POINT CalculateUltimateCursorMove(SHORT stickX, SHORT stickY) {
     remappedMagnitude = (std::max)(0.0, (std::min)(1.0, remappedMagnitude));
 
     double curvedMagnitude = curve_slope * remappedMagnitude + (1.0 - curve_slope) * std::pow(remappedMagnitude, curve_exponent);
-
+	// TODO: add vertical and horizontal sensitivity
     double finalSpeed = sensitivity * accel_multiplier;
     double dirX = normX / magnitude;
     double dirY = normY / magnitude;
