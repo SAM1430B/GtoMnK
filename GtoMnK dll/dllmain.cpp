@@ -73,7 +73,7 @@ int clipcursorhook, getkeystatehook, getasynckeystatehook, getcursorposhook, set
 int leftrect, toprect, rightrect, bottomrect;
 // Controller
 int righthanded, Xoffset, Yoffset;
-float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, accel_multiplier;
+float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, accel_multiplier, horizontal_sensitivity, vertical_sensitivity;
 // General
 int userealmouse, ignorerect, drawfakecursor, alwaysdrawcursor, doubleclicks, scrolloutsidewindow, responsetime, quickMW, scrollenddelay;
 bool hooksinited = false;
@@ -154,6 +154,8 @@ void LoadIniSettings() {
     // [StickToMouse]
     righthanded = GetPrivateProfileIntA("StickToMouse", "Righthanded", 2, iniPath.c_str());
     GetPrivateProfileStringA("StickToMouse", "Sensitivity", "1.45", buffer, sizeof(buffer), iniPath.c_str()); sensitivity = std::stof(buffer);
+	GetPrivateProfileStringA("StickToMouse", "Horizontal_Sensitivity", "0.0", buffer, sizeof(buffer), iniPath.c_str()); horizontal_sensitivity = std::stof(buffer);
+	GetPrivateProfileStringA("StickToMouse", "Vertical_Sensitivity", "0.0", buffer, sizeof(buffer), iniPath.c_str()); vertical_sensitivity = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Accel_Multiplier", "3.0", buffer, sizeof(buffer), iniPath.c_str()); accel_multiplier = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Radial_Deadzone", "0.1", buffer, sizeof(buffer), iniPath.c_str()); radial_deadzone = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Axial_Deadzone", "0.0", buffer, sizeof(buffer), iniPath.c_str()); axial_deadzone = std::stof(buffer);
@@ -215,7 +217,7 @@ void LoadIniSettings() {
 }
 
 
-POINT CalculateUltimateCursorMove(SHORT stickX, SHORT stickY) {
+POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
     static double mouseDeltaAccumulatorX = 0.0;
     static double mouseDeltaAccumulatorY = 0.0;
 
@@ -237,12 +239,12 @@ POINT CalculateUltimateCursorMove(SHORT stickX, SHORT stickY) {
     remappedMagnitude = (std::max)(0.0, (std::min)(1.0, remappedMagnitude));
 
     double curvedMagnitude = curve_slope * remappedMagnitude + (1.0 - curve_slope) * std::pow(remappedMagnitude, curve_exponent);
-	// TODO: add vertical and horizontal sensitivity
-    double finalSpeed = sensitivity * accel_multiplier;
+    double finalSpeedX = sensitivity * (1.0f + horizontal_sensitivity) * accel_multiplier;
+    double finalSpeedY = sensitivity * (1.0f + vertical_sensitivity) * accel_multiplier;
     double dirX = normX / magnitude;
     double dirY = normY / magnitude;
-    double finalMouseDeltaX = dirX * curvedMagnitude * finalSpeed;
-    double finalMouseDeltaY = dirY * curvedMagnitude * finalSpeed;
+    double finalMouseDeltaX = dirX * curvedMagnitude * finalSpeedX;
+    double finalMouseDeltaY = dirY * curvedMagnitude * finalSpeedY;
 
     mouseDeltaAccumulatorX += finalMouseDeltaX;
     mouseDeltaAccumulatorY += finalMouseDeltaY;
@@ -463,7 +465,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                     thumbX = state.Gamepad.sThumbLX;
                     thumbY = state.Gamepad.sThumbLY;
                 }
-                POINT delta = CalculateUltimateCursorMove(thumbX, thumbY);
+                POINT delta = ThumbstickMouseMove(thumbX, thumbY);
 
                 if (delta.x != 0 || delta.y != 0) {
                     Mouse::Xf += delta.x; Mouse::Yf += delta.y;

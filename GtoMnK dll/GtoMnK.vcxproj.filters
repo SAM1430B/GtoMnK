@@ -48,4 +48,10 @@
       <UniqueIdentifier>{0dd4a3a1-b51f-416a-a2fa-bdc4b1707150}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="GtoMnK.ini" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="GtoMnK_Keys.txt" />
+  </ItemGroup>
 </Project>

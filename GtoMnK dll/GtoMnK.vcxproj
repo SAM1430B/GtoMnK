@@ -87,7 +87,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir>$(PlatformShortName)\$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)$(PlatformArchitecture)</TargetName>
+    <TargetName>$(SolutionName)$(PlatformArchitecture)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -107,7 +107,9 @@
     </Link>
     <PostBuildEvent>
       <Command>echo Copying MinHook DLLs...
-copy "$(SolutionDir)include\MinHook\MinHook.x86.dll" "$(TargetDir)"</Command>
+copy "$(SolutionDir)include\MinHook\MinHook.x86.dll" "$(TargetDir)"
+copy "$(ProjectDir)GtoMnK_Keys.txt" "$(TargetDir)"
+copy "$(ProjectDir)GtoMnK.ini" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -132,7 +134,9 @@ copy "$(SolutionDir)include\MinHook\MinHook.x86.dll" "$(TargetDir)"</Command>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying MinHook DLLs...
-copy "$(SolutionDir)include\MinHook\MinHook.x86.dll" "$(TargetDir)"</Command>
+copy "$(SolutionDir)include\MinHook\MinHook.x86.dll" "$(TargetDir)"
+copy "$(ProjectDir)GtoMnK_Keys.txt" "$(TargetDir)"
+copy "$(ProjectDir)GtoMnK.ini" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -152,7 +156,9 @@ copy "$(SolutionDir)include\MinHook\MinHook.x86.dll" "$(TargetDir)"</Command>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying MinHook DLLs...
-copy "$(SolutionDir)include\MinHook\MinHook.x64.dll" "$(TargetDir)"</Command>
+copy "$(SolutionDir)include\MinHook\MinHook.x64.dll" "$(TargetDir)"
+copy "$(ProjectDir)GtoMnK_Keys.txt" "$(TargetDir)"
+copy "$(ProjectDir)GtoMnK.ini" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -176,7 +182,9 @@ copy "$(SolutionDir)include\MinHook\MinHook.x64.dll" "$(TargetDir)"</Command>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying MinHook DLLs...
-copy "$(SolutionDir)include\MinHook\MinHook.x64.dll" "$(TargetDir)"</Command>
+copy "$(SolutionDir)include\MinHook\MinHook.x64.dll" "$(TargetDir)"
+copy "$(ProjectDir)GtoMnK_Keys.txt" "$(TargetDir)"
+copy "$(ProjectDir)GtoMnK.ini" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
