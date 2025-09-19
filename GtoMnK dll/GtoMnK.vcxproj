@@ -97,19 +97,20 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Users\nils\source\repos\screenshot-input\include\MinHook.x86.lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>$(SolutionDir)include\MinHook\MinHook.x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)include\EasyHook\EasyHook32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying MinHook DLLs...
-copy "$(SolutionDir)include\MinHook\MinHook.x86.dll" "$(TargetDir)"
-copy "$(ProjectDir)GtoMnK_Keys.txt" "$(TargetDir)"
-copy "$(ProjectDir)GtoMnK.ini" "$(TargetDir)"</Command>
+copy "$(SolutionDir)include\EasyHook\EasyHook32.dll" "$(TargetDir)"
+copy "$(ProjectDir)Documents\GtoMnK_Keys.txt" "$(TargetDir)"
+copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -122,7 +123,7 @@ copy "$(ProjectDir)GtoMnK.ini" "$(TargetDir)"</Command>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\Users</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -130,13 +131,14 @@ copy "$(ProjectDir)GtoMnK.ini" "$(TargetDir)"</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>$(SolutionDir)include\MinHook\MinHook.x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)include\EasyHook\EasyHook32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying MinHook DLLs...
-copy "$(SolutionDir)include\MinHook\MinHook.x86.dll" "$(TargetDir)"
-copy "$(ProjectDir)GtoMnK_Keys.txt" "$(TargetDir)"
-copy "$(ProjectDir)GtoMnK.ini" "$(TargetDir)"</Command>
+copy "$(SolutionDir)include\EasyHook\EasyHook32.dll" "$(TargetDir)"
+copy "$(ProjectDir)Documents\GtoMnK_Keys.txt" "$(TargetDir)"
+copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -147,18 +149,20 @@ copy "$(ProjectDir)GtoMnK.ini" "$(TargetDir)"</Command>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>$(SolutionDir)include\MinHook\MinHook.x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)include\EasyHook\EasyHook64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying MinHook DLLs...
-copy "$(SolutionDir)include\MinHook\MinHook.x64.dll" "$(TargetDir)"
-copy "$(ProjectDir)GtoMnK_Keys.txt" "$(TargetDir)"
-copy "$(ProjectDir)GtoMnK.ini" "$(TargetDir)"</Command>
+copy "$(SolutionDir)include\EasyHook\EasyHook64.dll" "$(TargetDir)"
+copy "$(ProjectDir)Documents\GtoMnK_Keys.txt" "$(TargetDir)"
+copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -171,6 +175,7 @@ copy "$(ProjectDir)GtoMnK.ini" "$(TargetDir)"</Command>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -178,13 +183,14 @@ copy "$(ProjectDir)GtoMnK.ini" "$(TargetDir)"</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>$(SolutionDir)include\MinHook\MinHook.x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)include\EasyHook\EasyHook64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying MinHook DLLs...
-copy "$(SolutionDir)include\MinHook\MinHook.x64.dll" "$(TargetDir)"
-copy "$(ProjectDir)GtoMnK_Keys.txt" "$(TargetDir)"
-copy "$(ProjectDir)GtoMnK.ini" "$(TargetDir)"</Command>
+copy "$(SolutionDir)include\EasyHook\EasyHook64.dll" "$(TargetDir)"
+copy "$(ProjectDir)Documents\GtoMnK_Keys.txt" "$(TargetDir)"
+copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -212,10 +218,10 @@ copy "$(ProjectDir)GtoMnK.ini" "$(TargetDir)"</Command>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="GtoMnK.ini" />
+    <None Include="Documents\GtoMnK.ini" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="GtoMnK_Keys.txt" />
+    <Text Include="Documents\GtoMnK_Keys.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

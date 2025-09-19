@@ -32,6 +32,6 @@
 #include <tlhelp32.h>
 
 // Project-specific
-#include "MinHook.h"
+//#include "MinHook.h"
 
 #endif

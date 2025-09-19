@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Keyboard.h"
-#include "Hooks.h"
+//#include "Hooks.h"
 
 namespace GtoMnK {
 
@@ -10,28 +10,23 @@ namespace GtoMnK {
     int Keyboard::samekeyA = 0;
 
     SHORT WINAPI Keyboard::HookedGetAsyncKeyState(int vKey) {
-        if (samekeyA == vKey) {
-            return (short)0x8001;
-        }
+        if (samekeyA == vKey) return (short)0x8001;
         samekeyA = 0;
 
         if (vKey == keystatesend) {
             samekeyA = vKey;
             return (short)0x8000;
         }
-        return Hooks::fpGetAsyncKeyState(vKey);
+        return GetAsyncKeyState(vKey);
     }
 
     SHORT WINAPI Keyboard::HookedGetKeyState(int nVirtKey) {
-        if (samekey == nVirtKey) {
-            return (short)0x8001;
-        }
+        if (samekey == nVirtKey) return (short)0x0001;
         samekey = 0;
-        
         if (nVirtKey == keystatesend) {
             samekey = nVirtKey;
-            return (short)0x8000;
+            return (short)0x0001;
         }
-        return Hooks::fpGetKeyState(nVirtKey);
-    }
+        return GetKeyState(nVirtKey);
+	}
 }

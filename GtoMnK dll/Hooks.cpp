@@ -8,83 +8,160 @@
 extern int leftrect, toprect, rightrect, bottomrect;
 extern int clipcursorhook, getkeystatehook, getasynckeystatehook, getcursorposhook, setcursorposhook, setcursorhook, setrecthook;
 
+HOOK_TRACE_INFO g_getCursorPosHookHandle = { NULL };
+HOOK_TRACE_INFO g_setCursorPosHookHandle = { NULL };
+HOOK_TRACE_INFO g_getAsyncKeyStateHookHandle = { NULL };
+HOOK_TRACE_INFO g_getKeyStateHookHandle = { NULL };
+HOOK_TRACE_INFO g_clipCursorHookHandle = { NULL };
+HOOK_TRACE_INFO g_setCursorHookHandle = { NULL };
+HOOK_TRACE_INFO g_setRectHookHandle = { NULL };
+HOOK_TRACE_INFO g_adjustWindowRectHookHandle = { NULL };
+
 namespace GtoMnK {
 
-    // Initialize static function pointers
-    GetCursorPos_t Hooks::fpGetCursorPos = nullptr;
-    SetCursorPos_t Hooks::fpSetCursorPos = nullptr;
-    GetAsyncKeyState_t Hooks::fpGetAsyncKeyState = nullptr;
-    GetKeyState_t Hooks::fpGetKeyState = nullptr;
-    ClipCursor_t Hooks::fpClipCursor = nullptr;
-    SetCursor_t Hooks::fpSetCursor = nullptr;
-    SetRect_t Hooks::fpSetRect = nullptr;
-    AdjustWindowRect_t Hooks::fpAdjustWindowRect = nullptr;
-
     void Hooks::SetupHooks() {
-        if (MH_Initialize() != MH_OK) {
-           LOG("Failed to initialize MinHook");
-            return;
-        }
-
-       LOG("--- Setting up API hooks ---");
+        LOG("--- Setting up API hooks using EasyHook ---");
+        NTSTATUS result;
+        
+        //LOG("--- Setting up API hooks ---");
 
         if (getcursorposhook) {
-            if (MH_CreateHook(&GetCursorPos, &Mouse::MyGetCursorPos, reinterpret_cast<LPVOID*>(&fpGetCursorPos)) == MH_OK) {
-                MH_EnableHook(&GetCursorPos);
-               LOG("GetCursorPos hook enabled.");
+            result = LhInstallHook(
+                GetProcAddress(GetModuleHandle("user32"), "GetCursorPos"),
+                Mouse::MyGetCursorPos, // Your hook handler function
+                NULL,                  // Optional callback
+                &g_getCursorPosHookHandle // The handle to store hook info
+            );
+            if (FAILED(result)) {
+                LOG("Failed to install hook for GetCursorPos: %S", RtlGetLastErrorString());
+            }
+            else {
+                LOG("GetCursorPos hook installed successfully.");
             }
         }
+
         if (setcursorposhook) {
-            if (MH_CreateHook(&SetCursorPos, &Mouse::MySetCursorPos, reinterpret_cast<LPVOID*>(&fpSetCursorPos)) == MH_OK) {
-                MH_EnableHook(&SetCursorPos);
-               LOG("SetCursorPos hook enabled.");
+            result = LhInstallHook(
+                GetProcAddress(GetModuleHandle("user32"), "SetCursorPos"),
+                Mouse::MySetCursorPos,
+                NULL,
+                &g_setCursorPosHookHandle
+            );
+            if (FAILED(result)) {
+                LOG("Failed to install hook for SetCursorPos: %S", RtlGetLastErrorString());
             }
-        }
+            else {
+                LOG("SetCursorPos hook installed successfully.");
+            }
+		}
+
         if (getasynckeystatehook) {
-            if (MH_CreateHook(&GetAsyncKeyState, &Keyboard::HookedGetAsyncKeyState, reinterpret_cast<LPVOID*>(&fpGetAsyncKeyState)) == MH_OK) {
-                MH_EnableHook(&GetAsyncKeyState);
-               LOG("GetAsyncKeyState hook enabled.");
+            result = LhInstallHook(
+                GetProcAddress(GetModuleHandle("user32"), "GetAsyncKeyState"),
+                Keyboard::HookedGetAsyncKeyState,
+                NULL,
+                &g_getAsyncKeyStateHookHandle
+            );
+            if (FAILED(result)) {
+                LOG("Failed to install hook for GetAsyncKeyState: %S", RtlGetLastErrorString());
+            }
+            else {
+                LOG("GetAsyncKeyState hook installed successfully.");
             }
         }
+
         if (getkeystatehook) {
-            if (MH_CreateHook(&GetKeyState, &Keyboard::HookedGetKeyState, reinterpret_cast<LPVOID*>(&fpGetKeyState)) == MH_OK) {
-                MH_EnableHook(&GetKeyState);
-               LOG("GetKeyState hook enabled.");
+            result = LhInstallHook(
+                GetProcAddress(GetModuleHandle("user32"), "GetKeyState"),
+                Keyboard::HookedGetKeyState,
+                NULL,
+                &g_getKeyStateHookHandle
+            );
+            if (FAILED(result)) {
+                LOG("Failed to install hook for GetKeyState: %S", RtlGetLastErrorString());
             }
-        }
+            else {
+                LOG("GetKeyState hook installed successfully.");
+            }
+		}
+
         if (clipcursorhook) {
-            if (MH_CreateHook(&ClipCursor, &HookedClipCursor, reinterpret_cast<LPVOID*>(&fpClipCursor)) == MH_OK) {
-                MH_EnableHook(&ClipCursor);
-               LOG("ClipCursor hook enabled.");
+            result = LhInstallHook(
+                GetProcAddress(GetModuleHandle("user32"), "ClipCursor"),
+                HookedClipCursor,
+                NULL,
+                &g_clipCursorHookHandle
+            );
+            if (FAILED(result)) {
+                LOG("Failed to install hook for ClipCursor: %S", RtlGetLastErrorString());
             }
-        }
+            else {
+                LOG("ClipCursor hook installed successfully.");
+            }
+		}
+
         if (setrecthook) {
-            if (MH_CreateHook(&SetRect, &HookedSetRect, reinterpret_cast<LPVOID*>(&fpSetRect)) == MH_OK) {
-                MH_EnableHook(&SetRect);
-               LOG("SetRect hook enabled.");
+            result = LhInstallHook(
+                GetProcAddress(GetModuleHandle("user32"), "SetRect"),
+                HookedSetRect,
+                NULL,
+				&g_setRectHookHandle
+            );
+            if (FAILED(result)) {
+                LOG("Failed to install hook for SetRect: %S", RtlGetLastErrorString());
             }
-            if (MH_CreateHook(&AdjustWindowRect, &HookedAdjustWindowRect, reinterpret_cast<LPVOID*>(&fpAdjustWindowRect)) == MH_OK) {
-                MH_EnableHook(&AdjustWindowRect);
-               LOG("AdjustWindowRect hook enabled.");
+            else {
+                LOG("SetRect hook installed successfully.");
             }
+
+            result = LhInstallHook(
+                GetProcAddress(GetModuleHandle("user32"), "AdjustWindowRect"),
+                HookedAdjustWindowRect,
+				NULL,
+                &g_adjustWindowRectHookHandle
+			);
+            if (FAILED(result)) {
+                LOG("Failed to install hook for AdjustWindowRect: %S", RtlGetLastErrorString());
+            }
+            else {
+                LOG("AdjustWindowRect hook installed successfully.");
+			}
         }
+
         if (setcursorhook) {
-            if (MH_CreateHook(&SetCursor, &HookedSetCursor, reinterpret_cast<LPVOID*>(&fpSetCursor)) == MH_OK) {
-                MH_EnableHook(&SetCursor);
-               LOG("SetCursor hook enabled.");
+            result = LhInstallHook(
+                GetProcAddress(GetModuleHandle("user32"), "SetCursor"),
+                HookedSetCursor,
+                NULL,
+                &g_setCursorHookHandle
+            );
+            if (FAILED(result)) {
+                LOG("Failed to install hook for SetCursor: %S", RtlGetLastErrorString());
             }
-        }
-        LOG("--- Hook setup finished ---");
+            else {
+                LOG("SetCursor hook installed successfully.");
+            }
+		}
+        ULONG threadIdList = 0;
+        LhSetExclusiveACL(&threadIdList, 0, &g_getCursorPosHookHandle);
+        LhSetExclusiveACL(&threadIdList, 0, &g_setCursorPosHookHandle);
+        LhSetExclusiveACL(&threadIdList, 0, &g_getAsyncKeyStateHookHandle);
+        LhSetExclusiveACL(&threadIdList, 0, &g_getKeyStateHookHandle);
+		LhSetExclusiveACL(&threadIdList, 0, &g_clipCursorHookHandle);
+		LhSetExclusiveACL(&threadIdList, 0, &g_setCursorHookHandle);
+		LhSetExclusiveACL(&threadIdList, 0, &g_setRectHookHandle);
+		LhSetExclusiveACL(&threadIdList, 0, &g_adjustWindowRectHookHandle);
+        LOG("--- All hooks enabled for current process ---");
     }
 
     void Hooks::RemoveHooks() {
-        MH_DisableHook(MH_ALL_HOOKS);
-        MH_Uninitialize();
+        LhUninstallAllHooks();
+        LOG("All hooks have been uninstalled.");
     }
 
     HCURSOR WINAPI Hooks::HookedSetCursor(HCURSOR hcursor) {
         Mouse::hCursor = hcursor;
-        return fpSetCursor(hcursor);
+        return SetCursor(hcursor);
     }
 
     BOOL WINAPI Hooks::HookedClipCursor(const RECT* lpRect) {
@@ -92,15 +169,13 @@ namespace GtoMnK {
     }
 
     BOOL WINAPI Hooks::HookedSetRect(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom) {
-        return fpSetRect(lprc, leftrect, toprect, rightrect, bottomrect);
+        *lprc = { leftrect, toprect, rightrect, bottomrect };
+        return TRUE;
     }
 
     BOOL WINAPI Hooks::HookedAdjustWindowRect(LPRECT lprc, DWORD dwStyle, BOOL bMenu) {
-        lprc->top = toprect;
-        lprc->bottom = bottomrect;
-        lprc->left = leftrect;
-        lprc->right = rightrect;
-        return fpAdjustWindowRect(lprc, dwStyle, bMenu);
+        *lprc = { leftrect, toprect, rightrect, bottomrect };
+        return TRUE;
     }
 
 }

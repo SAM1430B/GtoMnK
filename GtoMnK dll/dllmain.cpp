@@ -354,7 +354,10 @@ void ProcessTrigger(UINT triggerID, BYTE triggerValue) {
 DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     LOG("ThreadFunction started.");
     Sleep(2000);
+
     LoadIniSettings();
+    LOG("Settings loaded. Setting up hooks...");
+
     Hooks::SetupHooks();
     hooksinited = true;
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
@@ -503,18 +506,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     return 0;
 }
 
-DWORD WINAPI SafeThreadLauncher(LPVOID hModule) {
-    HANDLE hThread = CreateThread(nullptr, 0, ThreadFunction, hModule, 0, nullptr);
-    if (hThread) {
-        LOG("Main worker thread created successfully.");
-        CloseHandle(hThread);
-    }
-    else {
-        LOG("FATAL: Failed to create main worker thread! GetLastError() = %lu", GetLastError());
-    }
-    return 0;
-}
-
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH: {
@@ -524,12 +515,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         INIT_LOGGER();
         LOG("================== DLL Attached (PID: %lu) ==================", GetCurrentProcessId());
 
-        HANDLE hLauncher = CreateThread(nullptr, 0, SafeThreadLauncher, hModule, 0, nullptr);
-        if (hLauncher) {
-            CloseHandle(hLauncher);
+        HANDLE hThread = CreateThread(nullptr, 0, ThreadFunction, hModule, 0, nullptr);
+        if (hThread) {
+            CloseHandle(hThread);
         }
         else {
-            LOG("FATAL: Failed to create the launcher thread! GetLastError() = %lu", GetLastError());
+            LOG("FATAL: Failed to create main worker thread! GetLastError() = %lu", GetLastError());
+            return FALSE;
         }
         break;
     }
