@@ -20,17 +20,21 @@ HOOK_TRACE_INFO g_adjustWindowRectHookHandle = { NULL };
 namespace GtoMnK {
 
     void Hooks::SetupHooks() {
-        LOG("--- Setting up API hooks using EasyHook ---");
+        LOG("--- Setting up the hooks ---");
+        HMODULE hUser32 = GetModuleHandleA("user32");
+        if (!hUser32) {
+            LOG("FATAL: Could not get a handle to user32.dll! Hooks will not be installed.");
+            return;
+        }
+
         NTSTATUS result;
         
-        //LOG("--- Setting up API hooks ---");
-
         if (getcursorposhook) {
             result = LhInstallHook(
                 GetProcAddress(GetModuleHandle("user32"), "GetCursorPos"),
-                Mouse::MyGetCursorPos, // Your hook handler function
-                NULL,                  // Optional callback
-                &g_getCursorPosHookHandle // The handle to store hook info
+                Mouse::MyGetCursorPos,
+                NULL,
+                &g_getCursorPosHookHandle
             );
             if (FAILED(result)) {
                 LOG("Failed to install hook for GetCursorPos: %S", RtlGetLastErrorString());
@@ -165,7 +169,7 @@ namespace GtoMnK {
     }
 
     BOOL WINAPI Hooks::HookedClipCursor(const RECT* lpRect) {
-        return TRUE; // Ignore ClipCursor calls
+        return TRUE;
     }
 
     BOOL WINAPI Hooks::HookedSetRect(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom) {

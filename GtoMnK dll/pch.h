@@ -10,6 +10,7 @@
 // Windows Headers
 #define NOMINMAX
 #include <windows.h>
+#include <hidusage.h>
 
 // Standard C++ Headers
 #include <iostream>
@@ -33,5 +34,6 @@
 
 // Project-specific
 //#include "MinHook.h"
+#include <easyhook.h>
 
 #endif

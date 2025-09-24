@@ -6,6 +6,8 @@
 #include "Input.h"
 #include "InputState.h"
 #include <map>
+#include "RawInput.h"
+
 
 using namespace GtoMnK;
 
@@ -25,6 +27,14 @@ struct ButtonState {
 enum CustomInputID {
     CUSTOM_ID_LT = 0x10000,
     CUSTOM_ID_RT,
+    CUSTOM_ID_LSU,
+    CUSTOM_ID_LSD,
+    CUSTOM_ID_LSL,
+    CUSTOM_ID_LSR,
+    CUSTOM_ID_RSU,
+    CUSTOM_ID_RSD,
+    CUSTOM_ID_RSL,
+    CUSTOM_ID_RSR
 };
 
 HMODULE g_hModule = nullptr;
@@ -44,7 +54,7 @@ std::map<UINT, ButtonState> buttonStates;
 bool pausedraw = false;
 bool gotcursoryet = false;
 
-SendMethod g_SendMethod = SendMethod::PostMessage;
+InputMethod g_InputMethod = InputMethod::PostMessage;
 
 bool g_EnableMouseDoubleClick = false;
 BYTE g_TriggerThreshold = 175;
@@ -53,14 +63,14 @@ float stick_as_button_deadzone;
 std::string A_Action, B_Action, X_Action, Y_Action;
 std::string RB_Action, LB_Action, RSB_Action, LSB_Action;
 std::string D_UP_Action, D_DOWN_Action, D_LEFT_Action, D_RIGHT_Action;
-std::string LSU_Action, LSD_Action, LSL_Action, LSR_Action;
-std::string RSU_Action, RSD_Action, RSL_Action, RSR_Action;
+//std::string LSU_Action, LSD_Action, LSL_Action, LSR_Action;
+//std::string RSU_Action, RSD_Action, RSL_Action, RSR_Action;
 std::string Start_Action;
 std::string Back_Action;
 std::string LT_Action, RT_Action;
 
-bool oldLSU = false, oldLSD = false, oldLSL = false, oldLSR = false;
-bool oldRSU = false, oldRSD = false, oldRSL = false, oldRSR = false;
+//bool oldLSU = false, oldLSD = false, oldLSL = false, oldLSR = false;
+//bool oldRSU = false, oldRSD = false, oldRSL = false, oldRSR = false;
 
 bool scrollmap = false;
 POINT scroll = { 0, 0 };
@@ -110,6 +120,15 @@ std::string UGetExecutableFolder_main() {
     return exePath.substr(0, lastSlash);
 }
 
+// UGetDllFolder_main is for getting the DLL folder path
+std::string UGetDllFolder_main() {
+    char path[MAX_PATH];
+    GetModuleFileNameA(g_hModule, path, MAX_PATH);
+    std::string dllPath(path);
+    size_t lastSlash = dllPath.find_last_of("\\/");
+    return dllPath.substr(0, lastSlash);
+}
+
 // getShortenedPath_Manual is for shortening the path
 std::string getShortenedPath_Manual(const std::string& fullPath)
 {
@@ -129,8 +148,38 @@ std::string getShortenedPath_Manual(const std::string& fullPath)
 }
 
 void LoadIniSettings() {
-    std::string iniPath = UGetExecutableFolder_main() + "\\GtoMnK.ini";
-    LOG("Reading settings from: %s", getShortenedPath_Manual(iniPath).c_str());
+
+    std::string iniPath = "";
+
+    std::string dllIniPath = UGetDllFolder_main() + "\\GtoMnK.ini";
+
+    if (GetFileAttributesA(dllIniPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+        iniPath = dllIniPath;
+        LOG("INI file found next the DLL at: %s", getShortenedPath_Manual(dllIniPath).c_str());
+    }
+    else {
+        std::string exeIniPath = UGetExecutableFolder_main() + "\\GtoMnK.ini";
+
+        if (GetFileAttributesA(exeIniPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+            iniPath = exeIniPath;
+            LOG("INI file found next the EXE at: %s", getShortenedPath_Manual(exeIniPath).c_str());
+        }
+        else {
+            LOG("WARNING: No INI file found in next the DLL or the EXE files. Using default values...");
+        }
+    }
+
+    char buffer[256];
+
+    // [API]
+    int method = GetPrivateProfileIntA("API", "InputMethod", 0, iniPath.c_str());
+    if (method == 1) {
+        g_InputMethod = InputMethod::RawInput;
+    }
+    else {
+        g_InputMethod = InputMethod::PostMessage;
+    }
+    LOG("Using Input Method: %s", (g_InputMethod == InputMethod::RawInput) ? "RawInput" : "PostMessage");
 
     // [Hooks]
     clipcursorhook = GetPrivateProfileIntA("Hooks", "ClipCursorHook", 0, iniPath.c_str());
@@ -141,16 +190,13 @@ void LoadIniSettings() {
     setcursorhook = GetPrivateProfileIntA("Hooks", "SetCursorHook", 1, iniPath.c_str());
 
     // [Settings]
-    int method = GetPrivateProfileIntA("Settings", "SendMethod", 0, iniPath.c_str());
-    g_SendMethod = (method == 1) ? SendMethod::SendInput : SendMethod::PostMessage;
-    LOG("Using SendMethod: %s", (g_SendMethod == SendMethod::SendInput) ? "SendInput" : "PostMessage");
     controllerID = GetPrivateProfileIntA("Settings", "Controllerid", 0, iniPath.c_str());
     mode = GetPrivateProfileIntA("Settings", "Mode", 1, iniPath.c_str());
     drawfakecursor = GetPrivateProfileIntA("Settings", "DrawFakeCursor", 1, iniPath.c_str());
     alwaysdrawcursor = GetPrivateProfileIntA("Settings", "DrawFakeCursorAlways", 0, iniPath.c_str());
     responsetime = GetPrivateProfileIntA("Settings", "Responsetime", 0, iniPath.c_str());
+    LOG("Using controller ID: %d", controllerID);
 
-    char buffer[256];
     // [StickToMouse]
     righthanded = GetPrivateProfileIntA("StickToMouse", "Righthanded", 2, iniPath.c_str());
     GetPrivateProfileStringA("StickToMouse", "Sensitivity", "1.45", buffer, sizeof(buffer), iniPath.c_str()); sensitivity = std::stof(buffer);
@@ -176,6 +222,7 @@ void LoadIniSettings() {
     buttonStates[XINPUT_GAMEPAD_X].actions = Input::ParseActionString(buffer);
     GetPrivateProfileStringA("KeyMapping", "Y", "0", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_Y].actions = Input::ParseActionString(buffer);
+
     // Shoulder Buttons & Thumbs
     GetPrivateProfileStringA("KeyMapping", "RB", "0", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_RIGHT_SHOULDER].actions = Input::ParseActionString(buffer);
@@ -185,6 +232,7 @@ void LoadIniSettings() {
     buttonStates[XINPUT_GAMEPAD_RIGHT_THUMB].actions = Input::ParseActionString(buffer);
     GetPrivateProfileStringA("KeyMapping", "LSB", "4", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_LEFT_THUMB].actions = Input::ParseActionString(buffer);
+
     // D-Pad
     GetPrivateProfileStringA("KeyMapping", "D_UP", "14", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_DPAD_UP].actions = Input::ParseActionString(buffer);
@@ -194,21 +242,33 @@ void LoadIniSettings() {
     buttonStates[XINPUT_GAMEPAD_DPAD_LEFT].actions = Input::ParseActionString(buffer);
     GetPrivateProfileStringA("KeyMapping", "D_RIGHT", "17", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_DPAD_RIGHT].actions = Input::ParseActionString(buffer);
+
 	// Start & Back
     GetPrivateProfileStringA("KeyMapping", "Start", "1", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_START].actions = Input::ParseActionString(buffer);
     GetPrivateProfileStringA("KeyMapping", "Back", "3", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[XINPUT_GAMEPAD_BACK].actions = Input::ParseActionString(buffer);
+
     // Left Stick
-    GetPrivateProfileStringA("KeyMapping", "LSU", "47", buffer, sizeof(buffer), iniPath.c_str()); LSU_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "LSD", "43", buffer, sizeof(buffer), iniPath.c_str()); LSD_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "LSL", "25", buffer, sizeof(buffer), iniPath.c_str()); LSL_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "LSR", "28", buffer, sizeof(buffer), iniPath.c_str()); LSR_Action = buffer;
+    GetPrivateProfileStringA("KeyMapping", "LSU", "47", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[CUSTOM_ID_LSU].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "LSD", "43", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[CUSTOM_ID_LSD].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "LSL", "25", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[CUSTOM_ID_LSL].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "LSR", "28", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[CUSTOM_ID_LSR].actions = Input::ParseActionString(buffer);
+
     // Right Stick
-    GetPrivateProfileStringA("KeyMapping", "RSU", "0", buffer, sizeof(buffer), iniPath.c_str()); RSU_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "RSD", "0", buffer, sizeof(buffer), iniPath.c_str()); RSD_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "RSL", "0", buffer, sizeof(buffer), iniPath.c_str()); RSL_Action = buffer;
-    GetPrivateProfileStringA("KeyMapping", "RSR", "0", buffer, sizeof(buffer), iniPath.c_str()); RSR_Action = buffer;
+    GetPrivateProfileStringA("KeyMapping", "RSU", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[CUSTOM_ID_RSU].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "RSD", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[CUSTOM_ID_RSD].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "RSL", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[CUSTOM_ID_RSL].actions = Input::ParseActionString(buffer);
+    GetPrivateProfileStringA("KeyMapping", "RSR", "0", buffer, sizeof(buffer), iniPath.c_str());
+    buttonStates[CUSTOM_ID_RSR].actions = Input::ParseActionString(buffer);
+
     // Triggers
     GetPrivateProfileStringA("KeyMapping", "LT", "-2", buffer, sizeof(buffer), iniPath.c_str());
     buttonStates[CUSTOM_ID_LT].actions = Input::ParseActionString(buffer);
@@ -358,8 +418,22 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     LoadIniSettings();
     LOG("Settings loaded. Setting up hooks...");
 
-    Hooks::SetupHooks();
-    hooksinited = true;
+    if (controllerID < 0) {
+		LOG("Controller is disabled: terminating GtoMnK...");
+        loop = false;
+		return 0;
+    }
+
+    if (g_InputMethod == InputMethod::RawInput) {
+        LOG("Initializing RawInput system...");
+        RawInput::Initialize();
+        hooksinited = true;
+    }
+    else {
+        LOG("Initializing EasyHook system for PostMessage...");
+        Hooks::SetupHooks();
+        hooksinited = true;
+    }
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
 
     ULONGLONG lastMoveTime = 0;
@@ -405,89 +479,67 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
             if (onoroff && (mode == 0 || (mode == 1 && righthanded == 1))) {
                 float normLX = static_cast<float>(state.Gamepad.sThumbLX) / 32767.0f;
                 float normLY = static_cast<float>(state.Gamepad.sThumbLY) / 32767.0f;
-                float magnitudeL = sqrt(normLX * normLX + normLY * normLY);
+                float magnitudeL = static_cast<float>(sqrt(normLX * normLX + normLY * normLY));
 
                 bool isLSU = false, isLSD = false, isLSL = false, isLSR = false;
                 if (magnitudeL > stick_as_button_deadzone) {
                     float angleDeg = atan2(normLY, normLX) * 180.0f / 3.1415926535f;
                     if (angleDeg < 0) angleDeg += 360.0f;
-
                     if (angleDeg > 22.5f && angleDeg < 157.5f) isLSU = true;
                     if (angleDeg > 202.5f && angleDeg < 337.5f) isLSD = true;
                     if (angleDeg > 112.5f && angleDeg < 247.5f) isLSL = true;
                     if (angleDeg > 292.5f || angleDeg < 67.5f) isLSR = true;
                 }
-
-                if (!oldLSU && isLSU) { oldLSU = true; Input::SendAction(LSU_Action, true); }
-                else if (oldLSU && !isLSU) { oldLSU = false; Input::SendAction(LSU_Action, false); }
-                if (!oldLSD && isLSD) { oldLSD = true; Input::SendAction(LSD_Action, true); }
-                else if (oldLSD && !isLSD) { oldLSD = false; Input::SendAction(LSD_Action, false); }
-                if (!oldLSL && isLSL) { oldLSL = true; Input::SendAction(LSL_Action, true); }
-                else if (oldLSL && !isLSL) { oldLSL = false; Input::SendAction(LSL_Action, false); }
-                if (!oldLSR && isLSR) { oldLSR = true; Input::SendAction(LSR_Action, true); }
-                else if (oldLSR && !isLSR) { oldLSR = false; Input::SendAction(LSR_Action, false); }
+                ProcessButton(CUSTOM_ID_LSU, isLSU);
+                ProcessButton(CUSTOM_ID_LSD, isLSD);
+                ProcessButton(CUSTOM_ID_LSL, isLSL);
+                ProcessButton(CUSTOM_ID_LSR, isLSR);
             }
-
             // Right Stick
             if (onoroff && (mode == 0 || (mode == 1 && righthanded == 0))) {
                 float normRX = static_cast<float>(state.Gamepad.sThumbRX) / 32767.0f;
                 float normRY = static_cast<float>(state.Gamepad.sThumbRY) / 32767.0f;
-                float magnitudeR = sqrt(normRX * normRX + normRY * normRY);
-
+                float magnitudeR = static_cast<float>(sqrt(normRX * normRX + normRY * normRY));
                 bool isRSU = false, isRSD = false, isRSL = false, isRSR = false;
                 if (magnitudeR > stick_as_button_deadzone) {
                     float angleDeg = atan2(normRY, normRX) * 180.0f / 3.1415926535f;
                     if (angleDeg < 0) angleDeg += 360.0f;
-
                     if (angleDeg > 22.5f && angleDeg < 157.5f) isRSU = true;
                     if (angleDeg > 202.5f && angleDeg < 337.5f) isRSD = true;
                     if (angleDeg > 112.5f && angleDeg < 247.5f) isRSL = true;
                     if (angleDeg > 292.5f || angleDeg < 67.5f) isRSR = true;
                 }
-
-                if (!oldRSU && isRSU) { oldRSU = true; Input::SendAction(RSU_Action, true); }
-                else if (oldRSU && !isRSU) { oldRSU = false; Input::SendAction(RSU_Action, false); }
-                if (!oldRSD && isRSD) { oldRSD = true; Input::SendAction(RSD_Action, true); }
-                else if (oldRSD && !isRSD) { oldRSD = false; Input::SendAction(RSD_Action, false); }
-                if (!oldRSL && isRSL) { oldRSL = true; Input::SendAction(RSL_Action, true); }
-                else if (oldRSL && !isRSL) { oldRSL = false; Input::SendAction(RSL_Action, false); }
-                if (!oldRSR && isRSR) { oldRSR = true; Input::SendAction(RSR_Action, true); }
-                else if (oldRSR && !isRSR) { oldRSR = false; Input::SendAction(RSR_Action, false); }
+                ProcessButton(CUSTOM_ID_RSU, isRSU);
+                ProcessButton(CUSTOM_ID_RSD, isRSD);
+                ProcessButton(CUSTOM_ID_RSL, isRSL);
+                ProcessButton(CUSTOM_ID_RSR, isRSR);
             }
 
-			// CURSOR MOVEMENT
+			// Mouse MOVEMENT
             if (mode == 1 && onoroff) {
-                SHORT thumbX = 0;
-                SHORT thumbY = 0;
-
-                if (righthanded == 1) {
-                    thumbX = state.Gamepad.sThumbRX;
-                    thumbY = state.Gamepad.sThumbRY;
-                }
-                else {
-                    thumbX = state.Gamepad.sThumbLX;
-                    thumbY = state.Gamepad.sThumbLY;
-                }
+                SHORT thumbX = (righthanded == 1) ? state.Gamepad.sThumbRX : state.Gamepad.sThumbLX;
+                SHORT thumbY = (righthanded == 1) ? state.Gamepad.sThumbRY : state.Gamepad.sThumbLY;
                 POINT delta = ThumbstickMouseMove(thumbX, thumbY);
-
                 if (delta.x != 0 || delta.y != 0) {
                     Mouse::Xf += delta.x; Mouse::Yf += delta.y;
                     Mouse::Xf = std::max((LONG)rect.left, std::min((LONG)Mouse::Xf, (LONG)rect.right));
                     Mouse::Yf = std::max((LONG)rect.top, std::min((LONG)Mouse::Yf, (LONG)rect.bottom));
                     movedmouse = true;
-
                     ULONGLONG currentTime = GetTickCount64();
                     if (currentTime - lastMoveTime > MOVE_UPDATE_INTERVAL) {
                         lastMoveTime = currentTime;
-                        POINT screenPos = { (LONG)Mouse::Xf, (LONG)Mouse::Yf };
-                        ClientToScreen(hwnd, &screenPos);
-                        Input::SendAction(screenPos.x, screenPos.y);
+                        if (g_InputMethod == InputMethod::RawInput) {
+                            Input::SendActionDelta(delta.x, delta.y);
+                        } else {
+                            POINT screenPos = { (LONG)Mouse::Xf, (LONG)Mouse::Yf };
+                            ClientToScreen(hwnd, &screenPos);
+                            Input::SendAction(screenPos.x, screenPos.y);
+                        }
                     }
                 }
             }
-        }
-        else {
-            showmessage = 12;
+        } else {
+            showmessage = 12; // Controller disconnected
         }
 
         // Drawing and Message
