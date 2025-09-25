@@ -14,7 +14,6 @@ namespace GtoMnK {
         DWORD WINAPI RawInputWindowThread(LPVOID lpParameter);
         void ProcessRealRawInput(HRAWINPUT rawInputHandle);
 
-
         void Initialize() {
             LOG("RawInput System: Initializing...");
 
@@ -30,13 +29,10 @@ namespace GtoMnK {
                 CloseHandle(hThread);
             }
             CloseHandle(hWindowReadyEvent);
-
-            RawInputHooks::Install();
         }
 
         void Shutdown() {
             LOG("RawInput System: Shutting down...");
-            RawInputHooks::Uninstall();
 
             if (g_rawInputHwnd) {
                 PostMessage(g_rawInputHwnd, WM_QUIT, 0, 0);

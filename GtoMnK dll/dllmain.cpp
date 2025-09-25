@@ -63,14 +63,10 @@ float stick_as_button_deadzone;
 std::string A_Action, B_Action, X_Action, Y_Action;
 std::string RB_Action, LB_Action, RSB_Action, LSB_Action;
 std::string D_UP_Action, D_DOWN_Action, D_LEFT_Action, D_RIGHT_Action;
-//std::string LSU_Action, LSD_Action, LSL_Action, LSR_Action;
-//std::string RSU_Action, RSD_Action, RSL_Action, RSR_Action;
+
 std::string Start_Action;
 std::string Back_Action;
 std::string LT_Action, RT_Action;
-
-//bool oldLSU = false, oldLSD = false, oldLSL = false, oldLSR = false;
-//bool oldRSU = false, oldRSD = false, oldRSL = false, oldRSR = false;
 
 bool scrollmap = false;
 POINT scroll = { 0, 0 };
@@ -79,7 +75,7 @@ POINT rectignore = { 0, 0 };
 DWORD lastClickTime = 0;
 
 // Hooks
-int clipcursorhook, getkeystatehook, getasynckeystatehook, getcursorposhook, setcursorposhook, setcursorhook, setrecthook;
+int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setCursorHook, setRectHook;
 int leftrect, toprect, rightrect, bottomrect;
 // Controller
 int righthanded, Xoffset, Yoffset;
@@ -182,13 +178,15 @@ void LoadIniSettings() {
     LOG("Using Input Method: %s", (g_InputMethod == InputMethod::RawInput) ? "RawInput" : "PostMessage");
 
     // [Hooks]
-    clipcursorhook = GetPrivateProfileIntA("Hooks", "ClipCursorHook", 0, iniPath.c_str());
-    getkeystatehook = GetPrivateProfileIntA("Hooks", "GetKeystateHook", 1, iniPath.c_str());
-    getasynckeystatehook = GetPrivateProfileIntA("Hooks", "GetAsynckeystateHook", 1, iniPath.c_str());
-    getcursorposhook = GetPrivateProfileIntA("Hooks", "GetCursorposHook", 1, iniPath.c_str());
-    setcursorposhook = GetPrivateProfileIntA("Hooks", "SetCursorposHook", 1, iniPath.c_str());
-    setcursorhook = GetPrivateProfileIntA("Hooks", "SetCursorHook", 1, iniPath.c_str());
-
+    getCursorPosHook = GetPrivateProfileIntA("Hooks", "GetCursorposHook", 1, iniPath.c_str());
+    setCursorPosHook = GetPrivateProfileIntA("Hooks", "SetCursorposHook", 1, iniPath.c_str());
+    clipCursorHook = GetPrivateProfileIntA("Hooks", "ClipCursorHook", 0, iniPath.c_str());
+    getKeyStateHook = GetPrivateProfileIntA("Hooks", "GetKeystateHook", 1, iniPath.c_str());
+    getAsyncKeyStateHook = GetPrivateProfileIntA("Hooks", "GetAsynckeystateHook", 1, iniPath.c_str());
+    getKeyboardStateHook = GetPrivateProfileIntA("Hooks", "GetKeyboardstateHook", 1, iniPath.c_str());
+    setCursorHook = GetPrivateProfileIntA("Hooks", "SetCursorHook", 1, iniPath.c_str());
+    setRectHook = GetPrivateProfileIntA("Hooks", "SetRectHook", 0, iniPath.c_str());
+    
     // [Settings]
     controllerID = GetPrivateProfileIntA("Settings", "Controllerid", 0, iniPath.c_str());
     mode = GetPrivateProfileIntA("Settings", "Mode", 1, iniPath.c_str());
@@ -338,11 +336,13 @@ void DrawOverlay() {
 void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
     ButtonState& bs = buttonStates[buttonFlag];
 
+    // On Press
     if (!bs.isPhysicallyPressed && isCurrentlyPressed) {
         bs.isPhysicallyPressed = true;
         bs.pressTime = GetTickCount64();
         bs.activeActionIndex = NO_ACTION;
         bs.pressActionFired = false;
+        bs.heldActionString = "0";
 
         if (!bs.actions.empty() && bs.actions[0].holdDurationMs == 0) {
             bs.activeActionIndex = 0;
@@ -357,41 +357,49 @@ void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
         return;
     }
 
+    // While Held
     if (bs.isPhysicallyPressed && isCurrentlyPressed) {
         ULONGLONG holdTime = GetTickCount64() - bs.pressTime;
-
         size_t newActionIndex = NO_ACTION;
         for (size_t i = 0; i < bs.actions.size(); ++i) {
             if (holdTime >= bs.actions[i].holdDurationMs) {
                 newActionIndex = i;
             }
         }
-
-        if (newActionIndex != -1 && newActionIndex != bs.activeActionIndex) {
+        if (newActionIndex != NO_ACTION && newActionIndex != bs.activeActionIndex) {
             if (!bs.heldActionString.empty() && bs.heldActionString != "0") {
                 Input::SendAction(bs.heldActionString, false);
             }
-
             bs.activeActionIndex = newActionIndex;
             bs.pressActionFired = false;
             bs.heldActionString = "0";
-
             const Action& newActiveAction = bs.actions[bs.activeActionIndex];
             if (!newActiveAction.onRelease) {
-                Input::SendAction(newActiveAction.actionString, true); // Send KeyDown
-                bs.heldActionString = newActiveAction.actionString;    // Remember the new held key
+                Input::SendAction(newActiveAction.actionString, true);
+                bs.heldActionString = newActiveAction.actionString;
                 bs.pressActionFired = true;
             }
         }
         return;
     }
 
+    // On Release
     if (bs.isPhysicallyPressed && !isCurrentlyPressed) {
         bs.isPhysicallyPressed = false;
 
-        if (bs.activeActionIndex != NO_ACTION && bs.actions[bs.activeActionIndex].onRelease) {
-            const Action& finalAction = bs.actions[bs.activeActionIndex];
+        size_t finalActionIndex = NO_ACTION;
+        ULONGLONG finalHoldTime = GetTickCount64() - bs.pressTime;
+        for (size_t i = 0; i < bs.actions.size(); ++i) {
+            if (finalHoldTime >= bs.actions[i].holdDurationMs) {
+                finalActionIndex = i;
+            }
+        }
+
+        if (finalActionIndex != NO_ACTION && bs.actions[finalActionIndex].onRelease) {
+            const Action& finalAction = bs.actions[finalActionIndex];
+
             Input::SendAction(finalAction.actionString, true);
+            Sleep(20);
             Input::SendAction(finalAction.actionString, false);
         }
 
@@ -413,7 +421,7 @@ void ProcessTrigger(UINT triggerID, BYTE triggerValue) {
 
 DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     LOG("ThreadFunction started.");
-    Sleep(2000);
+    Sleep(1000 * 2);
 
     LoadIniSettings();
     LOG("Settings loaded. Setting up hooks...");
@@ -424,16 +432,18 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
 		return 0;
     }
 
+    LOG("Settings loaded. Setting up hooks...");
+    Hooks::SetupHooks();
+    hooksinited = true;
+
     if (g_InputMethod == InputMethod::RawInput) {
         LOG("Initializing RawInput system...");
         RawInput::Initialize();
-        hooksinited = true;
     }
     else {
-        LOG("Initializing EasyHook system for PostMessage...");
-        Hooks::SetupHooks();
-        hooksinited = true;
+        LOG("Initializing PostMessage system...");
     }
+
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
 
     ULONGLONG lastMoveTime = 0;

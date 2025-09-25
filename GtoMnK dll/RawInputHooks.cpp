@@ -2,16 +2,14 @@
 #include "RawInputHooks.h"
 #include "RawInput.h"
 #include "Logging.h"
+#include "Mouse.h"
+#include "Keyboard.h"
 #include <easyhook.h>
-
+#include <algorithm>
 
 // Thanks to ProtoInput.
 
-HOOK_TRACE_INFO g_getRawInputDataHook = { NULL };
-HOOK_TRACE_INFO g_registerRawInputDevicesHook = { NULL };
-
-
-UINT WINAPI Hooked_GetRawInputData(HRAWINPUT hRawInput, UINT uiCommand, LPVOID pData, PUINT pcbSize, UINT cbSizeHeader) {
+UINT WINAPI GtoMnK::RawInputHooks::GetRawInputDataHook(HRAWINPUT hRawInput, UINT uiCommand, LPVOID pData, PUINT pcbSize, UINT cbSizeHeader) {
     UINT handleValue = (UINT)(UINT_PTR)hRawInput;
     if ((handleValue & 0xFF000000) == 0xAB000000) {
         UINT bufferIndex = handleValue & 0x00FFFFFF;
@@ -35,7 +33,7 @@ UINT WINAPI Hooked_GetRawInputData(HRAWINPUT hRawInput, UINT uiCommand, LPVOID p
     }
 }
 
-BOOL WINAPI Hooked_RegisterRawInputDevices(PCRAWINPUTDEVICE pRawInputDevices, UINT uiNumDevices, UINT cbSize) {
+BOOL WINAPI GtoMnK::RawInputHooks::RegisterRawInputDevicesHook(PCRAWINPUTDEVICE pRawInputDevices, UINT uiNumDevices, UINT cbSize) {
     for (UINT i = 0; i < uiNumDevices; ++i) {
         HWND targetHwnd = pRawInputDevices[i].hwndTarget;
 
@@ -48,30 +46,4 @@ BOOL WINAPI Hooked_RegisterRawInputDevices(PCRAWINPUTDEVICE pRawInputDevices, UI
         }
     }
     return TRUE;
-}
-
-
-namespace GtoMnK {
-    namespace RawInputHooks {
-        void Install() {
-            HMODULE hUser32 = GetModuleHandleA("user32");
-            if (!hUser32) {
-                LOG("FATAL: Could not get a handle to user32.dll! RawInput hooks will not be installed.");
-                return;
-            }
-
-            LhInstallHook(GetProcAddress(hUser32, "GetRawInputData"), Hooked_GetRawInputData, NULL, &g_getRawInputDataHook);
-            LhInstallHook(GetProcAddress(hUser32, "RegisterRawInputDevices"), Hooked_RegisterRawInputDevices, NULL, &g_registerRawInputDevicesHook);
-            
-            ULONG threadIdList = 0;
-            LhSetExclusiveACL(&threadIdList, 0, &g_getRawInputDataHook);
-            LhSetExclusiveACL(&threadIdList, 0, &g_registerRawInputDevicesHook);
-            LOG("RawInput hooks installed and enabled.");
-        }
-
-        void Uninstall() {
-            LhUninstallAllHooks();
-            LOG("RawInput hooks uninstalled.");
-        }
-    }
 }

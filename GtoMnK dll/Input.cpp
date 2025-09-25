@@ -2,6 +2,7 @@
 #include "Input.h"
 #include "Mouse.h"
 #include "InputState.h"
+#include "KeyboardState.h"
 #include "RawInput.h"
 #include <vector>
 #include <sstream>
@@ -75,7 +76,7 @@ namespace GtoMnK {
 
             RAWINPUT ri = {};
             ri.header.dwType = RIM_TYPEKEYBOARD;
-            ri.header.hDevice = NULL; // Spoof a generic keyboard
+            ri.header.hDevice = NULL;
 
             UINT scanCode = MapVirtualKey(vkCode, MAPVK_VK_TO_VSC);
             ri.data.keyboard.MakeCode = scanCode;
@@ -176,15 +177,31 @@ namespace GtoMnK {
 			}
 		}
 
-		// For PostMessage method
         void DispatchAction_PostMessage(int actionCode, bool press) {
             bool isMouseAction = (actionCode < 0);
             if (isMouseAction) {
+                int vkCode = 0;
+                switch (actionCode) {
+                case -1: case -8: vkCode = VK_LBUTTON; break;
+                case -2: vkCode = VK_RBUTTON; break;
+                case -3: vkCode = VK_MBUTTON; break;
+                case -4: vkCode = VK_XBUTTON1; break;
+                case -5: vkCode = VK_XBUTTON2; break;
+                }
+                if (vkCode != 0) {
+                    if (press) g_heldVirtualKeys.insert(vkCode);
+                    else g_heldVirtualKeys.erase(vkCode);
+                }
                 PostMessageMouse(actionCode, press);
             }
+            // Keyboard actions
             else {
                 int vkCode; bool isExtended;
                 TranslateKeyboardAction(actionCode, vkCode, isExtended);
+                if (vkCode != 0) {
+                    if (press) g_heldVirtualKeys.insert(vkCode);
+                    else g_heldVirtualKeys.erase(vkCode);
+                }
                 PostMessageKey(vkCode, press, isExtended);
             }
         }
@@ -193,10 +210,28 @@ namespace GtoMnK {
         void DispatchAction_RawInput(int actionCode, bool press) {
             bool isMouseAction = (actionCode < 0);
             if (isMouseAction) {
+                int vkCode = 0;
+                switch (actionCode) {
+                case -1: case -8: vkCode = VK_LBUTTON; break;
+                case -2: vkCode = VK_RBUTTON; break;
+                case -3: vkCode = VK_MBUTTON; break;
+                case -4: vkCode = VK_XBUTTON1; break;
+                case -5: vkCode = VK_XBUTTON2; break;
+                }
+                if (vkCode != 0) {
+                    if (press) g_heldVirtualKeys.insert(vkCode);
+                    else g_heldVirtualKeys.erase(vkCode);
+                }
                 GenerateRawMouseButton(actionCode, press);
-            } else {
+            }
+            // Keyboard actions
+            else {
                 int vkCode; bool isExtended;
                 TranslateKeyboardAction(actionCode, vkCode, isExtended);
+                if (vkCode != 0) {
+                    if (press) g_heldVirtualKeys.insert(vkCode);
+                    else g_heldVirtualKeys.erase(vkCode);
+                }
                 GenerateRawKey(vkCode, press, isExtended);
             }
         }
@@ -247,43 +282,53 @@ namespace GtoMnK {
         void SendAction(const std::string& actionString, bool press) {
             if (actionString.empty() || actionString == "0") return;
 
-            // Double-click logic
+            void (*dispatcher)(int, bool) = (g_InputMethod == InputMethod::RawInput)
+                ? DispatchAction_RawInput
+                : DispatchAction_PostMessage;
+
             static ULONGLONG lastLeftClickTime = 0;
             if (actionString.find("-1") != std::string::npos && g_EnableMouseDoubleClick && press) {
                 ULONGLONG currentTime = GetTickCount64();
                 if (currentTime - lastLeftClickTime < GetDoubleClickTime()) {
-                    if (g_InputMethod == InputMethod::RawInput) DispatchAction_RawInput(-8, true);
-                    else DispatchAction_PostMessage(-8, true);
+                    dispatcher(-8, true);
                     lastLeftClickTime = 0;
                     return;
                 }
                 lastLeftClickTime = currentTime;
             }
 
-            // Router logic
-            if (g_InputMethod == InputMethod::RawInput) {
-                try { DispatchAction_RawInput(std::stoi(actionString), press); }
+            if (actionString.find('+') == std::string::npos) {
+                // Handle single actions
+                try {
+                    dispatcher(std::stoi(actionString), press);
+                }
                 catch (...) {}
             }
-            else { // PostMessage
-                if (actionString.find('+') == std::string::npos) {
-                    try { DispatchAction_PostMessage(std::stoi(actionString), press); }
-                    catch (...) {}
+            else {
+                // Handle combo actions
+                std::vector<int> keycodes;
+                std::stringstream ss(actionString);
+                std::string part;
+                while (std::getline(ss, part, '+')) {
+                    if (part.empty()) continue;
+                    size_t firstDigitPos = part.find_first_of("-0123456789");
+                    if (firstDigitPos != std::string::npos) {
+                        try {
+                            keycodes.push_back(std::stoi(part.substr(firstDigitPos)));
+                        }
+                        catch (...) {}
+                    }
+                }
+
+                if (press) {
+                    for (int code : keycodes) {
+                        dispatcher(code, true);
+                    }
                 }
                 else {
-                    std::vector<int> keycodes;
-                    std::stringstream ss(actionString);
-                    std::string part;
-                    while (std::getline(ss, part, '+')) {
-                        if (part.empty()) continue;
-                        size_t firstDigitPos = part.find_first_of("-0123456789");
-                        if (firstDigitPos != std::string::npos) {
-                            try { keycodes.push_back(std::stoi(part.substr(firstDigitPos))); }
-                            catch (...) {}
-                        }
+                    for (auto it = keycodes.rbegin(); it != keycodes.rend(); ++it) {
+                        dispatcher(*it, false);
                     }
-                    if (press) { for (int code : keycodes) DispatchAction_PostMessage(code, true); }
-                    else { for (auto it = keycodes.rbegin(); it != keycodes.rend(); ++it) DispatchAction_PostMessage(*it, false); }
                 }
             }
         }

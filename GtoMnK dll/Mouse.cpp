@@ -36,7 +36,7 @@ namespace GtoMnK {
     };
 
 
-    BOOL WINAPI Mouse::MyGetCursorPos(PPOINT lpPoint) {
+    BOOL WINAPI Mouse::GetCursorPosHook(PPOINT lpPoint) {
         if (!lpPoint) return FALSE;
 
         POINT mpos;
@@ -60,7 +60,7 @@ namespace GtoMnK {
         return TRUE;
     }
 
-    BOOL WINAPI Mouse::MySetCursorPos(int X, int Y) {
+    BOOL WINAPI Mouse::SetCursorPosHook(int X, int Y) {
         POINT point = { X, Y };
         ScreenToClient(hwnd, &point);
         Xf = point.x;

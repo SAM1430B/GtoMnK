@@ -5,7 +5,7 @@
 namespace GtoMnK {
     namespace RawInput {
 
-		// This is the main initialization function to start the RawInput method.
+		// To start the RawInput method.
         void Initialize();
 
         void Shutdown();

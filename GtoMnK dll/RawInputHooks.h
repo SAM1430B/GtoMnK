@@ -2,10 +2,7 @@
 
 namespace GtoMnK {
     namespace RawInputHooks {
-
-        void Install();
-
-        void Uninstall();
-
+		UINT WINAPI GetRawInputDataHook(HRAWINPUT hRawInput, UINT uiCommand, LPVOID pData, PUINT pcbSize, UINT cbSizeHeader);
+		BOOL WINAPI RegisterRawInputDevicesHook(PCRAWINPUTDEVICE pRawInputDevices, UINT uiNumDevices, UINT cbSize);
     }
 }
