@@ -4,15 +4,16 @@
 
 namespace GtoMnK {
 
-    enum class SendMethod {
+    enum class InputMethod {
         PostMessage,
-        SendInput
+        RawInput
     };
 
     namespace Input {
 
         void SendAction(const std::string& actionString, bool press);
         void SendAction(int screenX, int screenY);
+        void SendActionDelta(int deltaX, int deltaY);
 
         std::vector<Action> ParseActionString(const std::string& fullString);
 

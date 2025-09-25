@@ -9,8 +9,8 @@ namespace GtoMnK {
         static int Yf;
         static HICON hCursor;
 
-        static BOOL WINAPI MyGetCursorPos(PPOINT lpPoint);
-        static BOOL WINAPI MySetCursorPos(int X, int Y);
+        static BOOL WINAPI GetCursorPosHook(PPOINT lpPoint);
+        static BOOL WINAPI SetCursorPosHook(int X, int Y);
 
 
         static bool Mutexlock(bool lock);

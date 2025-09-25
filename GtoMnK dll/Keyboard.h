@@ -1,19 +1,11 @@
 #pragma once
-#include "pch.h"
+#include <windows.h>
 
 namespace GtoMnK {
-
     class Keyboard {
     public:
-        static int keystatesend;
-
-        static SHORT WINAPI HookedGetAsyncKeyState(int vKey);
-        static SHORT WINAPI HookedGetKeyState(int nVirtKey);
-
-
-    private:
-        static int samekey;
-        static int samekeyA;
+        static SHORT WINAPI GetAsyncKeyStateHook(int vKey);
+        static SHORT WINAPI GetKeyStateHook(int nVirtKey);
+        static BOOL WINAPI GetKeyboardStateHook(PBYTE lpKeyState);
     };
-
 }
