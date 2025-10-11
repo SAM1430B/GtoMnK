@@ -18,6 +18,13 @@
     <ClCompile Include="Mouse.cpp">
       <Filter>Files</Filter>
     </ClCompile>
+    <ClCompile Include="KeyboardState.cpp" />
+    <ClCompile Include="RawInput.cpp">
+      <Filter>Files\RawInput</Filter>
+    </ClCompile>
+    <ClCompile Include="RawInputHooks.cpp">
+      <Filter>Files\RawInput</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -42,16 +49,33 @@
     <ClInclude Include="Mouse.h">
       <Filter>Files</Filter>
     </ClInclude>
+    <ClInclude Include="KeyboardState.h" />
+    <ClInclude Include="RawInput.h">
+      <Filter>Files\RawInput</Filter>
+    </ClInclude>
+    <ClInclude Include="RawInputHooks.h">
+      <Filter>Files\RawInput</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Files">
       <UniqueIdentifier>{0dd4a3a1-b51f-416a-a2fa-bdc4b1707150}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Files\RawInput">
+      <UniqueIdentifier>{12845725-75fd-4e30-836a-14668e1dd249}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Documents">
+      <UniqueIdentifier>{3907f1c7-1235-40d0-b7dd-4bd06f2b4232}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="GtoMnK.ini" />
+    <Text Include="Documents\GtoMnK_Keys.txt">
+      <Filter>Documents</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="GtoMnK_Keys.txt" />
+    <None Include="Documents\GtoMnK.ini">
+      <Filter>Documents</Filter>
+    </None>
   </ItemGroup>
 </Project>

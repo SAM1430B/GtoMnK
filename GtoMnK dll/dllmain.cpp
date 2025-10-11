@@ -7,11 +7,14 @@
 #include "InputState.h"
 #include <map>
 #include "RawInput.h"
+#include <easyhook.h>
 
 
 using namespace GtoMnK;
 
 #pragma comment(lib, "Xinput9_1_0.lib")
+
+volatile bool g_isInitialized = false;
 
 const size_t NO_ACTION = static_cast<size_t>(-1);
 
@@ -147,18 +150,18 @@ void LoadIniSettings() {
 
     std::string iniPath = "";
 
-    std::string dllIniPath = UGetDllFolder_main() + "\\GtoMnK.ini";
+    std::string exeIniPath = UGetExecutableFolder_main() + "\\GtoMnK.ini";
 
-    if (GetFileAttributesA(dllIniPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
-        iniPath = dllIniPath;
-        LOG("INI file found next the DLL at: %s", getShortenedPath_Manual(dllIniPath).c_str());
+    if (GetFileAttributesA(exeIniPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+        iniPath = exeIniPath;
+        LOG("INI file found next the EXE at: %s", getShortenedPath_Manual(exeIniPath).c_str());
     }
     else {
-        std::string exeIniPath = UGetExecutableFolder_main() + "\\GtoMnK.ini";
+        std::string dllIniPath = UGetDllFolder_main() + "\\GtoMnK.ini";
 
-        if (GetFileAttributesA(exeIniPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
-            iniPath = exeIniPath;
-            LOG("INI file found next the EXE at: %s", getShortenedPath_Manual(exeIniPath).c_str());
+        if (GetFileAttributesA(dllIniPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+            iniPath = dllIniPath;
+            LOG("INI file found next the DLL at: %s", getShortenedPath_Manual(dllIniPath).c_str());
         }
         else {
             LOG("WARNING: No INI file found in next the DLL or the EXE files. Using default values...");
@@ -427,12 +430,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     LOG("Settings loaded. Setting up hooks...");
 
     if (controllerID < 0) {
-		LOG("Controller is disabled: terminating GtoMnK...");
+        LOG("Controller is disabled by INI. Thread is exiting.");
         loop = false;
-		return 0;
+        return 0;
     }
 
-    LOG("Settings loaded. Setting up hooks...");
     Hooks::SetupHooks();
     hooksinited = true;
 
@@ -440,10 +442,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         LOG("Initializing RawInput system...");
         RawInput::Initialize();
     }
-    else {
-        LOG("Initializing PostMessage system...");
-    }
-
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
 
     ULONGLONG lastMoveTime = 0;
@@ -568,6 +566,25 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     return 0;
 }
 
+// Entry point for EasyHook DLL injection
+extern "C" void __declspec(dllexport) __stdcall NativeInjectionEntryPoint(REMOTE_ENTRY_INFO* inRemoteInfo) {
+    if (g_isInitialized) {
+        RhWakeUpProcess();
+        return;
+    }
+
+    g_isInitialized = true;
+
+    LOG("Initialization started via NativeInjectionEntryPoint (EasyHook).");
+
+    HANDLE hThread = CreateThread(nullptr, 0, ThreadFunction, NULL, 0, NULL);
+    if (hThread) {
+        CloseHandle(hThread);
+    }
+
+    RhWakeUpProcess();
+}
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH: {
@@ -577,14 +594,20 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         INIT_LOGGER();
         LOG("================== DLL Attached (PID: %lu) ==================", GetCurrentProcessId());
 
-        HANDLE hThread = CreateThread(nullptr, 0, ThreadFunction, hModule, 0, nullptr);
-        if (hThread) {
-            CloseHandle(hThread);
-        }
-        else {
-            LOG("FATAL: Failed to create main worker thread! GetLastError() = %lu", GetLastError());
-            return FALSE;
-        }
+		// Create a thread if not using EasyHook injection
+        CreateThread(nullptr, 0, [](LPVOID) -> DWORD {
+            Sleep(100);
+            if (!g_isInitialized) {
+                g_isInitialized = true;
+                LOG("Initialization started via DllMain.");
+
+                HANDLE hThread = CreateThread(nullptr, 0, ThreadFunction, NULL, 0, NULL);
+                if (hThread) {
+                    CloseHandle(hThread);
+                }
+            }
+            return 0;
+            }, NULL, 0, NULL);
         break;
     }
 
@@ -592,6 +615,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         if (lpReserved == nullptr) {
             LOG("DLL Detaching gracefully.");
             loop = false;
+            Sleep(50);
         }
         else {
             LOG("DLL detaching due to process termination.");
@@ -600,6 +624,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         if (hooksinited) {
             Hooks::RemoveHooks();
             LOG("Hooks removed.");
+            if (g_InputMethod == InputMethod::RawInput) {
+                RawInput::Shutdown();
+                LOG("RawInput system shut down.");
+            }
         }
         SHUTDOWN_LOGGER();
         break;
