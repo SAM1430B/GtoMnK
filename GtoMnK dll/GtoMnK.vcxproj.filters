@@ -18,13 +18,16 @@
     <ClCompile Include="Mouse.cpp">
       <Filter>Files</Filter>
     </ClCompile>
-    <ClCompile Include="KeyboardState.cpp" />
     <ClCompile Include="RawInput.cpp">
       <Filter>Files\RawInput</Filter>
     </ClCompile>
     <ClCompile Include="RawInputHooks.cpp">
       <Filter>Files\RawInput</Filter>
     </ClCompile>
+    <ClCompile Include="KeyboardState.cpp">
+      <Filter>Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MainThread.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -49,13 +52,16 @@
     <ClInclude Include="Mouse.h">
       <Filter>Files</Filter>
     </ClInclude>
-    <ClInclude Include="KeyboardState.h" />
     <ClInclude Include="RawInput.h">
       <Filter>Files\RawInput</Filter>
     </ClInclude>
     <ClInclude Include="RawInputHooks.h">
       <Filter>Files\RawInput</Filter>
     </ClInclude>
+    <ClInclude Include="KeyboardState.h">
+      <Filter>Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MainThread.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Files">

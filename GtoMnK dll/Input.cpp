@@ -8,11 +8,12 @@
 #include <sstream>
 #include <map>
 #include <algorithm>
+#include "MainThread.h"
 
-extern HWND hwnd;
-extern GtoMnK::InputMethod g_InputMethod;
-extern int keystatesend;
-extern bool g_EnableMouseDoubleClick;
+//extern HWND hwnd;
+//extern GtoMnK::InputMethod g_InputMethod;
+//extern int keystatesend;
+//extern bool g_EnableMouseDoubleClick;
 
 namespace GtoMnK {
     namespace Input {
