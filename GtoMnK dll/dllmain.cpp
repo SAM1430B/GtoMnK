@@ -13,6 +13,9 @@
 
 using namespace GtoMnK;
 
+volatile bool g_isInitialized = false;
+bool g_isLoadedByDll = false;
+
 // Entry point for EasyHook DLL injection
 extern "C" void __declspec(dllexport) __stdcall NativeInjectionEntryPoint(REMOTE_ENTRY_INFO* inRemoteInfo) {
     if (g_isInitialized) {
@@ -46,6 +49,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             Sleep(100);
             if (!g_isInitialized) {
                 g_isInitialized = true;
+				g_isLoadedByDll = true;
                 LOG("Initialization started via DllMain.");
 
                 HANDLE hThread = CreateThread(nullptr, 0, ThreadFunction, NULL, 0, NULL);
@@ -59,23 +63,26 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     }
 
     case DLL_PROCESS_DETACH: {
-        if (lpReserved == nullptr) {
-            LOG("DLL Detaching gracefully.");
-            loop = false;
-            Sleep(50);
-        }
-        else {
-            LOG("DLL detaching due to process termination.");
-        }
+        loop = false;
 
-        if (hooksinited) {
-            Hooks::RemoveHooks();
-            LOG("Hooks removed.");
-            if (g_InputMethod == InputMethod::RawInput) {
-                RawInput::Shutdown();
-                LOG("RawInput system shut down.");
+        if (lpReserved == nullptr) {
+            LOG("DLL Detaching gracefully (FreeLibrary called).");
+            Sleep(50);
+
+            if (g_isLoadedByDll && hooksinited) {
+                LOG("Running as master. Performing full cleanup...");
+                Hooks::RemoveHooks();
+                LOG("Hooks removed.");
+                if (g_InputMethod == InputMethod::RawInput) {
+                    RawInput::Shutdown();
+                    LOG("RawInput system shut down.");
+                }
             }
         }
+        else {
+            LOG("DLL detaching due to process termination. Skipping explicit cleanup.");
+        }
+
         SHUTDOWN_LOGGER();
         break;
     }

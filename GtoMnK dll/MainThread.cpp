@@ -13,7 +13,6 @@ using namespace GtoMnK;
 #pragma comment(lib, "Xinput9_1_0.lib")
 
 // For Initialization and Thread state
-volatile bool g_isInitialized = false;
 HMODULE g_hModule = nullptr;
 bool hooksinited = false;
 bool loop = true;
@@ -278,7 +277,6 @@ void LoadIniSettings() {
     buttonStates[CUSTOM_ID_RT].actions = Input::ParseActionString(buffer);
 }
 
-
 POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
     static double mouseDeltaAccumulatorX = 0.0;
     static double mouseDeltaAccumulatorY = 0.0;
@@ -322,7 +320,6 @@ POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
 bool IsTriggerPressed(BYTE triggerValue) {
     return triggerValue > g_TriggerThreshold;
 }
-
 
 void DrawOverlay() {
     if (!hwnd || pausedraw || !drawfakecursor) return;
@@ -423,8 +420,6 @@ void ProcessTrigger(UINT triggerID, BYTE triggerValue) {
     ProcessButton(triggerID, isPressed);
 }
 
-// --- Main Thread Function ---
-
 DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     LOG("ThreadFunction started.");
     Sleep(1000 * 2);
@@ -445,18 +440,18 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         LOG("Initializing RawInput system...");
         RawInput::Initialize();
     }
-    hwnd = GetMainWindowHandle(GetCurrentProcessId());
+        hwnd = GetMainWindowHandle(GetCurrentProcessId());
 
     ULONGLONG lastMoveTime = 0;
     const DWORD MOVE_UPDATE_INTERVAL = 8;
 
     while (loop) {
         bool movedmouse = false;
-        if (!hwnd) {
-            hwnd = GetMainWindowHandle(GetCurrentProcessId());
-            Sleep(1000);
-            continue;
-        }
+            if (!hwnd) {
+                hwnd = GetMainWindowHandle(GetCurrentProcessId());
+                Sleep(1000);
+                continue;
+            }
 
         RECT rect;
         GetClientRect(hwnd, &rect);

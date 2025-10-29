@@ -108,8 +108,8 @@ namespace GtoMnK {
     }
 
     void Hooks::RemoveHooks() {
+		LOG("Removing hooks...");
         LhUninstallAllHooks();
-        LOG("All hooks have been uninstalled.");
     }
 
     HCURSOR WINAPI Hooks::SetCursorHook(HCURSOR hcursor) {
