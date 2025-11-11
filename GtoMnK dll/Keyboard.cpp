@@ -21,14 +21,26 @@ namespace GtoMnK {
         if (IsVirtualKeyPressed(vKey)) {
             return (short)0x8001;
         }
-        return GetAsyncKeyState(vKey);
+
+        //Recursion safety
+        ULONG threadIdList[] = { 0 };
+        LhSetGlobalExclusiveACL(threadIdList, 1);
+        SHORT result = GetAsyncKeyState(vKey);
+        LhSetGlobalInclusiveACL(threadIdList, 1);
+        return result;
     }
 
     SHORT WINAPI Keyboard::GetKeyStateHook(int nVirtKey) {
         if (IsVirtualKeyPressed(nVirtKey)) {
             return (short)0x8000;
         }
-        return GetKeyState(nVirtKey);
+
+        //Recursion safety
+        ULONG threadIdList[] = { 0 };
+        LhSetGlobalExclusiveACL(threadIdList, 1);
+        SHORT result = GetKeyState(nVirtKey);
+        LhSetGlobalInclusiveACL(threadIdList, 1);
+        return result;
     }
 
     BOOL WINAPI Keyboard::GetKeyboardStateHook(PBYTE lpKeyState) {
@@ -36,18 +48,19 @@ namespace GtoMnK {
             return FALSE;
         }
 
-        BOOL originalResult = GetKeyboardState(lpKeyState);
-        if (!originalResult) return FALSE;
+        //Recursion safety
+        ULONG threadIdList[] = { 0 };
+        LhSetGlobalExclusiveACL(threadIdList, 1);
+        BOOL result = GetKeyboardState(lpKeyState);
+        LhSetGlobalInclusiveACL(threadIdList, 1);
+
+        if (!result) return FALSE;
 
         for (int i = 0; i < 256; ++i) {
             if (IsVirtualKeyPressed(i)) {
                 lpKeyState[i] |= 0x80;
             }
-            else {
-                lpKeyState[i] &= ~0x80;
-            }
         }
-
         return TRUE;
     }
 }

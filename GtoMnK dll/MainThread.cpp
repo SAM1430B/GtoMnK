@@ -7,6 +7,7 @@
 #include "RawInput.h"
 #include <easyhook.h>
 #include "MainThread.h"
+#include "FakeCursor.h"
 
 using namespace GtoMnK;
 
@@ -56,7 +57,9 @@ HANDLE hMutex = nullptr;
 int responsetime;
 
 // Drawing & cursor state
-int drawfakecursor;
+int drawfakecursor = 0;
+int drawProtoFakeCursor = 0; // From ProtoInput
+int ShowProtoCursorWhenImageUpdated = 1; // From ProtoInput
 int mode = 1;
 bool onoroff = true;
 int showmessage = 0;
@@ -99,13 +102,19 @@ HWND GetMainWindowHandle(DWORD targetPID) {
         HandleData* pData = reinterpret_cast<HandleData*>(lParam);
         DWORD windowPID = 0;
         GetWindowThreadProcessId(hWnd, &windowPID);
-        if (windowPID == pData->pid && GetWindow(hWnd, GW_OWNER) == nullptr && IsWindowVisible(hWnd)) {
-            pData->hwnd = hWnd;
-            return FALSE;
+
+        if (windowPID == pData->pid) {
+            if (GetWindow(hWnd, GW_OWNER) == (HWND)0 && IsWindowVisible(hWnd)) {
+				// (ProtoInput FakeCursor) Ignore the pointer window
+                if (hWnd == FakeCursor::GetPointerWindow()) {
+                    return TRUE;
+                }
+                pData->hwnd = hWnd;
+                return FALSE;
+            }
         }
         return TRUE;
         };
-
     EnumWindows(EnumWindowsCallback, reinterpret_cast<LPARAM>(&data));
     return data.hwnd;
 }
@@ -193,9 +202,18 @@ void LoadIniSettings() {
     // [Settings]
     controllerID = GetPrivateProfileIntA("Settings", "Controllerid", 0, iniPath.c_str());
     mode = GetPrivateProfileIntA("Settings", "Mode", 1, iniPath.c_str());
-    drawfakecursor = GetPrivateProfileIntA("Settings", "DrawFakeCursor", 1, iniPath.c_str());
+    drawfakecursor = GetPrivateProfileIntA("Settings", "drawfakecursor", 0, iniPath.c_str());
+	drawProtoFakeCursor = GetPrivateProfileIntA("Settings", "DrawProtoFakeCursor", 1, iniPath.c_str()); //From ProtoInput
+	ShowProtoCursorWhenImageUpdated = GetPrivateProfileIntA("Settings", "ShowCursorWhenImageUpdated", 1, iniPath.c_str());
     //alwaysdrawcursor = GetPrivateProfileIntA("Settings", "DrawFakeCursorAlways", 0, iniPath.c_str());
+    if (drawProtoFakeCursor == 1) {
+        if (drawfakecursor == 1) {
+            LOG("INI Info: Both 'drawfakecursor' and 'drawProtoFakeCursor' are enabled. Prioritizing the ProtoInput cursor.");
+            drawfakecursor = 0; // Force the old cursor to be disabled.
+        }
+    }
     responsetime = GetPrivateProfileIntA("Settings", "Responsetime", 0, iniPath.c_str());
+
     LOG("Using controller ID: %d", controllerID);
 
     // [StickToMouse]
@@ -322,15 +340,21 @@ bool IsTriggerPressed(BYTE triggerValue) {
 }
 
 void DrawOverlay() {
-    if (!hwnd || pausedraw || !drawfakecursor) return;
+    if (showmessage == 0 && !(drawfakecursor && mode == 1 && onoroff)) {
+        return;
+    }
     HDC hdcWindow = GetDC(hwnd);
-    if (!hdcWindow) return;
+    if (!hdcWindow) {
+        return;
+    }
     if (showmessage == 1) TextOutA(hdcWindow, Mouse::Xf, Mouse::Yf, "KEYBOARD MODE", 13);
     else if (showmessage == 2) TextOutA(hdcWindow, Mouse::Xf, Mouse::Yf, "CURSOR MODE", 11);
     else if (showmessage == 69) TextOutA(hdcWindow, Mouse::Xf, Mouse::Yf, "DISABLED", 8);
     else if (showmessage == 70) TextOutA(hdcWindow, Mouse::Xf, Mouse::Yf, "ENABLED", 7);
     else if (showmessage == 12) TextOutA(hdcWindow, 20, 20, "CONTROLLER DISCONNECTED", 23);
-    else if (mode == 1 && onoroff) { Mouse::DrawBeautifulCursor(hdcWindow); }
+    else if (drawfakecursor && mode == 1 && onoroff) {
+        Mouse::DrawBeautifulCursor(hdcWindow);
+    }
     ReleaseDC(hwnd, hdcWindow);
 }
 
@@ -440,7 +464,17 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         LOG("Initializing RawInput system...");
         RawInput::Initialize();
     }
-        hwnd = GetMainWindowHandle(GetCurrentProcessId());
+    hwnd = GetMainWindowHandle(GetCurrentProcessId());
+
+    if (drawProtoFakeCursor == 1) {
+        LOG("ProtoInput Fake Cursor is enabled. Initializing...");
+        FakeCursor::Initialise();
+        FakeCursor::EnableDisableFakeCursor(true);
+		// CursorVisibilityHook will be enabled automatically when `drawProtoFakeCursor` is enabled. 
+    }
+    else if (drawfakecursor) {
+        LOG("Simple Fake Cursor is enabled.");
+    }
 
     ULONGLONG lastMoveTime = 0;
     const DWORD MOVE_UPDATE_INTERVAL = 8;
@@ -531,6 +565,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                     Mouse::Xf = std::max((LONG)rect.left, std::min((LONG)Mouse::Xf, (LONG)rect.right));
                     Mouse::Yf = std::max((LONG)rect.top, std::min((LONG)Mouse::Yf, (LONG)rect.bottom));
                     movedmouse = true;
+
+					//ProtoInput Fake Cursor update
+                    if (drawProtoFakeCursor == 1) {
+                        FakeCursor::NotifyUpdatedCursorPosition();
+                    }
+
                     ULONGLONG currentTime = GetTickCount64();
                     if (currentTime - lastMoveTime > MOVE_UPDATE_INTERVAL) {
                         lastMoveTime = currentTime;
