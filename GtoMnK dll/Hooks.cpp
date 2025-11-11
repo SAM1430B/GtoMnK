@@ -6,12 +6,14 @@
 #include "Keyboard.h"
 #include "RawInput.h"
 #include "RawInputHooks.h"
+#include "CursorVisibilityHooks.h"
 
 // External global variables from dllmain.cpp
 extern int leftrect, toprect, rightrect, bottomrect;
 extern int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setCursorHook, setRectHook;
 
 extern GtoMnK::InputMethod g_InputMethod;
+extern int drawProtoFakeCursor;
 
 // For RawInput
 HOOK_TRACE_INFO g_getRawInputDataHook = { NULL };
@@ -27,6 +29,11 @@ HOOK_TRACE_INFO g_getKeyboardStateHookHandle = { NULL };
 HOOK_TRACE_INFO g_setCursorHookHandle = { NULL };
 HOOK_TRACE_INFO g_setRectHookHandle = { NULL };
 HOOK_TRACE_INFO g_adjustWindowRectHookHandle = { NULL };
+
+// From ProtoInput
+HOOK_TRACE_INFO g_HookShowCursorHandle = { NULL };
+HOOK_TRACE_INFO g_HookSetCursorHandle = { NULL };
+HOOK_TRACE_INFO g_HookSetSystemCursorHandle = { NULL };
 
 namespace GtoMnK {
 
@@ -49,6 +56,16 @@ namespace GtoMnK {
             result = LhInstallHook(GetProcAddress(hUser32, "RegisterRawInputDevices"), GtoMnK::RawInputHooks::RegisterRawInputDevicesHook, NULL, &g_registerRawInputDevicesHook);
             if (FAILED(result)) LOG("Failed to install hook for RegisterRawInputDevices: %S", RtlGetLastErrorString());
         }
+        // From ProtoInput
+        if (drawProtoFakeCursor == 1) {
+            LOG("Installing hooks for ProtoInput Fake Cursor...");
+            result = LhInstallHook(GetProcAddress(hUser32, "ShowCursor"), GtoMnK::CursorVisibilityHook::Hook_ShowCursor, NULL, &g_HookShowCursorHandle);
+            if (FAILED(result)) LOG("Failed to install hook for ShowCursor: %S", RtlGetLastErrorString());
+            result = LhInstallHook(GetProcAddress(hUser32, "SetCursor"), GtoMnK::CursorVisibilityHook::Hook_SetCursor, NULL, &g_HookSetCursorHandle);
+            if (FAILED(result)) LOG("Failed to install hook for SetCursor: %S", RtlGetLastErrorString());
+            result = LhInstallHook(GetProcAddress(hUser32, "SetSystemCursor"), GtoMnK::CursorVisibilityHook::Hook_SetSystemCursor, NULL, &g_HookSetSystemCursorHandle);
+            if (FAILED(result)) LOG("Failed to install hook for SetSystemCursor: %S", RtlGetLastErrorString());
+		}
 		// General hooks
         if (getCursorPosHook) {
             result = LhInstallHook(GetProcAddress(hUser32, "GetCursorPos"), Mouse::GetCursorPosHook, NULL, &g_getCursorPosHookHandle);
@@ -74,7 +91,7 @@ namespace GtoMnK {
             result = LhInstallHook(GetProcAddress(hUser32, "GetKeyboardState"), Keyboard::GetKeyboardStateHook, NULL, &g_getKeyboardStateHookHandle);
             if (FAILED(result)) LOG("Failed to install hook for GetKeyboardState: %S", RtlGetLastErrorString());
         }
-        if (setCursorHook) {
+        if (setCursorHook && drawProtoFakeCursor != 1) {
             result = LhInstallHook(GetProcAddress(hUser32, "SetCursor"), SetCursorHook, NULL, &g_setCursorHookHandle);
             if (FAILED(result)) LOG("Failed to install hook for SetCursor: %S", RtlGetLastErrorString());
         }
@@ -103,13 +120,18 @@ namespace GtoMnK {
             LhSetExclusiveACL(threadIdList, 1, &g_setRectHookHandle);
             LhSetExclusiveACL(threadIdList, 1, &g_adjustWindowRectHookHandle);
         }
+        if (drawProtoFakeCursor == 1) {
+            LhSetExclusiveACL(threadIdList, 1, &g_HookShowCursorHandle);
+            LhSetExclusiveACL(threadIdList, 1, &g_HookSetCursorHandle);
+            LhSetExclusiveACL(threadIdList, 1, &g_HookSetSystemCursorHandle);
+        }
 
         LOG("All selected hooks are now enabled.");
     }
 
     void Hooks::RemoveHooks() {
+		LOG("Removing hooks...");
         LhUninstallAllHooks();
-        LOG("All hooks have been uninstalled.");
     }
 
     HCURSOR WINAPI Hooks::SetCursorHook(HCURSOR hcursor) {
