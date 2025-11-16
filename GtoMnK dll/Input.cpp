@@ -23,6 +23,7 @@ namespace GtoMnK {
 		// For PostMessage method
         WPARAM BuildWParam() {
             WPARAM wParam = 0;
+			//wParam |= GtoMnK_MOUSE_SIGNATURE;
             if (isLMB_Down) wParam |= MK_LBUTTON;
             if (isRMB_Down) wParam |= MK_RBUTTON;
             if (isMMB_Down) wParam |= MK_MBUTTON;
@@ -52,6 +53,7 @@ namespace GtoMnK {
             case -7: if (press) { msg = WM_MOUSEWHEEL; wParam |= MAKEWPARAM(0, -120); } break;
             case -8: msg = press ? WM_LBUTTONDBLCLK : WM_LBUTTONUP; break;
             }
+			wParam |= GtoMnK_MOUSE_SIGNATURE; // For filter identification
             if (msg != 0) PostMessage(hwnd, msg, wParam, clickPos);
         }
 
@@ -60,6 +62,8 @@ namespace GtoMnK {
             keystatesend = press ? vkCode : 0;
             UINT scanCode = MapVirtualKey(vkCode, MAPVK_VK_TO_VSC);
             LPARAM lParam = (1 | (scanCode << 16));
+
+			lParam |= GtoMnK_KEYBOARD_SIGNATURE; // For filter identification
 
             if (isExtended) {
                 lParam |= (1 << 24);

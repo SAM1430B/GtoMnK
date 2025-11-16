@@ -7,6 +7,7 @@
 #include "RawInput.h"
 #include "RawInputHooks.h"
 #include "CursorVisibilityHooks.h"
+#include "MessageFilterHooks.h"
 
 // External global variables from dllmain.cpp
 extern int leftrect, toprect, rightrect, bottomrect;
@@ -14,6 +15,7 @@ extern int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, 
 
 extern GtoMnK::InputMethod g_InputMethod;
 extern int drawProtoFakeCursor;
+extern bool g_filterRawInput, g_filterMouseMove, g_filterMouseActivate, g_filterWindowActivate, g_filterWindowActivateApp, g_filterMouseWheel, g_filterMouseButton, g_filterKeyboardButton;
 
 // For RawInput
 HOOK_TRACE_INFO g_getRawInputDataHook = { NULL };
@@ -34,6 +36,11 @@ HOOK_TRACE_INFO g_adjustWindowRectHookHandle = { NULL };
 HOOK_TRACE_INFO g_HookShowCursorHandle = { NULL };
 HOOK_TRACE_INFO g_HookSetCursorHandle = { NULL };
 HOOK_TRACE_INFO g_HookSetSystemCursorHandle = { NULL };
+
+HOOK_TRACE_INFO g_HookGetMessageAHandle = { NULL };
+HOOK_TRACE_INFO g_HookGetMessageWHandle = { NULL };
+HOOK_TRACE_INFO g_HookPeekMessageAHandle = { NULL };
+HOOK_TRACE_INFO g_HookPeekMessageWHandle = { NULL };
 
 namespace GtoMnK {
 
@@ -65,6 +72,17 @@ namespace GtoMnK {
             if (FAILED(result)) LOG("Failed to install hook for SetCursor: %S", RtlGetLastErrorString());
             result = LhInstallHook(GetProcAddress(hUser32, "SetSystemCursor"), GtoMnK::CursorVisibilityHook::Hook_SetSystemCursor, NULL, &g_HookSetSystemCursorHandle);
             if (FAILED(result)) LOG("Failed to install hook for SetSystemCursor: %S", RtlGetLastErrorString());
+		}
+        if (g_filterRawInput || g_filterMouseMove || g_filterMouseActivate || g_filterWindowActivate || g_filterWindowActivateApp || g_filterMouseWheel || g_filterMouseButton || g_filterKeyboardButton) {
+            LOG("Installing hooks for Message Filtering...");
+            result = LhInstallHook(GetProcAddress(hUser32, "GetMessageA"), GtoMnK::MessageFilterHook::Hook_GetMessageA, NULL, &g_HookGetMessageAHandle);
+            if (FAILED(result)) LOG("Failed to install hook for GetMessageA: %S", RtlGetLastErrorString());
+            result = LhInstallHook(GetProcAddress(hUser32, "GetMessageW"), GtoMnK::MessageFilterHook::Hook_GetMessageW, NULL, &g_HookGetMessageWHandle);
+            if (FAILED(result)) LOG("Failed to install hook for GetMessageW: %S", RtlGetLastErrorString());
+            result = LhInstallHook(GetProcAddress(hUser32, "PeekMessageA"), GtoMnK::MessageFilterHook::Hook_PeekMessageA, NULL, &g_HookPeekMessageAHandle);
+            if (FAILED(result)) LOG("Failed to install hook for PeekMessageA: %S", RtlGetLastErrorString());
+            result = LhInstallHook(GetProcAddress(hUser32, "PeekMessageW"), GtoMnK::MessageFilterHook::Hook_PeekMessageW, NULL, &g_HookPeekMessageWHandle);
+            if (FAILED(result)) LOG("Failed to install hook for PeekMessageW: %S", RtlGetLastErrorString());
 		}
 		// General hooks
         if (getCursorPosHook) {
@@ -125,7 +143,12 @@ namespace GtoMnK {
             LhSetExclusiveACL(threadIdList, 1, &g_HookSetCursorHandle);
             LhSetExclusiveACL(threadIdList, 1, &g_HookSetSystemCursorHandle);
         }
-
+        if (g_filterRawInput || g_filterMouseMove || g_filterMouseActivate || g_filterWindowActivate || g_filterWindowActivateApp || g_filterMouseWheel || g_filterMouseButton || g_filterKeyboardButton) {
+            LhSetExclusiveACL(threadIdList, 1, &g_HookGetMessageAHandle);
+            LhSetExclusiveACL(threadIdList, 1, &g_HookGetMessageWHandle);
+            LhSetExclusiveACL(threadIdList, 1, &g_HookPeekMessageAHandle);
+            LhSetExclusiveACL(threadIdList, 1, &g_HookPeekMessageWHandle);
+        }
         LOG("All selected hooks are now enabled.");
     }
 

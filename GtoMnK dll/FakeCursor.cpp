@@ -217,7 +217,7 @@ namespace GtoMnK
         wc.hInstance = hInstance;
         wc.hbrBackground = transparencyBrush;
         std::srand(static_cast<unsigned int>(std::time(nullptr)));
-        const std::wstring classNameStr = std::wstring{ L"GtoMnK_Pointer_" } + std::to_wstring(std::rand());
+        const std::wstring classNameStr = std::wstring{ L"GtoMnK_Pointer_Window" } + std::to_wstring(std::rand());
 
         wc.lpszClassName = classNameStr.c_str();
 

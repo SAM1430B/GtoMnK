@@ -58,7 +58,7 @@ int responsetime;
 
 // Drawing & cursor state
 int drawfakecursor = 0;
-int drawProtoFakeCursor = 0; // From ProtoInput
+int drawProtoFakeCursor = 0; // From ProtoInput also for the Cursor visibility hooks
 int ShowProtoCursorWhenImageUpdated = 1; // From ProtoInput
 int mode = 1;
 bool onoroff = true;
@@ -69,6 +69,16 @@ bool pausedraw = false;
 // For the Hooks
 InputMethod g_InputMethod = InputMethod::PostMessage;
 int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setCursorHook, setRectHook;
+
+// For MessageFilterHook
+bool g_filterRawInput = false;
+bool g_filterMouseMove = false;
+bool g_filterMouseActivate = false;
+bool g_filterWindowActivate = false;
+bool g_filterWindowActivateApp = false;
+bool g_filterMouseWheel = false;
+bool g_filterMouseButton = false;
+bool g_filterKeyboardButton = false;
 
 // For GetCursorPosHook
 POINT scroll = { 0, 0 };
@@ -198,6 +208,17 @@ void LoadIniSettings() {
     getKeyboardStateHook = GetPrivateProfileIntA("Hooks", "GetKeyboardstateHook", 1, iniPath.c_str());
     setCursorHook = GetPrivateProfileIntA("Hooks", "SetCursorHook", 1, iniPath.c_str());
     setRectHook = GetPrivateProfileIntA("Hooks", "SetRectHook", 0, iniPath.c_str());
+
+	// [MessageFilter]
+    LOG("Loading Message Filter settings...");
+    g_filterRawInput = GetPrivateProfileIntA("MessageFilter", "RawInputFilter", 0, iniPath.c_str()) == 1;
+    g_filterMouseMove = GetPrivateProfileIntA("MessageFilter", "MouseMoveFilter", 0, iniPath.c_str()) == 1;
+    g_filterMouseActivate = GetPrivateProfileIntA("MessageFilter", "MouseActivateFilter", 0, iniPath.c_str()) == 1;
+    g_filterWindowActivate = GetPrivateProfileIntA("MessageFilter", "WindowActivateFilter", 0, iniPath.c_str()) == 1;
+    g_filterWindowActivateApp = GetPrivateProfileIntA("MessageFilter", "WindowActivateAppFilter", 0, iniPath.c_str()) == 1;
+    g_filterMouseWheel = GetPrivateProfileIntA("MessageFilter", "MouseWheelFilter", 0, iniPath.c_str()) == 1;
+    g_filterMouseButton = GetPrivateProfileIntA("MessageFilter", "MouseButtonFilter", 0, iniPath.c_str()) == 1;
+    g_filterKeyboardButton = GetPrivateProfileIntA("MessageFilter", "KeyboardButtonFilter", 0, iniPath.c_str()) == 1;
 
     // [Settings]
     controllerID = GetPrivateProfileIntA("Settings", "Controllerid", 0, iniPath.c_str());
