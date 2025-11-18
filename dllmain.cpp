@@ -38,7 +38,7 @@ typedef BOOL(WINAPI* AdjustWindowRect_t)(LPRECT lprc, DWORD  dwStyle, BOOL bMenu
 
 
 
-
+CRITICAL_SECTION critical;
 
 GetCursorPos_t fpGetCursorPos = nullptr;
 GetCursorPos_t fpSetCursorPos = nullptr;
@@ -65,7 +65,7 @@ HANDLE hMutex;
 
 int getmouseonkey = 0;
 int message = 0;
-
+auto hInstance = nullptr;
 
 //hooks
 bool hooksinited = false;   
@@ -231,12 +231,12 @@ int knappsovetid = 100;
 int samekey = 0;
 int samekeyA = 0;
 
-
-
 HCURSOR WINAPI HookedSetCursor(HCURSOR hcursor) {
+	    EnterCriticalSection(&critical);
 		hCursor = hcursor; // Store the cursor handle  
 
         hcursor = fpSetCursor(hcursor);
+		LeaveCriticalSection(&critical);
         return hcursor;
 }
 
@@ -1609,11 +1609,271 @@ bool Buttonaction(const char key[3], int mode, int serchnum, int startsearch)
     return true;
 }
 //int akkumulator = 0;    
+
+#define WM_MOVE_pointerWindow (WM_APP + 1)
+
+void GetWindowDimensions(HWND pointerWindow)
+{
+    HWND tHwnd = hwnd;
+    if (pointerWindow == tHwnd)
+        return;
+
+    if (IsWindow(tHwnd))
+    {
+        RECT cRect;
+        GetClientRect(tHwnd, &cRect);
+
+        POINT topLeft = { cRect.left, cRect.top };
+        ClientToScreen(tHwnd, &topLeft);
+
+        SetWindowPos(pointerWindow, HWND_TOPMOST,
+            topLeft.x,
+            topLeft.y,
+            cRect.right - cRect.left,
+            cRect.bottom - cRect.top,
+            SWP_NOACTIVATE);
+        ShowWindow(pointerWindow, SW_SHOW);
+    }
+}
+int cursoroffsetx, cursoroffsety;
+int offsetSET; //0:sizing 1:offset 2:done
+int cursorWidth = 40;
+int cursorHeight = 40;
+HWND pointerWindow = nullptr;
+bool DrawFakeCursorFix = false;
+static constexpr auto transparencyKey = RGB(0, 0, 1);
+HBRUSH transparencyBrush;
+HCURSOR oldhCursor = NULL;
+bool nochange = false;
+int WoldX, WoldY;
+bool oldHadShowCursor = true;
+void DrawCursor(int X, int Y, HCURSOR hcursor)
+{
+    HDC hdccw = GetDC(pointerWindow);
+
+    POINT pos = { X, Y };
+
+    DrawIcon(hdccw, pos.x, pos.y, hcursor);
+
+    ReleaseDC(pointerWindow, hdccw);
+    
+    //DeleteObject(hcursor);
+}
+// Window procedure
+LRESULT CALLBACK FakeCursorWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    switch (msg)
+    {
+    case WM_MOVE_pointerWindow:
+    {
+        GetWindowDimensions(hWnd);
+        break;
+    }
+    case WM_PAINT: {
+        PAINTSTRUCT ps; 
+        HDC hdcc = BeginPaint(hWnd, &ps); 
+        EnterCriticalSection(&critical); 
+        RECT fill{ WoldX, WoldY, WoldX + cursorWidth, WoldY + cursorHeight }; 
+		POINT pos = { fakecursor.x, fakecursor.y };
+        FillRect(hdcc, &fill, transparencyBrush); // Note: window, not screen coordinates! 
+        if (!DrawFakeCursorFix)
+        { 
+            if (hCursor != NULL)
+            {
+                DrawIcon(hdcc, fakecursor.x, fakecursor.y, hCursor);
+            }
+            else {
+                DrawIcon(hdcc, 100, 100, LoadCursor(NULL, IDC_ARROW));
+            }
+        }
+        if (DrawFakeCursorFix)
+        {
+            pos.x -= cursoroffsetx;
+            pos.y -= cursoroffsety;
+            RECT fill{ pos.x, pos.y, pos.x + cursorWidth, pos.y + cursorHeight };
+            FillRect(hdcc, &fill, transparencyBrush); // Note: window, not screen coordinates! 
+            if (pos.x < 0) pos.x = 0;
+            if (pos.y < 0) pos.y = 0;
+
+            if (hCursor != NULL)// && hdc && hCursor
+            {
+                if (DrawIconEx(hdcc, pos.x, pos.y, hCursor, cursorWidth, cursorHeight, 0, transparencyBrush, DI_NORMAL))
+                {
+                    if (hCursor != oldhCursor && offsetSET > 1 && nochange == false)
+                    {
+                        offsetSET = 0;
+                    }
+                    if (offsetSET == 1 && hCursor != LoadCursor(NULL, IDC_ARROW) && IsWindowVisible(pointerWindow)) //offset setting
+                    {
+                        HDC hdcMem = CreateCompatibleDC(hdcc);
+                        HBITMAP hbmScreen = CreateCompatibleBitmap(hdcc, cursorWidth, cursorHeight);
+                        SelectObject(hdcMem, hbmScreen);
+                        BitBlt(hdcMem, 0, 0, cursorWidth, cursorHeight, hdcc, pos.x, pos.y, SRCCOPY);
+                        cursoroffsetx = -1;
+                        cursoroffsety = -1;
+                        int leftcursoroffsetx = 0;
+                        int leftcursoroffsety = -1;
+                        int rightcursoroffsetx = 0;
+                        // Scanning
+                        for (int y = 0; y < cursorHeight; y++)
+                        {
+                            for (int x = 0; x < cursorWidth; x++)
+                            {
+                                COLORREF pixelColor = GetPixel(hdcMem, x, y); // scan from left and find common y to use in next scan also
+                                if (pixelColor != transparencyKey)
+                                {
+                                    leftcursoroffsetx = x;
+                                    leftcursoroffsety = y;
+                                    break;
+                                }
+                            }
+                            if (leftcursoroffsetx != -1) break;
+                        }
+
+
+                        for (int x = cursorWidth - 1; x >= 0; x--)
+                        {
+                            COLORREF pixelColor = GetPixel(hdcMem, x, leftcursoroffsety); // scan from right
+                            if (pixelColor != transparencyKey)
+                            {
+                                rightcursoroffsetx = cursorWidth - x;
+                                break;
+                            }
+                        }
+                        //Adjusting possible here if symmetric cursor is not found
+                        if (leftcursoroffsetx == rightcursoroffsetx - 1 || leftcursoroffsetx == rightcursoroffsetx + 1 || leftcursoroffsetx == rightcursoroffsetx) //check for symmetric first only if Y offset is small
+                        {
+                            cursoroffsety = cursorHeight / 2;
+                            cursoroffsetx = cursorWidth / 2;
+                        }
+                        else if (leftcursoroffsety > 2 || leftcursoroffsetx > 2) //is there any other offsets?
+                        {
+                            cursoroffsetx = leftcursoroffsetx;
+                            cursoroffsety = leftcursoroffsety;
+                            nochange = true;
+                        }
+
+                        else { //no offsets
+                            cursoroffsetx = 0;
+                            cursoroffsety = 0;
+                        }
+                        offsetSET++; //offset set to 2 should do drawing only now
+                        DeleteDC(hdcMem);
+                        DeleteObject(hbmScreen);
+
+
+
+                    }
+                    if (offsetSET == 0 && hCursor != LoadCursor(NULL, IDC_ARROW) && IsWindowVisible(pointerWindow)) //size setting
+                    {
+                        ICONINFO ii;
+                        BITMAP bitmap;
+                        cursoroffsetx = 0;
+                        cursoroffsety = 0;
+                        if (GetIconInfo(hCursor, &ii))
+                        {
+                            if (GetObject(ii.hbmMask, sizeof(BITMAP), &bitmap))
+                            {
+                                cursorWidth = bitmap.bmWidth;
+                                if (ii.hbmColor == NULL)
+                                {//For monochrome icons, the hbmMask is twice the height of the icon and hbmColor is NULL
+                                    cursorHeight = bitmap.bmHeight / 2;
+                                }
+                                else
+                                {
+                                    cursorHeight = bitmap.bmHeight;
+                                }
+                                DeleteObject(ii.hbmColor);
+                                DeleteObject(ii.hbmMask);
+                            }
+
+                        }
+                        offsetSET++; //size set, doing offset next run
+                    }
+                    oldhCursor = hCursor;
+                }
+            }
+        }
+        WoldX = fakecursor.x;
+        WoldY = fakecursor.y;
+        LeaveCriticalSection(&critical);
+
+        EndPaint(hWnd, &ps);
+        return 0;
+
+    }
+
+
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+    default:
+        break;
+    }
+
+    return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+//TODO: width/height probably needs to change
+
+
+// DrawFakeCursorFix. cursor offset scan and cursor size fix
+
+
+// Thread to create and run the window
+DWORD WINAPI WindowThreadProc(LPVOID) {
+    EnterCriticalSection(&critical);
+    transparencyBrush = (HBRUSH)CreateSolidBrush(transparencyKey);
+    WNDCLASSW wc = { };
+    wc.lpfnWndProc = FakeCursorWndProc;
+    wc.hInstance = GetModuleHandleW(0);
+    wc.hbrBackground = transparencyBrush;
+
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
+    const std::wstring classNameStr = std::wstring{ L"GtoMnK_Pointer_Window" } + std::to_wstring(std::rand());
+
+    wc.lpszClassName = classNameStr.c_str();
+    wc.style = CS_OWNDC | CS_NOCLOSE;
+
+    RegisterClassW(&wc);
+
+    pointerWindow = CreateWindowExW(WS_EX_NOACTIVATE | WS_EX_NOINHERITLAYOUT | WS_EX_NOPARENTNOTIFY |
+        WS_EX_TOPMOST | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_LAYERED,
+        wc.lpszClassName, L"classNameStr.c_str()",
+        WS_POPUP | WS_VISIBLE,
+        0, 0, 800, 600,
+        nullptr, nullptr, GetModuleHandle(NULL), nullptr);
+
+
+
+
+    if (!pointerWindow) {
+        MessageBoxA(NULL, "Failed to create pointer window", "Error", MB_OK | MB_ICONERROR);
+    }
+    SetLayeredWindowAttributes(pointerWindow, transparencyKey, 0, LWA_COLORKEY);
+    ShowWindow(pointerWindow, SW_SHOW);
+
+    MSG msg;
+    ZeroMemory(&msg, sizeof(msg));
+	LeaveCriticalSection(&critical);
+    while (GetMessage(&msg, nullptr, 0, 0))
+    {
+        if (msg.message != WM_QUIT)
+        {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+		}
+
+    }
+    return 0;
+}
+
+RECT oldrect;
 DWORD WINAPI ThreadFunction(LPVOID lpParam)
 {
     Sleep(2000);
     char buffer[256];
-
+    
     // settings reporting
     std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
     std::string iniSettings = "Settings";
@@ -1685,6 +1945,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 
     int scrolloutsidewindow = GetPrivateProfileInt(iniSettings.c_str(), "Scrollmapfix", 1, iniPath.c_str());   //scrolloutsidewindow
     
+    if (drawfakecursor == 3)
+		DrawFakeCursorFix = true;
 
     Sleep(1000);
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
@@ -1835,45 +2097,75 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     }
     ///////////////////////////////////////////////////////////////////////////////////LLLLLLLOOOOOOOOOOOOOPPPPPPPPPPPPP
     bool Aprev = false;
-        
+
+ 
+	bool window = false;
     while (loop == true)
     {
         bool movedmouse = false; //reset
         keystatesend = 0; //reset keystate
 		foundit = false; //reset foundit the bmp search found or not
-        int calcsleep = 0;
         if (hwnd == NULL)
         {
             hwnd = GetMainWindowHandle(GetCurrentProcessId());
         }
-        RECT rect;
-        GetClientRect(hwnd, &rect);
-
-        if (ignorerect == 1)
+        else
         {
-            RECT frameBounds;
-            HRESULT hr = DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &frameBounds, sizeof(frameBounds));
-            if (SUCCEEDED(hr)) {
-                // These are the actual visible edges of the window in client coordinates
-                POINT upper;
-                upper.x = frameBounds.left;
-                upper.y = frameBounds.top;
+			//EnterCriticalSection(&critical);    
+            RECT rect;
 
-				//used in getcursrorpos
-				rectignore.x = upper.x;  
-                rectignore.y = upper.y;
+            GetClientRect(hwnd, &rect);
 
-                rect.right = frameBounds.right - frameBounds.left;
-                rect.bottom = frameBounds.bottom - frameBounds.top;
-                rect.left = 0;
-                rect.top = 0;
-                
+            if (drawfakecursor == 2 || drawfakecursor == 3)
+            {//fake cursor window creation
+                if (!window) 
+                { 
+                    HANDLE two = CreateThread(nullptr, 0,
+                        (LPTHREAD_START_ROUTINE)WindowThreadProc, g_hModule, 0, 0); //GetModuleHandle(0)
+                    CloseHandle(two);
+					Sleep(100); //give time to create window
+                    while (!pointerWindow) Sleep(10);
+					SendMessage(pointerWindow, WM_MOVE_pointerWindow, 0, 0); //focus to avoid alt tab issues
+
+				    window = true;
+                }
+                else if (oldrect.left != rect.left || oldrect.right != rect.right || oldrect.top != rect.top || oldrect.bottom != rect.bottom)
+                {
+                    SendMessage(pointerWindow, WM_MOVE_pointerWindow, 0, 0); //focus to avoid alt tab issues
+					MessageBoxA(NULL, "Resized/moved window - adjust fake cursor window", "Info", MB_OK);
+                    ShowWindow(pointerWindow, SW_SHOW);
+                }
+			}
+			//LeaveCriticalSection(&critical);
+
+            oldrect.left = rect.left;
+			oldrect.right = rect.right;
+			oldrect.top = rect.top;
+			oldrect.bottom = rect.bottom;
+
+
+            if (ignorerect == 1)
+            {
+                RECT frameBounds;
+                HRESULT hr = DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &frameBounds, sizeof(frameBounds));
+                if (SUCCEEDED(hr)) {
+                    // These are the actual visible edges of the window in client coordinates
+                    POINT upper;
+                    upper.x = frameBounds.left;
+                    upper.y = frameBounds.top;
+
+                    //used in getcursrorpos
+                    rectignore.x = upper.x;
+                    rectignore.y = upper.y;
+
+                    rect.right = frameBounds.right - frameBounds.left;
+                    rect.bottom = frameBounds.bottom - frameBounds.top;
+                    rect.left = 0;
+                    rect.top = 0;
+
+                }
             }
-        }
-        
 
-        if (hwnd != NULL)
-        {
             XINPUT_STATE state;
             ZeroMemory(&state, sizeof(XINPUT_STATE));
             // Check controller 0
@@ -1881,15 +2173,17 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
             bool leftPressed = IsTriggerPressed(state.Gamepad.bLeftTrigger);
             bool rightPressed = IsTriggerPressed(state.Gamepad.bRightTrigger);
             
+			
 
 
 
             if (dwResult == ERROR_SUCCESS)
             {
-
+                EnterCriticalSection(&critical);
                 fakecursor.x = Xf;
                 fakecursor.y = Yf;
                 ClientToScreen(hwnd, &fakecursor);
+				LeaveCriticalSection(&critical);
                 // Controller is connected
                 WORD buttons = state.Gamepad.wButtons;
                 bool currA = (buttons & XINPUT_GAMEPAD_A) != 0;
@@ -2155,9 +2449,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     {
                         //post keep?
                         if (scrolloutsidewindow >= 3 && quickMW == 1) {
+                            EnterCriticalSection(&critical);
                             ClientToScreen(hwnd, &fakecursor); //double
                             SendMouseClick(fakecursor.x, fakecursor.y, 20, 1);
                             ScreenToClient(hwnd, &fakecursor);
+							LeaveCriticalSection(&critical);
                         }
                     }
                     else {
@@ -2181,9 +2477,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     if (scrolloutsidewindow >= 3) {
                         oldup = true;
                         scrollmap = false;
+                        EnterCriticalSection(&critical);
                         ClientToScreen(hwnd, &fakecursor); //double
                         SendMouseClick(fakecursor.x, fakecursor.y, 20, 1);
                         ScreenToClient(hwnd, &fakecursor);
+						LeaveCriticalSection(&critical);
                         
                     }
                 }
@@ -2197,9 +2495,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     {
                         //post keep?
                         if (scrolloutsidewindow >= 3 && quickMW == 1) {
+                            EnterCriticalSection(&critical);
                             ClientToScreen(hwnd, &fakecursor); //double
                             SendMouseClick(fakecursor.x, fakecursor.y, 21, 1);
                             ScreenToClient(hwnd, &fakecursor);
+							LeaveCriticalSection(&critical);
                         }
                     }
                     else {
@@ -2223,9 +2523,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     if (scrolloutsidewindow >= 3) {
                         olddown = true;
                         scrollmap = false;
+                        EnterCriticalSection(&critical);
                         ClientToScreen(hwnd, &fakecursor); //double
                         SendMouseClick(fakecursor.x, fakecursor.y, 21, 1);
                         ScreenToClient(hwnd, &fakecursor);
+						LeaveCriticalSection(&critical);
                         
                     }
                 }
@@ -2403,8 +2705,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
                                 tick = 0;
+                                EnterCriticalSection(&critical);
                                 SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); 
                                 SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3 
+								LeaveCriticalSection(&critical);
                             }
                             oldscrollleftaxis = true;
                             //keystatesend = VK_LEFT;
@@ -2441,8 +2745,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
                                 tick = 0;
+                                EnterCriticalSection(&critical);
                                 SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); 
                                 SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
+								LeaveCriticalSection(&critical);
                             }
                             oldscrollrightaxis = true;
                             //keystatesend = VK_RIGHT;
@@ -2481,8 +2787,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
                                 tick = 0;
+                                EnterCriticalSection(&critical);
                                 SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); 
                                 SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
+								LeaveCriticalSection(&critical);
                             }
                             oldscrolldownaxis = true;
                         }
@@ -2522,8 +2830,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             if (scrolloutsidewindow == 3 && doscrollyes == false)
                             {//start
                                 tick = 0;
+                                EnterCriticalSection(&critical);
                                 SendMouseClick(fakecursor.x, fakecursor.y, 8, 1); 
                                 SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
+								LeaveCriticalSection(&critical);
                             }
                             oldscrollupaxis = true;
                         }   
@@ -2606,48 +2916,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         }
                     }
 
-                    //sleeptime adjust. slow movement on low axis
-                    if (Xaxis < 0) //negative
-                    {
-                        if (Xaxis < -22000) //-7849
-                            calcsleep = 3;
-                        else if (Xaxis < -15000)
-                            calcsleep = 2;
-                        else if (Xaxis < -10000)
-                            calcsleep = 1;
-                        else calcsleep = 0;
-                    }
-                    else if (Xaxis > 0) //positive
-                    {
-                        if (Xaxis > 24000) //12000
-                            calcsleep = 3;
-                        else if (Xaxis > 18000)
-                            calcsleep = 2;
-                        else if (Xaxis > 14000)
-                            calcsleep = 1;
-                        else calcsleep = 0;
-					}   
-                    if (Yaxis < 0) //negative
-                    {
-                        if (Yaxis < -24000) //-16000
-                            calcsleep = 3;
-                        else if (Yaxis < -22000)
-                            calcsleep = 2;
-                        else if (Yaxis < -17000)
-                            calcsleep = 1;
-                        else calcsleep = 0;
-                    }
-                    else if (Yaxis > 0) //positive
-                    {
-                        if (Yaxis > 24000) //0
-                            calcsleep = 3;
-                        else if (Yaxis > 20000)
-                            calcsleep = 2;
-                        else if (Yaxis > 16000)
-                            calcsleep = 1;
-                        else calcsleep = 0;
-                    }
-
                     POINT delta = CalculateUltimateCursorMove(
                         Xaxis, Yaxis,
                         radial_deadzone, axial_deadzone, max_threshold,
@@ -2673,7 +2941,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                           //  if ( !leftPressed && !rightPressed)
                                 //fakecursor.x = Xf;
                                 //fakecursor.y = Yf;
+                            EnterCriticalSection(&critical);
                                 SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
+								LeaveCriticalSection(&critical);
                          //   else if (leftPressed && !rightPressed)
                           //      SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
                         }
@@ -2688,6 +2958,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                      startdrag.x = Xf;
                      startdrag.y = Yf;
                      leftPressedold = true;
+                     EnterCriticalSection(&critical);
                      if (userealmouse == 0 && scrolloutsidewindow == 3)
                      {
                          SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
@@ -2695,12 +2966,14 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                      }
                      else if (userealmouse == 0)
                          SendMouseClick(fakecursor.x, fakecursor.y, 5, 2); //4 skal vere 3
+					 LeaveCriticalSection(&critical);
                     }
                 }
                 if (leftPressedold)
                 {
                     if (!leftPressed)
                     {
+                        EnterCriticalSection(&critical);
                         if (userealmouse == 0) {
                             
 
@@ -2729,6 +3002,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             }
                         }
                         leftPressedold = false;
+						LeaveCriticalSection(&critical);
                     }   
                 }
                 if (rightPressed)
@@ -2744,6 +3018,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         rightPressedold = true;
                         if (userealmouse == 0)
                         {
+                            EnterCriticalSection(&critical);
                             DWORD currentTime = GetTickCount64();
                             if (currentTime - lastClickTime < GetDoubleClickTime() && movedmouse == false && doubleclicks == 1)
                             {
@@ -2756,6 +3031,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 
                             }
                             lastClickTime = currentTime;
+							LeaveCriticalSection(&critical);
                             
 						}
                     }
@@ -2766,7 +3042,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 {
                     if (!rightPressed)
                     {
-
+                        EnterCriticalSection(&critical);
                         if (userealmouse == 0) 
                             SendMouseClick(fakecursor.x, fakecursor.y, 4, 2);
                         else
@@ -2788,11 +3064,14 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 ScreenToClient(hwnd, &startdrag);
                             }
                         }
+						LeaveCriticalSection(&critical);
                         rightPressedold = false;
                     }
                 } //rightpress
                 } // mode above 0
+                EnterCriticalSection(&critical);
                 ScreenToClient(hwnd, &fakecursor);
+                LeaveCriticalSection(&critical);
             } //no controller
             else {
                 showmessage = 12;
@@ -2801,6 +3080,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
             }
             if (drawfakecursor == 1 || showmessage != 0)
                 CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw fake cursor
+            if (drawfakecursor == 2)
+            {
+                InvalidateRect(pointerWindow, NULL, false);
+            }
+
         } // no hwnd
         if (knappsovetid > 20)
         {
@@ -2853,16 +3137,13 @@ void RemoveHook() {
 }
 
 
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) 
 {
     switch (ul_reason_for_call) 
     {
         case DLL_PROCESS_ATTACH:
         {
-            //supposed to help againt crashes?
-            
-
-           // DisableThreadLibraryCalls(hModule);
             g_hModule = hModule;
 
             std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
@@ -2888,16 +3169,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 {
                // WaitForInputIdle(GetCurrentProcess(), 1000); //wait for input to be ready
                // DisableThreadLibraryCalls(hModule);
-
-                
                 SetupHook();
-
-                
-                
 			}
-            CreateThread(nullptr, 0,
+           InitializeCriticalSection(&critical);
+           HANDLE one = CreateThread(nullptr, 0,
                 (LPTHREAD_START_ROUTINE)ThreadFunction, g_hModule, 0, 0); //GetModuleHandle(0)
-
+			CloseHandle(one);
             break;
         }
         case DLL_PROCESS_DETACH:
