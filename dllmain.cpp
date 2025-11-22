@@ -1729,7 +1729,7 @@ void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bo
                         }
                         
                        // DeleteObject(hbm24);
-                        DeleteObject(hbmdsktop);
+                        DeleteObject(hbbmdsktop);
                     }
 
 
