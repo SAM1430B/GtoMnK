@@ -18,6 +18,7 @@
 #include <string>
 #include <cstdlib> // For strtoul
 #include <dwmapi.h>
+#include <thread>
 #pragma comment(lib, "dwmapi.lib")
 
 
@@ -1278,9 +1279,9 @@ void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bo
     POINT coords = {0,0};
 
     //criticals
-    EnterCriticalSection(&critical);
-    bool found = foundit;
-    LeaveCriticalSection(&critical);
+    //EnterCriticalSection(&critical);
+    bool found = false;
+    //LeaveCriticalSection(&critical);
     //mode // onlysearch
 
     if (mode != 2 || onlysearch)
@@ -1297,11 +1298,11 @@ void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bo
         //HDC tomakebmp = GetDC(hwnd);
         //HBITMAP hbmdsktop = CreateCompatibleBitmap(tomakebmp, rect.right, rect.left);
         //ReleaseDC(hwnd, tomakebmp);
-
-        char buffer[100];
-        wsprintf(buffer, "searchnum is %d", serchnum);
+       // bool found;
+        //char buffer[100];
+        //wsprintf(buffer, "searchnum is %d", serchnum);
         // MessageBoxA(NULL, buffer, "Info", MB_OK);
-        wsprintf(buffer, "starting search at %d", startsearch);
+        //wsprintf(buffer, "starting search at %d", startsearch);
         //MessageBoxA(NULL, buffer, "Info", MB_OK);
 
         for (int i = startsearch; i < serchnum; i++) //memory problem here somewhere
@@ -1343,7 +1344,7 @@ void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bo
                                 LeaveCriticalSection(&critical);
                             }
                         }
-                        else if (strcmp(key, "\\B") == 0) {
+                        if (strcmp(key, "\\B") == 0) {
                             if (bmpBtype == 1)
                             {
                                 movenotclick = true;
@@ -1363,7 +1364,7 @@ void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bo
                                 LeaveCriticalSection(&critical);
                             }
                         }
-                        else if (strcmp(key, "\\X") == 0) {
+                        if (strcmp(key, "\\X") == 0) {
                             if (bmpXtype == 1)
                             {
                                 movenotclick = true;
@@ -1383,7 +1384,7 @@ void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bo
                                 LeaveCriticalSection(&critical);
                             }
                         }
-                        else if (strcmp(key, "\\Y") == 0) {
+                        if (strcmp(key, "\\Y") == 0) {
                             if (bmpYtype == 1)
                             {
                                 movenotclick = true;
@@ -1403,7 +1404,7 @@ void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bo
                                 LeaveCriticalSection(&critical);
                             }
                         }
-                        else if (strcmp(key, "\\C") == 0) {
+                        if (strcmp(key, "\\C") == 0) {
                             if (bmpCtype == 1)
                             {
                                 movenotclick = true;
@@ -1414,7 +1415,7 @@ void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bo
                             }
                             startsearchC = i + 1;
                         }
-                        else if (strcmp(key, "\\D") == 0) {
+                        if (strcmp(key, "\\D") == 0) {
                             if (bmpDtype == 1)
                             {
                                 movenotclick = true;
@@ -1425,7 +1426,7 @@ void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bo
                             }
                             startsearchD = i + 1;
                         }
-                        else if (strcmp(key, "\\E") == 0) {
+                        if (strcmp(key, "\\E") == 0) {
                             if (bmpEtype == 1)
                             {
                                 movenotclick = true;
@@ -1436,7 +1437,7 @@ void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bo
                             }
                             startsearchE = i + 1;
                         }
-                        else if (strcmp(key, "\\F") == 0) {
+                        if (strcmp(key, "\\F") == 0) {
                             if (bmpFtype == 1)
                             {
                                 movenotclick = true;
@@ -1448,39 +1449,33 @@ void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bo
                             startsearchF = i + 1;
                         }
                         // else return false;
-                        if ( clicknotmove == false && !onlysearch)
+                        if (!onlysearch)
                         { 
-                            Xf = pt.x;
-                            Yf = pt.y;
-                        }
-                        if (movenotclick == false && !onlysearch)
-                        {
-                            Xf = pt.x;
-                            Yf = pt.y;
+                            if ( clicknotmove == false)
+                            { 
+                                Xf = pt.x;
+                                Yf = pt.y;
+                            }
+                            if (movenotclick == false)
+                            {
+                                Xf = pt.x;
+                                Yf = pt.y;
                            
-                            SendMouseClick(pt.x, pt.y, 8, 1);
-                            Sleep(10);
-                            SendMouseClick(pt.x, pt.y, 3, 2);
-                            Sleep(10);
-                            SendMouseClick(pt.x, pt.y, 4, 2);
+                                SendMouseClick(pt.x, pt.y, 8, 1);
+                                Sleep(10);
+                                SendMouseClick(pt.x, pt.y, 3, 2);
+                                Sleep(10);
+                                SendMouseClick(pt.x, pt.y, 4, 2);
                          
-                        }
-                        else if (!onlysearch)
-                        {
+                            }
+                            if (clicknotmove == true && movenotclick == true)
+                            {
                            
-                            SendMouseClick(pt.x, pt.y, 8, 1);
+                                SendMouseClick(pt.x, pt.y, 8, 1);
                            
+                            }
                         }
-                        if (clicknotmove == true && !onlysearch)
-                        {
-                         //   Sleep(10); //crashed game
-                         // fixme!
-                         //   X = fakecursor.x;
-                         //   Y = fakecursor.y;
-                           // SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
-
-                        }
-                        if (onlysearch) {
+                        else {
                             coords.x = pt.x;
                             coords.y = pt.y;
                         }
@@ -1649,42 +1644,33 @@ void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bo
                                 }
                                 startsearchF = i + 1;
                             }
-                           // X = pt.x;
-                           // Y = pt.y;
-                            if (clicknotmove == false)
+                            if (!onlysearch)
                             {
-                                Xf = pt.x;
-                                Yf = pt.y;
-                               // MessageBox(NULL, "some kind of error", "found image", MB_OK | MB_ICONINFORMATION);
-                            }
-                            if (movenotclick == false && !onlysearch)
-                            {
-                                Xf = pt.x;
-                                Yf = pt.y;
-                        
-                                SendMouseClick(pt.x, pt.y, 8, 1);
-                                Sleep(10);
-                                SendMouseClick(pt.x, pt.y, 3, 2);
-                                Sleep(10);
-                                SendMouseClick(pt.x, pt.y, 4, 2);
-                           
-                            }
-                            else if (!onlysearch)
-                            {
-                         
-                                SendMouseClick(pt.x, pt.y, 8, 1);
-                              
-                            }
-                            else if (clicknotmove == true && !onlysearch)
-                            { //found the problem. point fakecursor is not good
-                                //fixme!!
-                                //Sleep(2);  
-                               // X = fakecursor.x;
-                               // Y = fakecursor.y;
-                               // SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
+                                if (clicknotmove == false)
+                                {
+                                    Xf = pt.x;
+                                    Yf = pt.y;
+                                }
+                                if (movenotclick == false)
+                                {
+                                    Xf = pt.x;
+                                    Yf = pt.y;
 
+                                    SendMouseClick(pt.x, pt.y, 8, 1);
+                                    Sleep(10);
+                                    SendMouseClick(pt.x, pt.y, 3, 2);
+                                    Sleep(10);
+                                    SendMouseClick(pt.x, pt.y, 4, 2);
+
+                                }
+                                if (clicknotmove == true && movenotclick == true)
+                                {
+
+                                    SendMouseClick(pt.x, pt.y, 8, 1);
+
+                                }
                             }
-                            else if (onlysearch)
+                            else
                             { 
                                 coords.x = pt.x;
                                 coords.y = pt.y;
@@ -1692,41 +1678,7 @@ void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bo
                             found = true;
                             break;
                         }
-                        else if (onlysearch)//not found
-                        {
-                             if (strcmp(key, "\\X") == 0) 
-                             {
-                                   EnterCriticalSection(&critical);
-                                   startsearchX = 0;
-                                   PointX.x = 0;
-                                   PointX.y = 0;
-                                   LeaveCriticalSection(&critical);
-                             }
-                             if (strcmp(key, "\\Y") == 0)
-                             {
-                                 EnterCriticalSection(&critical);
-                                 startsearchY = 0;
-                                 PointY.x = 0;
-                                 PointY.y = 0;
-                                 LeaveCriticalSection(&critical);
-                             }
-                             if (strcmp(key, "\\B") == 0)
-                             {
-                                 EnterCriticalSection(&critical);
-                                 startsearchB = 0;
-                                 PointB.x = 0;
-                                 PointB.y = 0;
-                                 LeaveCriticalSection(&critical);
-                             }
-                             if (strcmp(key, "\\A") == 0)
-                             {
-                                 EnterCriticalSection(&critical);
-                                 startsearchA = 0;
-                                 PointA.x = 0;
-                                 PointA.y = 0;
-                                 LeaveCriticalSection(&critical);
-                             }
-                        }
+                        
                         
                        // DeleteObject(hbm24);
                         DeleteObject(hbbmdsktop);
@@ -1737,7 +1689,41 @@ void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bo
 
                 }
             }
-
+            if (onlysearch && !found)//not found
+            {
+                if (strcmp(key, "\\X") == 0)
+                {
+                    EnterCriticalSection(&critical);
+                    startsearchX = 0;
+                    PointX.x = 0;
+                    PointX.y = 0;
+                    LeaveCriticalSection(&critical);
+                }
+                if (strcmp(key, "\\Y") == 0)
+                {
+                    EnterCriticalSection(&critical);
+                    startsearchY = 0;
+                    PointY.x = 0;
+                    PointY.y = 0;
+                    LeaveCriticalSection(&critical);
+                }
+                if (strcmp(key, "\\B") == 0)
+                {
+                    EnterCriticalSection(&critical);
+                    startsearchB = 0;
+                    PointB.x = 0;
+                    PointB.y = 0;
+                    LeaveCriticalSection(&critical);
+                }
+                if (strcmp(key, "\\A") == 0)
+                {
+                    EnterCriticalSection(&critical);
+                    startsearchA = 0;
+                    PointA.x = 0;
+                    PointA.y = 0;
+                    LeaveCriticalSection(&critical);
+                }
+            }
 
         }
     }
@@ -1760,9 +1746,8 @@ void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bo
     { 
         Sleep(50); //to avoid double press
         pausedraw = false; //used?
-        return;
     }
-    else return;
+    return;
      //return not caught here, hopefully no problem
 }
 //int akkumulator = 0;    
@@ -1798,7 +1783,7 @@ int cursorWidth = 40;
 int cursorHeight = 40;
 HWND pointerWindow = nullptr;
 bool DrawFakeCursorFix = false;
-static constexpr auto transparencyKey = RGB(0, 0, 1);
+static int transparencyKey = RGB(0, 0, 1);
 HBRUSH transparencyBrush;
 HCURSOR oldhCursor = NULL;
 HCURSOR hCursorW = NULL;
@@ -2084,35 +2069,36 @@ DWORD WINAPI ScanThread(LPVOID)
 {
    // EnterCriticalSection(&critical);
    // LeaveCriticalSection(&critical);
+    Sleep(3000);
     while (scanloop)
     { 
-        if (scantick < 21)
+        if (scantick < 41)
             scantick++;
         else scantick = 0;
         if (scanoption == 1)
         {
-            if (scantick == 5)
+            if (scantick == 10)
             {
                 
                 Buttonaction("\\A", mode, numphotoA, startsearchA, true);
                 
                 InvalidateRect(pointerWindow, NULL, true); //invalidate all
             }
-            if (scantick == 10)
+            if (scantick == 20)
             {
                 
                 Buttonaction("\\B", mode, numphotoB, startsearchB, true);
                 
                 InvalidateRect(pointerWindow, NULL, true); //invalidate all
             }
-            if (scantick == 15)
+            if (scantick == 30)
             {
                
                 Buttonaction("\\X", mode, numphotoX, startsearchX, true);
                 
                 InvalidateRect(pointerWindow, NULL, true); //invalidate all
             }
-            if (scantick == 20)
+            if (scantick == 40)
             {
                 
                 Buttonaction("\\Y", mode, numphotoY, startsearchY, true);
@@ -2136,7 +2122,8 @@ int scanYtype = 0;
 
 // Thread to create and run the window
 DWORD WINAPI WindowThreadProc(LPVOID) {
-    EnterCriticalSection(&critical);
+   // Sleep(5000);
+    //EnterCriticalSection(&critical);
     transparencyBrush = (HBRUSH)CreateSolidBrush(transparencyKey);
     WNDCLASSW wc = { };
     wc.lpfnWndProc = FakeCursorWndProc;
@@ -2161,15 +2148,15 @@ DWORD WINAPI WindowThreadProc(LPVOID) {
 
 
 
-    if (!pointerWindow) {
-        MessageBoxA(NULL, "Failed to create pointer window", "Error", MB_OK | MB_ICONERROR);
+    if(!pointerWindow) {
+       MessageBoxA(NULL, "Failed to create pointer window", "Error", MB_OK | MB_ICONERROR);
+       
     }
     SetLayeredWindowAttributes(pointerWindow, transparencyKey, 0, LWA_COLORKEY);
-    ShowWindow(pointerWindow, SW_SHOW);
-
+ 
     MSG msg;
     ZeroMemory(&msg, sizeof(msg));
-	LeaveCriticalSection(&critical);
+	//LeaveCriticalSection(&critical);
     while (GetMessage(&msg, nullptr, 0, 0))
     {
         if (msg.message != WM_QUIT)
@@ -2184,7 +2171,7 @@ DWORD WINAPI WindowThreadProc(LPVOID) {
 
 RECT oldrect;
 POINT oldposcheck;
-DWORD WINAPI ThreadFunction(LPVOID lpParam)
+void ThreadFunction(HMODULE hModule)
 {
     Sleep(2000);
     char buffer[256];
@@ -2415,11 +2402,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
     ///////////////////////////////////////////////////////////////////////////////////LLLLLLLOOOOOOOOOOOOOPPPPPPPPPPPPP
     bool Aprev = false;
 
-    if (scanoption == 1)
+    if (scanoption == 1 && drawfakecursor > 1)
     {
-        HANDLE two = CreateThread(nullptr, 0,
-            (LPTHREAD_START_ROUTINE)ScanThread, g_hModule, 0, 0); //GetModuleHandle(0)
-        CloseHandle(two);
+        std::thread tree(ScanThread, g_hModule);
+        tree.detach();
        // InitializeCriticalSection(&criticalA);
     }
  
@@ -2442,18 +2428,19 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
 			poscheck.x = rect.left;
             poscheck.y = rect.top;
 			ClientToScreen(hwnd, &poscheck);
-
             if (drawfakecursor == 2 || drawfakecursor == 3)
             {//fake cursor window creation
                 
                 if (!window) 
                 { 
-                    HANDLE two = CreateThread(nullptr, 0,
-                        (LPTHREAD_START_ROUTINE)WindowThreadProc, g_hModule, 0, 0); //GetModuleHandle(0)
-                    CloseHandle(two);
+                    std::thread two(WindowThreadProc, g_hModule);
+                    two.detach();
 					Sleep(100); //give time to create window
                     EnterCriticalSection(&critical);
-                    while (!pointerWindow) Sleep(10);
+                    while (!pointerWindow) { 
+                        MessageBoxA(NULL, "No pointerwindow", "ohno", MB_OK);
+                        Sleep(1000); 
+                    }
 					
 					SendMessage(pointerWindow, WM_MOVE_pointerWindow, 0, 0); //focus to avoid alt tab issues
                     LeaveCriticalSection(&critical);
@@ -2571,10 +2558,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         Cpoint.x = PointA.x;
                         Cpoint.y = PointA.y;
                         
-                        LeaveCriticalSection(&critical);
+                        //LeaveCriticalSection(&critical);
                         if (Cpoint.x != 0 && Cpoint.y != 0)
                         {
-                            EnterCriticalSection(&critical);
+                            //EnterCriticalSection(&critical);
                             startsearchA++; //dont want it to update before input done
                             
                            
@@ -2606,8 +2593,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 Sleep(5);
                                 SendMouseClick(Xf, Yf, 8, 1);
                             }
-                            LeaveCriticalSection(&critical);
+                            
                         }
+                        LeaveCriticalSection(&critical);
                     }
                     
                     
@@ -3476,8 +3464,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                         curve_slope, curve_exponent,
                         sensitivity, accel_multiplier
                     );
-
-
                     if (delta.x != 0 || delta.y != 0) {
                         Xf += delta.x;
                         Yf += delta.y;
@@ -3500,7 +3486,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                           //      SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
                         }
                     }
-              
                 if (leftPressed)
                 { 
 
@@ -3524,14 +3509,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                     if (!leftPressed)
                     {
                         if (userealmouse == 0) {
-                            
-
                                 SendMouseClick(Xf, Yf, 6, 2); //double click
-                           
                         }
                         else
                         {
-
                             if (abs(startdrag.x - Xf) <= 5)
                             {
                                
@@ -3546,8 +3527,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 SendMouseClick(Xf, Yf, 8, 1);
                                 Sleep(20);
                                 SendMouseClick(Xf, Yf, 6, 2);
-                            
-                                
                             }
                         }
                         leftPressedold = false;
@@ -3581,8 +3560,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                             
 						}
                     }
-
-                        
                 }
                 if (rightPressedold)
                 {
@@ -3606,7 +3583,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                                 SendMouseClick(Xf, Yf, 8, 1); //4 skal vere 3
                                 Sleep(20);
                                 SendMouseClick(Xf, Yf, 4, 2);
-                           
                             }
                         }
                         rightPressedold = false;
@@ -3622,15 +3598,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
             if (drawfakecursor == 1 || showmessage != 0)
                 CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw fake cursor
 
-
         } // no hwnd
-        if (knappsovetid > 20)
-        {
-          //  sovetid = 20;
-          //  knappsovetid = 100;
-            
-		}
-
         if (showmessage != 0 && showmessage != 12)
         {
             counter++;
@@ -3649,7 +3617,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 }
                 showmessage = 0;
                 counter = 0;
-
             }
         }
         //ticks for scroll end delay
@@ -3664,12 +3631,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam)
                 Sleep(1 + responsetime ); //max 3. 0-2 on slow movement - calcsleep
             else Sleep(2); //max 3. 0-2 on slow movement
         }
-
-
     } //loop end but endless
-    return 0;
+    return;
 }
-//DWORD WINAPI ThreadFunction(LPVOID lpParam)
 void RemoveHook() {
     MH_DisableHook(MH_ALL_HOOKS);
     MH_Uninitialize();
@@ -3711,13 +3675,16 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 SetupHook();
 			}
            InitializeCriticalSection(&critical);
-           HANDLE one = CreateThread(nullptr, 0,
-                (LPTHREAD_START_ROUTINE)ThreadFunction, g_hModule, 0, 0); //GetModuleHandle(0)
-			CloseHandle(one);
+           std::thread one (ThreadFunction, g_hModule);
+           one.detach();
+
+
+			//CloseHandle(one);
             break;
         }
         case DLL_PROCESS_DETACH:
         {
+            DeleteCriticalSection(&critical);
             RemoveHook();
             exit(0);
             break;
