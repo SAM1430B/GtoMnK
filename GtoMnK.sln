@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35521.163
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GtoMnK dll", "GtoMnK dll\GtoMnK.vcxproj", "{008D5134-AE8D-4EF4-B97D-D545124A9184}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GtoMnK_DLL", "GtoMnK_DLL\GtoMnK.vcxproj", "{008D5134-AE8D-4EF4-B97D-D545124A9184}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GtoMnK_Injector", "GtoMnK_Injector\GtoMnK_Injector.vcxproj", "{68DFD4C0-D3E2-4A93-ABFB-6F224E9F2092}"
 EndProject
