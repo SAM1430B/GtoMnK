@@ -113,5 +113,13 @@
     <None Include="Documents\GtoMnK.ini">
       <Filter>Documents</Filter>
     </None>
+    <None Include="Documents\GtoMnK_Config.html">
+      <Filter>Documents</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Documents\GtoMnK_Config.png">
+      <Filter>Documents</Filter>
+    </Image>
   </ItemGroup>
 </Project>

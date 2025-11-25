@@ -171,12 +171,29 @@ namespace GtoMnK {
 			if (actionCode == 98) outVkCode = VK_UP;         // Numpad 8
 			if (actionCode == 99) outVkCode = VK_PRIOR;      // Numpad 9
 			if (actionCode == 100) outVkCode = VK_DELETE;    // Numpad .
+            // Lock Keys
+            if (actionCode == 101) outVkCode = VK_CAPITAL;   // Caps Lock
+            if (actionCode == 102) outVkCode = VK_NUMLOCK;   // Num Lock
+            if (actionCode == 103) outVkCode = VK_SCROLL;    // Scroll Lock
+            // Symbols
+            if (actionCode == 104) outVkCode = VK_OEM_1;      // ;  (Semicolon)
+            if (actionCode == 105) outVkCode = VK_OEM_PLUS;   // =  (Plus/Equal)
+            if (actionCode == 106) outVkCode = VK_OEM_COMMA;  // ,  (Comma)
+            if (actionCode == 107) outVkCode = VK_OEM_MINUS;  // -  (Minus)
+            if (actionCode == 108) outVkCode = VK_OEM_PERIOD; // .  (Period)
+            if (actionCode == 109) outVkCode = VK_OEM_2;      // /  (Forward Slash)
+            if (actionCode == 110) outVkCode = VK_OEM_3;      // `  (Grave Accent)
+            if (actionCode == 111) outVkCode = VK_OEM_4;      // [  (Left Bracket)
+            if (actionCode == 112) outVkCode = VK_OEM_5;      // \  (Backslash)
+            if (actionCode == 113) outVkCode = VK_OEM_6;      // ]  (Right Bracket)
+            if (actionCode == 114) outVkCode = VK_OEM_7;      // '  (Apostrophe)
 			// Extended Keys
 			if ((actionCode >= 14 && actionCode <= 17) || // Dedicated Arrow Keys
 				(actionCode >= 19 && actionCode <= 24) || // Insert, Del, Home, End, PgUp, PgDn
 				actionCode == 9 ||  // Right Control
 				actionCode == 12 || // Right Alt
-				actionCode == 88)   // Numpad Enter
+                actionCode == 88 || // Numpad Enter
+                actionCode == 102)
 			{
 				outIsExtended = true;
 			}

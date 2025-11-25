@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GtoMnK Configuration - Image Mode</title>
+    <style>
+        :root {
+            --bg-color: rgb(24, 25, 26);
+            --text-color: #e0e0e0;
+            --accent: #007acc;
+            --danger: #d32f2f;
+            --border: #333;
+            --active: rgba(0, 175, 80, 0.8);
+            --recording: rgba(255, 152, 0, 0.8);
+            --overlay-bg: rgba(0, 0, 0, 0.6);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        .panel {
+            background: rgb(36, 37, 38);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 300px;
+            max-width: 400px;
+        }
+
+        .controller-wrapper {
+            position: relative;
+            flex: 2;
+            min-width: 600px;
+            background: rgb(36, 37, 38);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .image-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+        }
+
+            .image-container img {
+                width: 100%;
+                height: auto;
+                display: block;
+                user-select: none;
+                -webkit-user-drag: none;
+            }
+
+        .btn-overlay {
+            position: absolute;
+            background-color: var(--overlay-bg);
+            border: 2px solid rgba(255,255,255,0.4);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 13px;
+            text-shadow: 1px 1px 2px black;
+            transition: all 0.1s;
+            border-radius: 50%;
+            user-select: none;
+            overflow: hidden;
+            white-space: nowrap;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+            .btn-overlay:hover {
+                border-color: white;
+                background-color: rgba(255,255,255,0.2);
+            }
+
+            .btn-overlay.recording {
+                background-color: var(--recording) !important;
+                border-color: #ffe0b2;
+                animation: pulse 1s infinite;
+                z-index: 10;
+            }
+
+            .btn-overlay.active-controller {
+                background-color: var(--active) !important;
+                border-color: #a5d6a7;
+                transform: scale(1.1);
+                z-index: 10;
+            }
+
+            .btn-overlay.flash-red {
+                background-color: rgb(116, 0, 0, 0.65);
+                border-color: #ff8a80 !important;
+                transform: scale(1.1);
+                z-index: 20;
+            }
+
+            .btn-overlay.disabled {
+                background-color: rgba(50, 50, 50, 0.5);
+                border-color: #444;
+                color: #777;
+                pointer-events: none;
+                cursor: not-allowed;
+            }
+
+        .shape-rect {
+            border-radius: 8px;
+        }
+
+        .shape-round {
+            border-radius: 50%;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #2a2a2a;
+            color: #777;
+        }
+
+        input[type="text"], input[type="number"], select {
+            background: #3c3c3c;
+            border: 1px solid #555;
+            color: white;
+            padding: 5px;
+            border-radius: 4px;
+            width: 100px;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        h2 {
+            margin-top: 0;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .arrow-btn {
+            width: 28px;
+            height: 28px;
+            background-color: #333;
+            color: #aaa;
+            border: 1px solid #555;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+            .arrow-btn:hover {
+                background-color: #444;
+                color: white;
+            }
+
+            .arrow-btn.open {
+                transform: rotate(180deg);
+            }
+
+        .hidden-content {
+            display: none;
+            padding: 10px;
+            background: #202020;
+            border: 1px solid #333;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            margin-top: -5px;
+        }
+
+            .hidden-content.show {
+                display: block;
+                animation: fadeIn 0.3s;
+            }
+
+        #gp-status {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #333;
+            border-radius: 5px;
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .connected {
+            color: #4caf50;
+        }
+
+        .disconnected {
+            color: #f44336;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 1400px;
+            margin-top: 20px;
+        }
+
+        button {
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+            button.download-btn {
+                background-color: var(--accent);
+                flex: 3;
+            }
+
+                button.download-btn:hover {
+                    background-color: #005fa3;
+                }
+
+            button.reset-btn {
+                background-color: var(--danger);
+                flex: 1;
+            }
+
+                button.reset-btn:hover {
+                    background-color: #b71c1c;
+                }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>GtoMnK Configuration</h1>
+    <div id="gp-status" class="disconnected">Waiting for Controller... Press a button.</div>
+
+    <div class="container">
+        <div class="panel">
+            <h2>Settings</h2>
+
+            <div class="setting-row">
+                <label>Input Method</label>
+                <select id="InputMethod" title="PostMessage (Recommended)&#10;RawInput (Compatible with most of the old games)">
+                    <option value="0">PostMessage</option>
+                    <option value="1">RawInput</option>
+                </select>
+            </div>
+
+            <div class="setting-row"><label>Mode</label><select id="Mode" title="Enable or disable mouse simulation." onchange="updateUIState()"><option value="1">Mouse & Keyboard</option><option value="0">Keyboard Only</option></select></div>
+            <div class="setting-row"><label>Thumbstick To Mouse</label><select id="Righthanded" title="Controls which analog stick is used for mouse movement." onchange="updateUIState()"><option value="1">Right Stick</option><option value="0">Left Stick</option></select></div>
+
+            <div class="setting-row"><label>Draw Cursor</label><input type="checkbox" id="DrawProtoFakeCursor" title="Enable this if the game doesn't have a cursor."></div>
+
+            <div class="setting-row">
+                <label>Sensitivity</label>
+                <div class="input-group">
+                    <div class="arrow-btn" onclick="toggleSection(this, 'sens-options')" title="Advanced Mouse Options">▼</div>
+                    <input type="text" id="Sensitivity" title="The base speed of the mouse move.&#10;Higher values make the cursor move faster." value="1.45">
+                </div>
+            </div>
+            <div id="sens-options" class="hidden-content">
+                <div class="setting-row"><label title="Horizontal Sensitivity. 0.0 uses global Sensitivity.">Horiz. Sens.</label><input type="text" id="Horizontal_Sensitivity" title="Horizontal Sensitivity.&#10;Range: -1.0 (-100%) to 1.0 (100%)." value="0.0"></div>
+                <div class="setting-row"><label title="Vertical Sensitivity. 0.0 uses global Sensitivity.">Vert. Sens.</label><input type="text" id="Vertical_Sensitivity" title="Vertical Sensitivity.&#10;Range: -1.0 (-100%) to 1.0 (100%)." value="0.0"></div>
+                <div class="setting-row"><label>Accel Multiplier</label><input type="text" id="Accel_Multiplier" title="A multiplier that affects the final speed after the acceleration curve (Curve Slope and Curve Exponent) is applied." value="3.0"></div>
+                <div class="setting-row"><label>Max Threshold</label><input type="text" id="Max_Threshold" title="An outer deadzone. Allows the mouse to reach max speed before the stick is fully pushed.&#10;Range: 0.0 to 0.15 (15%)." value="0.01"></div>
+                <div class="setting-row"><label>Curve Slope</label><input type="text" id="Curve_Slope" title="The initial, linear part of the movement..&#10;Higher value = more linear." value="0.30"></div>
+                <div class="setting-row"><label>Curve Exponent</label><input type="text" id="Curve_Exponent" title="How sharply the speed ramps up.&#10;Higher value = more acceleration." value="6.50"></div>
+
+                <div style="margin-top: 15px; font-size: 0.9em; text-align: center;">
+                    <a href="https://www.desmos.com/calculator/zqyusvabap" target="_blank" style="color: var(--accent); text-decoration: none; font-weight: bold;">
+                        Visualize the DeadZone and Response Curve ↗
+                    </a>
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <label>Radial Deadzone</label>
+                <div class="input-group">
+                    <div class="arrow-btn" onclick="toggleSection(this, 'deadzone-options')" title="Advanced Deadzone Options">▼</div>
+                    <input type="text" id="Radial_Deadzone" title="The circular deadzone with no guiding.&#10;Range: 0.0 to 1.0 (100%)." value="0.1">
+                </div>
+            </div>
+            <div id="deadzone-options" class="hidden-content">
+                <div class="setting-row"><label>Axial Deadzone</label><input type="text" id="Axial_Deadzone" title="The Square-shaped deadzone with cardinal guiding.&#10;Range: 0.0 to 1.0 (100%)." value="0.0"></div>
+                <div class="setting-row"><label title="Deadzone for using sticks as digital buttons">StickAsBtn Deadzone</label><input type="text" id="StickAsButtonDeadzone" title="Thumbstick As Button Deadzone.&#10;Range: 0.0 to 1.0 (100%)." value="0.25"></div>
+                <div class="setting-row"><label title="0-255 Threshold for triggers">Trigger Threshold</label><input type="text" id="TriggerThreshold" title="Range: 0 (hair trigger) to 255 (must be pulled all the way)." value="175"></div>
+
+                <div style="margin-top: 15px; font-size: 0.9em; text-align: center;">
+                    <a href="https://www.desmos.com/calculator/zqyusvabap" target="_blank" style="color: var(--accent); text-decoration: none; font-weight: bold;">
+                        Visualize the DeadZone and Response Curve ↗
+                    </a>
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <label>API Hooks</label>
+                <div class="input-group">
+                    <div class="arrow-btn" onclick="toggleSection(this, 'hooks-options')" title="API Hook Options">▼</div>
+                    <span style="font-size:0.8em; color:#777; line-height: 28px;">(Advanced)</span>
+                </div>
+            </div>
+            <div id="hooks-options" class="hidden-content">
+                <div class="setting-row"><label>GetCursorPos</label><input type="checkbox" id="GetCursorposHook" title="GetCursorPos Hook is needed for most of the games." checked></div>
+                <div class="setting-row"><label>SetCursorPos</label><input type="checkbox" id="SetCursorposHook" title="SetCursorPos Hook is needed for most of the games." checked></div>
+                <div class="setting-row"><label>ClipCursor</label><input type="checkbox" id="ClipCursorHook" title="ClipCursor Hook"></div>
+                <div class="setting-row"><label>GetKeyState</label><input type="checkbox" id="GetKeystateHook" title="GetKeyState Hook" checked></div>
+                <div class="setting-row"><label>GetAsyncKey</label><input type="checkbox" id="GetAsynckeystateHook" title="GetAsyncKeyState Hook" checked></div>
+                <div class="setting-row"><label>GetKeyboardState</label><input type="checkbox" id="GetKeyboardstateHook" title="GetKeyboardState Hook" checked></div>
+            </div>
+
+            <div class="setting-row">
+                <label>Message Filters</label>
+                <div class="input-group">
+                    <div class="arrow-btn" onclick="toggleSection(this, 'filters-options')" title="Message Filter Options">▼</div>
+                    <span style="font-size:0.8em; color:#777; line-height: 28px;">(Advanced)</span>
+                </div>
+            </div>
+            <div id="filters-options" class="hidden-content">
+                <div class="setting-row"><label>Mouse Button</label><input type="checkbox" id="MouseButtonFilter" title="Prevents `the real mouse` interactions." checked></div>
+                <div class="setting-row"><label>Key Button</label><input type="checkbox" id="KeyboardButtonFilter" title="Prevents `the real keyboard` interactions." checked></div>
+            </div>
+        </div>
+
+        <div class="controller-wrapper">
+            <div class="image-container" id="overlay-container">
+                <img src="GtoMnK_Config.png" alt="Xbox Controller">
+            </div>
+        </div>
+    </div>
+
+    <div class="button-row">
+        <button class="download-btn" onclick="generateINI()">Download GtoMnK.ini</button>
+        <button class="reset-btn" onclick="resetToDefaults()">Reset</button>
+    </div>
+
+    <script>
+        //TOGGLE SECTIONS
+        function toggleSection(btn, sectionId) {
+            const content = document.getElementById(sectionId);
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+                btn.classList.remove('open');
+            } else {
+                content.classList.add('show');
+                btn.classList.add('open');
+            }
+        }
+
+        //BUTTON POSITIONS
+        const positions = {
+            "A": { t: 53, l: 73.5, w: 6.5, h: 9, s: 'round' },
+            "B": { t: 44.1, l: 81.3, w: 6.6, h: 8, s: 'round' },
+            "X": { t: 45, l: 66.5, w: 6.5, h: 8.5, s: 'round' },
+            "Y": { t: 35, l: 74, w: 6.95, h: 10, s: 'round' },
+            "D_UP": { t: 62, l: 33.5, w: 4, h: 5, s: 'rect' },
+            "D_DOWN": { t: 74, l: 34, w: 4, h: 5, s: 'rect' },
+            "D_LEFT": { t: 68.5, l: 29, w: 4, h: 5, s: 'rect' },
+            "D_RIGHT": { t: 68, l: 39, w: 4, h: 5, s: 'rect' },
+            "LSB": { t: 46.5, l: 16.1, w: 11, h: 14, s: 'round' },
+            "RSB": { t: 67, l: 57, w: 11, h: 13.5, s: 'round' },
+            "LSU": { t: 37, l: 19, w: 5, h: 5, s: 'rect' },
+            "LSD": { t: 62, l: 19, w: 5, h: 5, s: 'rect' },
+            "LSL": { t: 49, l: 11, w: 4, h: 6, s: 'rect' },
+            "LSR": { t: 49, l: 29, w: 4, h: 6, s: 'rect' },
+            "RSU": { t: 57, l: 60, w: 5, h: 5, s: 'rect' },
+            "RSD": { t: 82, l: 60, w: 5, h: 5, s: 'rect' },
+            "RSL": { t: 68, l: 51, w: 4, h: 6, s: 'rect' },
+            "RSR": { t: 68, l: 70, w: 4, h: 6, s: 'rect' },
+            "Back": { t: 46.8, l: 37.3, w: 5, h: 5.3, s: 'round' },
+            "Start": { t: 46.8, l: 57.3, w: 5, h: 5.3, s: 'round' },
+            "LB": { t: 21, l: 16, w: 12, h: 7, s: 'rect' },
+            "RB": { t: 21, l: 71, w: 12, h: 7, s: 'rect' },
+            "LT": { t: 8, l: 22, w: 6, h: 8, s: 'rect' },
+            "RT": { t: 8, l: 71.7, w: 6, h: 8, s: 'rect' }
+        };
+
+        const xinputButtons = [
+            { id: "A", idx: 0, val: "13" }, { id: "B", idx: 1, val: "0" },
+            { id: "X", idx: 2, val: "42" }, { id: "Y", idx: 3, val: "0" },
+            { id: "LB", idx: 4, val: "0" }, { id: "RB", idx: 5, val: "0" },
+            { id: "LT", idx: 6, val: "-2" }, { id: "RT", idx: 7, val: "-1" },
+            { id: "Back", idx: 8, val: "3" }, { id: "Start", idx: 9, val: "1" },
+            { id: "LSB", idx: 10, val: "4" }, { id: "RSB", idx: 11, val: "0" },
+            { id: "D_UP", idx: 12, val: "14" }, { id: "D_DOWN", idx: 13, val: "15" },
+            { id: "D_LEFT", idx: 14, val: "16" }, { id: "D_RIGHT", idx: 15, val: "17" },
+            { id: "LSU", idx: -1, val: "47" }, { id: "LSD", idx: -1, val: "43" },
+            { id: "LSL", idx: -1, val: "25" }, { id: "LSR", idx: -1, val: "28" },
+            { id: "RSU", idx: -1, val: "0" }, { id: "RSD", idx: -1, val: "0" },
+            { id: "RSL", idx: -1, val: "0" }, { id: "RSR", idx: -1, val: "0" }
+        ];
+
+        //REVERSE LOOKUP MAP
+        const codeToName = {
+            "-1": "🖱️L", "-2": "🖱️R", "-3": "🖱️M", "-4": "X1", "-5": "X2",
+            "-6": "Whl↑", "-7": "Whl↓", "-8": "Dbl",
+            "0": "None", "1": "Esc", "2": "Ent", "3": "Tab", "13": "Spc",
+            "8": "Ctrl", "18": "Bsp", "19": "Del", "20": "Ins",
+            "21": "End", "22": "Home", "23": "PgUp", "24": "PgDn",
+            "14": "↑", "15": "↓", "16": "←", "17": "→",
+            "4": "Shft", "5": "LShft", "6": "RShft",
+            "7": "Ctrl", "8": "LCtrl", "9": "RCtrl",
+            "10": "Alt", "11": "LAlt", "12": "RAlt",
+            "101": "Caps", "102": "NumLk", "103": "ScrLk",
+            "104": ";", "105": "=", "106": ",",
+            "107": "-", "108": ".", "109": "/",
+            "110": "`", "111": "[", "112": "\\",
+            "113": "]", "114": "'",
+            "83": "Num+", "84": "Num-", "85": "Num*", "86": "Num/", "87": "Num.", "88": "NumEnt",
+            "91": "NumIns", "92": "NumEnd", "93": "Num↓", "94": "NumPgDn",
+            "95": "Num←", "96": "Num→",
+            "97": "NumHom", "98": "Num↑", "99": "NumPgUp", "100": "NumDel"
+        };
+
+        for (let i = 0; i < 26; i++) codeToName[25 + i] = String.fromCharCode(65 + i);
+        for (let i = 0; i < 10; i++) codeToName[51 + i] = i.toString();
+        for (let i = 1; i <= 12; i++) codeToName[60 + i] = "F" + i;
+        for (let i = 0; i < 10; i++) codeToName[73 + i] = "Num" + i;
+
+        function getLabel(code) {
+            const c = String(code);
+            if (codeToName[c]) return codeToName[c];
+            return c;
+        }
+
+        const keyMap = {
+            "Escape": 1, "Enter": 2, "Tab": 3, "Space": 13, "Backspace": 18, "Delete": 19, "Insert": 20, "End": 21, "Home": 22, "PageUp": 23, "PageDown": 24,
+            "ShiftLeft": 4, "ShiftRight": 4, "ControlLeft": 7, "ControlRight": 7, "AltLeft": 10, "AltRight": 10,
+            "ArrowUp": 14, "ArrowDown": 15, "ArrowLeft": 16, "ArrowRight": 17,
+            "CapsLock": 101, "NumLock": 102, "ScrollLock": 103,
+            "Backquote": 104, "Minus": 105, "Equal": 106, "BracketLeft": 107, "BracketRight": 108, "Backslash": 109, "Semicolon": 110, "Quote": 111, "Comma": 112, "Period": 113, "Slash": 114,
+            "NumpadAdd": 83, "NumpadSubtract": 84, "NumpadMultiply": 85, "NumpadDivide": 86, "NumpadDecimal": 87, "NumpadEnter": 88
+        };
+        for (let i = 0; i < 26; i++) keyMap["Key" + String.fromCharCode(65 + i)] = 25 + i;
+        for (let i = 1; i <= 12; i++) keyMap["F" + i] = 60 + i;
+        for (let i = 0; i < 10; i++) keyMap["Digit" + i] = 51 + i;
+        for (let i = 0; i < 10; i++) keyMap["Numpad" + i] = 73 + i;
+
+        let currentRecordingId = null;
+        let previousValue = null;
+        let previousLabel = null;
+        let gamepadIndex = null;
+
+        //RENDER BUTTONS AND HANDLERS
+        const container = document.getElementById('overlay-container');
+        xinputButtons.forEach(btn => {
+            const pos = positions[btn.id];
+            if (!pos) return;
+
+            const div = document.createElement('div');
+            div.className = `btn-overlay shape-${pos.s}`;
+            div.id = `btn-${btn.id}`;
+            div.dataset.idx = btn.idx;
+            div.dataset.value = btn.val;
+
+            div.style.top = pos.t + "%";
+            div.style.left = pos.l + "%";
+            div.style.width = pos.w + "%";
+            div.style.height = pos.h + "%";
+
+            const displayLabel = (btn.val == "0") ? "None" : getLabel(btn.val);
+            div.innerText = displayLabel;
+            div.title = btn.id;
+
+            // Left Click to Record
+            div.onclick = (e) => {
+                if (div.classList.contains('disabled')) return;
+                e.stopPropagation();
+                startRecording(btn.id);
+            };
+
+            // Middle Click to Flash Red and Reset
+            div.onmousedown = (e) => {
+                if (div.classList.contains('disabled')) return;
+
+                // Button 1 is Middle Click
+                if (e.button === 1) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    div.classList.add('flash-red');
+                    setTimeout(() => {
+                        div.classList.remove('flash-red');
+                    }, 200);
+
+                    div.dataset.value = "0";
+                    div.innerText = "None";
+
+                    if (currentRecordingId === btn.id) {
+                        div.classList.remove('recording');
+                        currentRecordingId = null;
+                        previousValue = null;
+                        previousLabel = null;
+                    }
+                }
+            };
+
+            container.appendChild(div);
+        });
+
+        // UI STATE LOGIC
+        function updateUIState() {
+            const mode = document.getElementById('Mode').value;
+            const stickSelect = document.getElementById('Righthanded');
+            const stick = stickSelect.value; // 1 = Right, 0 = Left
+
+            const leftStickDirs = ['LSU', 'LSD', 'LSL', 'LSR'];
+            const rightStickDirs = ['RSU', 'RSD', 'RSL', 'RSR'];
+
+            // Reset everything first
+            document.querySelectorAll('.btn-overlay').forEach(el => el.classList.remove('disabled'));
+            stickSelect.disabled = false;
+
+            if (mode === "0") { // Keyboard Only
+                stickSelect.disabled = true;
+            } else {
+                // Mouse & Keyboard Mode
+                if (stick === "1") { // Right Stick is Mouse -> Disable R mapping
+                    rightStickDirs.forEach(id => {
+                        const el = document.getElementById(`btn-${id}`);
+                        if (el) el.classList.add('disabled');
+                    });
+                } else { // Left Stick is Mouse -> Disable L mapping
+                    leftStickDirs.forEach(id => {
+                        const el = document.getElementById(`btn-${id}`);
+                        if (el) el.classList.add('disabled');
+                    });
+                }
+            }
+        }
+
+        // Call on load
+        updateUIState();
+
+        function startRecording(btnId) {
+            const el = document.getElementById(`btn-${btnId}`);
+            if (el.classList.contains('disabled')) return;
+
+            if (currentRecordingId && currentRecordingId !== btnId) {
+                const prevEl = document.getElementById(`btn-${currentRecordingId}`);
+                prevEl.dataset.value = previousValue;
+                prevEl.innerText = previousLabel;
+                prevEl.classList.remove('recording');
+            }
+
+            if (currentRecordingId === btnId) return;
+
+            currentRecordingId = btnId;
+            previousValue = el.dataset.value;
+            previousLabel = el.innerText;
+
+            document.querySelectorAll('.btn-overlay').forEach(e => e.classList.remove('recording'));
+            el.classList.add('recording');
+            el.innerText = "?";
+        }
+
+        function setMapping(code) {
+            if (!currentRecordingId) return;
+            const el = document.getElementById(`btn-${currentRecordingId}`);
+            el.dataset.value = code;
+
+            if (code == 0) el.innerText = "None";
+            else el.innerText = getLabel(code);
+
+            el.classList.remove('recording');
+            currentRecordingId = null;
+            previousValue = null;
+            previousLabel = null;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (currentRecordingId) {
+                e.preventDefault();
+
+                if (e.code === "NumLock") { setMapping(keyMap["NumLock"]); return; }
+                if (e.code.startsWith("Numpad") && !e.getModifierState("NumLock")) {
+                    const numOffMap = { "Numpad0": 91, "Numpad1": 92, "Numpad2": 93, "Numpad3": 94, "Numpad4": 95, "Numpad6": 96, "Numpad7": 97, "Numpad8": 98, "Numpad9": 99, "NumpadDecimal": 100 };
+                    if (numOffMap[e.code]) { setMapping(numOffMap[e.code]); return; }
+                }
+
+                let code = keyMap[e.code] || 0;
+                if (code === 0) console.log("Unknown:", e.code);
+                setMapping(code);
+            }
+        });
+        document.addEventListener('mousedown', (e) => {
+            if (currentRecordingId) {
+                e.preventDefault();
+                e.stopPropagation();
+                let code = -1;
+                // Mapping while recording:
+                if (e.button === 1) code = -3;
+                if (e.button === 2) code = -2;
+                if (e.button === 3) code = -4;
+                if (e.button === 4) code = -5;
+                setMapping(code);
+            }
+        });
+        document.addEventListener('wheel', (e) => {
+            if (currentRecordingId) {
+                e.preventDefault();
+                setMapping((e.deltaY < 0) ? -6 : -7);
+            }
+        }, { passive: false });
+        document.addEventListener('contextmenu', e => e.preventDefault());
+
+        window.addEventListener("gamepadconnected", (e) => {
+            gamepadIndex = e.gamepad.index;
+            document.getElementById("gp-status").innerText = `Connected: ${e.gamepad.id}`;
+            document.getElementById("gp-status").className = "connected";
+            requestAnimationFrame(gamepadLoop);
+        });
+        window.addEventListener("gamepaddisconnected", () => {
+            gamepadIndex = null;
+            document.getElementById("gp-status").innerText = "Disconnected";
+            document.getElementById("gp-status").className = "disconnected";
+        });
+
+        let prevButtons = [], prevAxes = [];
+        const AXIS_DEADZONE = 0.5;
+
+        function gamepadLoop() {
+            if (gamepadIndex === null) return;
+            const gp = navigator.getGamepads()[gamepadIndex];
+            if (!gp) return;
+
+            gp.buttons.forEach((b, i) => {
+                const mappedBtn = xinputButtons.find(btn => btn.idx === i);
+                if (mappedBtn) {
+                    const el = document.getElementById(`btn-${mappedBtn.id}`);
+                    if (el && !el.classList.contains('disabled')) {
+                        if (b.pressed) {
+                            if (!prevButtons[i]) {
+                                handleControllerPress(mappedBtn.id);
+                            }
+                            el.classList.add('active-controller');
+                        } else {
+                            el.classList.remove('active-controller');
+                        }
+                    }
+                }
+                prevButtons[i] = b.pressed;
+            });
+
+            if (gp.axes && gp.axes.length >= 4) {
+                checkAxis(gp.axes[0], prevAxes[0], 'LSL', 'LSR');
+                checkAxis(gp.axes[1], prevAxes[1], 'LSU', 'LSD');
+                checkAxis(gp.axes[2], prevAxes[2], 'RSL', 'RSR');
+                checkAxis(gp.axes[3], prevAxes[3], 'RSU', 'RSD');
+            }
+            prevAxes = [...gp.axes];
+            requestAnimationFrame(gamepadLoop);
+        }
+
+        function checkAxis(curr, prev, negId, posId) {
+            const neg = curr < -AXIS_DEADZONE;
+            const pos = curr > AXIS_DEADZONE;
+            const pNeg = prev < -AXIS_DEADZONE;
+            const pPos = prev > AXIS_DEADZONE;
+
+            const negEl = document.getElementById(`btn-${negId}`);
+            const posEl = document.getElementById(`btn-${posId}`);
+
+            if (neg && !pNeg && negEl && !negEl.classList.contains('disabled')) startRecording(negId);
+            if (pos && !pPos && posEl && !posEl.classList.contains('disabled')) startRecording(posId);
+
+            if (neg && negEl) negEl.classList.add('active-controller'); else if (negEl) negEl.classList.remove('active-controller');
+            if (pos && posEl) posEl.classList.add('active-controller'); else if (posEl) posEl.classList.remove('active-controller');
+        }
+
+        function handleControllerPress(id) { startRecording(id); }
+
+        function resetToDefaults() {
+            if (!confirm("Reset all your configuration?")) return;
+
+            document.getElementById('InputMethod').value = "0";
+            document.getElementById('Mode').value = "1";
+            document.getElementById('Righthanded').value = "1";
+            document.getElementById('DrawProtoFakeCursor').checked = false;
+
+            document.getElementById('Sensitivity').value = "1.45";
+            document.getElementById('Horizontal_Sensitivity').value = "0.0";
+            document.getElementById('Vertical_Sensitivity').value = "0.0";
+            document.getElementById('Accel_Multiplier').value = "3.0";
+            document.getElementById('Max_Threshold').value = "0.01";
+            document.getElementById('Curve_Slope').value = "0.30";
+            document.getElementById('Curve_Exponent').value = "6.50";
+
+            document.getElementById('Radial_Deadzone').value = "0.1";
+            document.getElementById('Axial_Deadzone').value = "0.0";
+            document.getElementById('StickAsButtonDeadzone').value = "0.25";
+            document.getElementById('TriggerThreshold').value = "175";
+
+            document.getElementById('GetCursorposHook').checked = true;
+            document.getElementById('SetCursorposHook').checked = true;
+            document.getElementById('ClipCursorHook').checked = false;
+            document.getElementById('GetKeystateHook').checked = true;
+            document.getElementById('GetAsynckeystateHook').checked = true;
+            document.getElementById('GetKeyboardstateHook').checked = true;
+
+            document.getElementById('MouseButtonFilter').checked = true;
+            document.getElementById('KeyboardButtonFilter').checked = true;
+
+            xinputButtons.forEach(btn => {
+                const el = document.getElementById(`btn-${btn.id}`);
+                el.dataset.value = btn.val;
+                el.innerText = (btn.val == "0") ? "None" : getLabel(btn.val);
+                el.classList.remove('recording', 'active-controller');
+            });
+
+            updateUIState();
+        }
+
+        function generateINI() {
+            const getSet = (id) => {
+                const el = document.getElementById(id);
+                if (!el) return "0";
+                if (el.type === 'checkbox') return el.checked ? 1 : 0;
+                return el.value;
+            };
+            const getVal = (id) => document.getElementById(`btn-${id}`).dataset.value;
+
+            const iniContent = `[API]
+InputMethod=${getSet('InputMethod')}
+
+[Hooks]
+GetCursorposHook=${getSet('GetCursorposHook')}
+SetCursorposHook=${getSet('SetCursorposHook')}
+ClipCursorHook=${getSet('ClipCursorHook')}
+
+GetKeystateHook=${getSet('GetKeystateHook')}
+GetAsynckeystateHook=${getSet('GetAsynckeystateHook')}
+GetKeyboardstateHook=${getSet('GetKeyboardstateHook')}
+SetCursorHook=0
+
+[MessageFilter]
+RawInputFilter=0
+MouseMoveFilter=0
+MouseActivateFilter=0
+WindowActivateFilter=0
+WindowActivateAppFilter=0
+MouseWheelFilter=0
+MouseButtonFilter=${getSet('MouseButtonFilter')}
+KeyboardButtonFilter=${getSet('KeyboardButtonFilter')}
+
+[Settings]
+Controllerid=0
+Mode=${getSet('Mode')}
+DrawProtoFakeCursor=${getSet('DrawProtoFakeCursor')}
+Responsetime=0
+
+[StickToMouse]
+Righthanded=${getSet('Righthanded')}
+Sensitivity=${getSet('Sensitivity')}
+Horizontal_Sensitivity=${getSet('Horizontal_Sensitivity')}
+Vertical_Sensitivity=${getSet('Vertical_Sensitivity')}
+
+Radial_Deadzone=${getSet('Radial_Deadzone')}
+Axial_Deadzone=${getSet('Axial_Deadzone')}
+Max_Threshold=${getSet('Max_Threshold')}
+Accel_Multiplier=${getSet('Accel_Multiplier')}
+
+Curve_Slope=${getSet('Curve_Slope')}
+Curve_Exponent=${getSet('Curve_Exponent')}
+
+[KeyMapping]
+EnableMouseDoubleClick=0
+TriggerThreshold=${getSet('TriggerThreshold')}
+StickAsButtonDeadzone=${getSet('StickAsButtonDeadzone')}
+
+A=${getVal('A')}
+B=${getVal('B')}
+X=${getVal('X')}
+Y=${getVal('Y')}
+
+RB=${getVal('RB')}
+LB=${getVal('LB')}
+RSB=${getVal('RSB')}
+LSB=${getVal('LSB')}
+
+D_UP=${getVal('D_UP')}
+D_DOWN=${getVal('D_DOWN')}
+D_LEFT=${getVal('D_LEFT')}
+D_RIGHT=${getVal('D_RIGHT')}
+
+LSU=${getVal('LSU')}
+LSD=${getVal('LSD')}
+LSL=${getVal('LSL')}
+LSR=${getVal('LSR')}
+
+RSU=${getVal('RSU')}
+RSD=${getVal('RSD')}
+RSL=${getVal('RSL')}
+RSR=${getVal('RSR')}
+
+Start=${getVal('Start')}
+Back=${getVal('Back')}
+
+LT=${getVal('LT')}
+RT=${getVal('RT')}
+`;
+            const blob = new Blob([iniContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'GtoMnK.ini';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

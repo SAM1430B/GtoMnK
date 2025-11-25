@@ -1,8 +1,8 @@
 ##Mouse Actions (Negative Numbers)
 
 --These codes simulate mouse inputs.
-Code	Action	                Description
--1	    Left Mouse Button	        -The primary mouse click. Gains double-click if enabled.
+Code	Action						 Description
+-1	    Left Mouse Button	        -The primary mouse click.
 -2	    Right Mouse Button	        -The secondary mouse click.
 -3	    Middle Mouse Button	        -The scroll wheel click.
 -4	    Mouse Button 4 (X1)	        -The "Back" side button on many mice.
@@ -15,17 +15,17 @@ Code	Action	                Description
 
 
 --Special & Modifier Keys
-Code	Key         	Description
+Code	Key         		Description
 1	    Escape	            -Esc key
 2	    Enter	            -The main Enter key
 3	    Tab	                -The Tab key
-4	    Shift (Generic)     -Use this for combos, like 4+25 for Shift+A.
+4	    Shift (Generic)     
 5	    Left Shift	        -The specific Left Shift key
 6	    Right Shift	        -The specific Right Shift key
-7	    Ctrl (Generic)      -Use this for combos, like 7+25 for Ctrl+A.
+7	    Ctrl (Generic)      
 8	    Left Ctrl	        -The specific Left Ctrl key
 9	    Right Ctrl  	    -The specific Right Ctrl key
-10	    Alt (Generic)	    -Use this for combos, like 10+61 for Alt+F1.
+10	    Alt (Generic)	    
 11	    Left Alt	        -The specific Left Alt key
 12	    Right Alt	        -The specific Right Alt key
 13	    Spacebar            -The Spacebar
@@ -114,3 +114,23 @@ Code	Key	            Description
 98	    Numpad UP
 99	    Numpad Page Up
 100	    Numpad DELETE
+
+--Lock Keys
+Code	Key
+101	    Caps Lock
+102	    Num Lock
+103	    Scroll Lock
+
+--Symbols
+Code	Key	            Description
+104	    ;	            -Semicolon
+105	    =	            -Equals
+106	    ,	            -Comma
+107	    -	            -Minus
+108	    .	            -Period
+109	    /	            -Forward Slash
+110	    `	            -Grave Accent
+111	    [	            -Left Bracket
+112	    \	            -Backslash
+113	    ]	            -Right Bracket
+114	    '	            -Apostrophe

@@ -236,9 +236,13 @@ copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
   </ItemGroup>
   <ItemGroup>
     <None Include="Documents\GtoMnK.ini" />
+    <None Include="Documents\GtoMnK_Config.html" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Documents\GtoMnK_Keys.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Documents\GtoMnK_Config.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

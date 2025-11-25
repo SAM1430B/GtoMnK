@@ -17,6 +17,7 @@ using namespace GtoMnK;
 HMODULE g_hModule = nullptr;
 bool hooksinited = false;
 bool loop = true;
+int startUpDelay = 0;
 
 // For Controller Input
 std::string A_Action, B_Action, X_Action, Y_Action;
@@ -206,7 +207,7 @@ void LoadIniSettings() {
     getKeyStateHook = GetPrivateProfileIntA("Hooks", "GetKeystateHook", 1, iniPath.c_str());
     getAsyncKeyStateHook = GetPrivateProfileIntA("Hooks", "GetAsynckeystateHook", 1, iniPath.c_str());
     getKeyboardStateHook = GetPrivateProfileIntA("Hooks", "GetKeyboardstateHook", 1, iniPath.c_str());
-    setCursorHook = GetPrivateProfileIntA("Hooks", "SetCursorHook", 1, iniPath.c_str());
+    setCursorHook = GetPrivateProfileIntA("Hooks", "SetCursorHook", 0, iniPath.c_str());
     setRectHook = GetPrivateProfileIntA("Hooks", "SetRectHook", 0, iniPath.c_str());
 
 	// [MessageFilter]
@@ -221,10 +222,11 @@ void LoadIniSettings() {
     g_filterKeyboardButton = GetPrivateProfileIntA("MessageFilter", "KeyboardButtonFilter", 0, iniPath.c_str()) == 1;
 
     // [Settings]
+	startUpDelay = GetPrivateProfileIntA("Settings", "StartUpDelay", 0, iniPath.c_str());
     controllerID = GetPrivateProfileIntA("Settings", "Controllerid", 0, iniPath.c_str());
     mode = GetPrivateProfileIntA("Settings", "Mode", 1, iniPath.c_str());
     drawfakecursor = GetPrivateProfileIntA("Settings", "drawfakecursor", 0, iniPath.c_str());
-	drawProtoFakeCursor = GetPrivateProfileIntA("Settings", "DrawProtoFakeCursor", 1, iniPath.c_str()); //From ProtoInput
+	drawProtoFakeCursor = GetPrivateProfileIntA("Settings", "DrawProtoFakeCursor", 0, iniPath.c_str()); //From ProtoInput
 	ShowProtoCursorWhenImageUpdated = GetPrivateProfileIntA("Settings", "ShowCursorWhenImageUpdated", 1, iniPath.c_str());
     //alwaysdrawcursor = GetPrivateProfileIntA("Settings", "DrawFakeCursorAlways", 0, iniPath.c_str());
     if (drawProtoFakeCursor == 1) {
@@ -476,6 +478,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         LOG("Controller is disabled by INI. Thread is exiting.");
         loop = false;
         return 0;
+    }
+
+    if (startUpDelay > 0) {
+        LOG("Waiting for startup delay of %dms before hooking...", startUpDelay);
+        Sleep(startUpDelay);
     }
 
     Hooks::SetupHooks();
