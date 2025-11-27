@@ -158,7 +158,7 @@ namespace GtoMnK
 
     DWORD WINAPI FakeCursorDrawLoopThread(LPVOID lpParameter)
     {
-        LOG("Fake cursor draw loop thread start\n");
+        LOG("Fake cursor draw loop thread start");
         FakeCursor::state.StartDrawLoopInternal();
 
         return 0;
@@ -166,7 +166,7 @@ namespace GtoMnK
 
     DWORD WINAPI PointerWindowLoopThread(LPVOID lpParameter)
     {
-        LOG("Pointer window loop thread start\n");
+        LOG("Pointer window loop thread start");
         FakeCursor::state.UpdatePointerWindowLoopInternal();
 
         return 0;
@@ -224,7 +224,7 @@ namespace GtoMnK
         wc.style = CS_OWNDC | CS_NOCLOSE;
 
         if (!RegisterClassW(&wc)) {
-			LOG("Failed to register pointer window class!\n");
+			LOG("Failed to register pointer window class!");
             return;
         }
         else
@@ -279,7 +279,7 @@ namespace GtoMnK
 
     DWORD WINAPI FakeCursorThreadStart(LPVOID lpParameter)
     {
-        //LOG("Fake Cursor thread start\n");
+        LOG("Fake Cursor thread start");
         FakeCursor::state.StartInternal();
         return 0;
     }

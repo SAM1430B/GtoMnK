@@ -18,6 +18,7 @@ HMODULE g_hModule = nullptr;
 bool hooksinited = false;
 bool loop = true;
 int startUpDelay = 0;
+bool recheckHWND = true;
 
 // For Controller Input
 std::string A_Action, B_Action, X_Action, Y_Action;
@@ -211,7 +212,6 @@ void LoadIniSettings() {
     setRectHook = GetPrivateProfileIntA("Hooks", "SetRectHook", 0, iniPath.c_str());
 
 	// [MessageFilter]
-    LOG("Loading Message Filter settings...");
     g_filterRawInput = GetPrivateProfileIntA("MessageFilter", "RawInputFilter", 0, iniPath.c_str()) == 1;
     g_filterMouseMove = GetPrivateProfileIntA("MessageFilter", "MouseMoveFilter", 0, iniPath.c_str()) == 1;
     g_filterMouseActivate = GetPrivateProfileIntA("MessageFilter", "MouseActivateFilter", 0, iniPath.c_str()) == 1;
@@ -223,6 +223,7 @@ void LoadIniSettings() {
 
     // [Settings]
 	startUpDelay = GetPrivateProfileIntA("Settings", "StartUpDelay", 0, iniPath.c_str());
+    recheckHWND = GetPrivateProfileIntA("Settings", "RecheckHWND", 1, iniPath.c_str()) == 1;
     controllerID = GetPrivateProfileIntA("Settings", "Controllerid", 0, iniPath.c_str());
     mode = GetPrivateProfileIntA("Settings", "Mode", 1, iniPath.c_str());
     drawfakecursor = GetPrivateProfileIntA("Settings", "drawfakecursor", 0, iniPath.c_str());
@@ -236,8 +237,6 @@ void LoadIniSettings() {
         }
     }
     responsetime = GetPrivateProfileIntA("Settings", "Responsetime", 0, iniPath.c_str());
-
-    LOG("Using controller ID: %d", controllerID);
 
     // [StickToMouse]
     righthanded = GetPrivateProfileIntA("StickToMouse", "Righthanded", 2, iniPath.c_str());
@@ -469,15 +468,17 @@ void ProcessTrigger(UINT triggerID, BYTE triggerValue) {
 
 DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     LOG("ThreadFunction started.");
-    Sleep(1000 * 2);
 
     LoadIniSettings();
-    LOG("Settings loaded. Setting up hooks...");
+    LOG("INI settings is Loaded");
 
     if (controllerID < 0) {
         LOG("Controller is disabled by INI. Thread is exiting.");
         loop = false;
         return 0;
+    }
+    else {
+        LOG("Using controller ID: %d", controllerID);
     }
 
     if (startUpDelay > 0) {
@@ -489,10 +490,15 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     hooksinited = true;
 
     if (g_InputMethod == InputMethod::RawInput) {
-        LOG("Initializing RawInput system...");
         RawInput::Initialize();
     }
-    hwnd = GetMainWindowHandle(GetCurrentProcessId());
+
+    if ((hwnd = GetMainWindowHandle(GetCurrentProcessId()))) {
+        LOG("Initial window handle acquired: 0x%p", hwnd);
+    }
+    else {
+        LOG("No initial window handle found. Will attempt to acquire later.");
+	}
 
     if (drawProtoFakeCursor == 1) {
         LOG("ProtoInput Fake Cursor is enabled. Initializing...");
@@ -509,14 +515,27 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
 
     while (loop) {
         bool movedmouse = false;
+
+        if (recheckHWND) {
+            if (hwnd && !IsWindow(hwnd)) {
+                LOG("Window handle became invalid. Resetting...");
+                hwnd = nullptr;
+            }
+        }
+
+        if (!hwnd) {
+            hwnd = GetMainWindowHandle(GetCurrentProcessId());
             if (!hwnd) {
-                hwnd = GetMainWindowHandle(GetCurrentProcessId());
-                Sleep(1000);
+                Sleep(100);
                 continue;
             }
+            LOG("Acquired new window handle: 0x%p", hwnd);
+        }
 
         RECT rect;
-        GetClientRect(hwnd, &rect);
+        if (!GetClientRect(hwnd, &rect)) {
+            rect.left = 0; rect.top = 0; rect.right = 800; rect.bottom = 600;
+        }
 
         XINPUT_STATE state;
         if (XInputGetState(controllerID, &state) == ERROR_SUCCESS) {

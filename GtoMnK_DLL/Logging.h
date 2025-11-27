@@ -20,7 +20,7 @@ namespace GtoMnK {
 
 }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(ENABLE_LOGGING)
 #define INIT_LOGGER()     GtoMnK::Logging::InitializeLogger()
 #define SHUTDOWN_LOGGER() GtoMnK::Logging::ShutdownLogger()
 #define LOG(...)          GtoMnK::Logging::Log(__VA_ARGS__)

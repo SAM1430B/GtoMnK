@@ -13,14 +13,18 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		Profile|x64 = Profile|x64
+		Profile|x86 = Profile|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{008D5134-AE8D-4EF4-B97D-D545124A9184}.Debug|x64.ActiveCfg = Debug|x64
-		{008D5134-AE8D-4EF4-B97D-D545124A9184}.Debug|x64.Build.0 = Debug|x64
 		{008D5134-AE8D-4EF4-B97D-D545124A9184}.Debug|x86.ActiveCfg = Debug|Win32
-		{008D5134-AE8D-4EF4-B97D-D545124A9184}.Debug|x86.Build.0 = Debug|Win32
+		{008D5134-AE8D-4EF4-B97D-D545124A9184}.Profile|x64.ActiveCfg = Profile|x64
+		{008D5134-AE8D-4EF4-B97D-D545124A9184}.Profile|x64.Build.0 = Profile|x64
+		{008D5134-AE8D-4EF4-B97D-D545124A9184}.Profile|x86.ActiveCfg = Profile|Win32
+		{008D5134-AE8D-4EF4-B97D-D545124A9184}.Profile|x86.Build.0 = Profile|Win32
 		{008D5134-AE8D-4EF4-B97D-D545124A9184}.Release|x64.ActiveCfg = Release|x64
 		{008D5134-AE8D-4EF4-B97D-D545124A9184}.Release|x64.Build.0 = Release|x64
 		{008D5134-AE8D-4EF4-B97D-D545124A9184}.Release|x86.ActiveCfg = Release|Win32
@@ -29,6 +33,8 @@ Global
 		{68DFD4C0-D3E2-4A93-ABFB-6F224E9F2092}.Debug|x64.Build.0 = Debug|x64
 		{68DFD4C0-D3E2-4A93-ABFB-6F224E9F2092}.Debug|x86.ActiveCfg = Debug|Win32
 		{68DFD4C0-D3E2-4A93-ABFB-6F224E9F2092}.Debug|x86.Build.0 = Debug|Win32
+		{68DFD4C0-D3E2-4A93-ABFB-6F224E9F2092}.Profile|x64.ActiveCfg = Release|x64
+		{68DFD4C0-D3E2-4A93-ABFB-6F224E9F2092}.Profile|x86.ActiveCfg = Release|Win32
 		{68DFD4C0-D3E2-4A93-ABFB-6F224E9F2092}.Release|x64.ActiveCfg = Release|x64
 		{68DFD4C0-D3E2-4A93-ABFB-6F224E9F2092}.Release|x64.Build.0 = Release|x64
 		{68DFD4C0-D3E2-4A93-ABFB-6F224E9F2092}.Release|x86.ActiveCfg = Release|Win32
@@ -37,6 +43,8 @@ Global
 		{722C34EF-B618-41C1-830C-D9F8EEAB9012}.Debug|x64.Build.0 = Debug|x64
 		{722C34EF-B618-41C1-830C-D9F8EEAB9012}.Debug|x86.ActiveCfg = Debug|Win32
 		{722C34EF-B618-41C1-830C-D9F8EEAB9012}.Debug|x86.Build.0 = Debug|Win32
+		{722C34EF-B618-41C1-830C-D9F8EEAB9012}.Profile|x64.ActiveCfg = Release|x64
+		{722C34EF-B618-41C1-830C-D9F8EEAB9012}.Profile|x86.ActiveCfg = Release|Win32
 		{722C34EF-B618-41C1-830C-D9F8EEAB9012}.Release|x64.ActiveCfg = Release|x64
 		{722C34EF-B618-41C1-830C-D9F8EEAB9012}.Release|x64.Build.0 = Release|x64
 		{722C34EF-B618-41C1-830C-D9F8EEAB9012}.Release|x86.ActiveCfg = Release|Win32
