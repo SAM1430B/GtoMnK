@@ -19,234 +19,21 @@
 #include <cstdlib> // For strtoul
 #include <dwmapi.h>
 #include <thread>
+#include "dllmain.h"
 #pragma comment(lib, "dwmapi.lib")
 
 
 #pragma comment(lib, "Xinput9_1_0.lib")
 
-HMODULE g_hModule = nullptr;
+std::vector<POINT> staticPointA;
+std::vector<POINT> staticPointB;
+std::vector<POINT> staticPointX;
+std::vector<POINT> staticPointY;
 
-typedef BOOL(WINAPI* GetCursorPos_t)(LPPOINT lpPoint);
-typedef BOOL(WINAPI* SetCursorPos_t)(int X, int Y);
-
-typedef SHORT(WINAPI* GetAsyncKeyState_t)(int vKey);
-typedef SHORT(WINAPI* GetKeyState_t)(int nVirtKey);
-typedef BOOL(WINAPI* ClipCursor_t)(const RECT*);
-typedef HCURSOR(WINAPI* SetCursor_t)(HCURSOR hCursor);
-
-typedef BOOL(WINAPI* SetRect_t)(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom);
-typedef BOOL(WINAPI* AdjustWindowRect_t)(LPRECT lprc, DWORD  dwStyle, BOOL bMenu);
-
-
-
-CRITICAL_SECTION critical; //window thread
-//CRITICAL_SECTION criticalA; //Scannning thread
-
-GetCursorPos_t fpGetCursorPos = nullptr;
-GetCursorPos_t fpSetCursorPos = nullptr;
-GetAsyncKeyState_t fpGetAsyncKeyState = nullptr;
-GetKeyState_t fpGetKeyState = nullptr;
-ClipCursor_t fpClipCursor = nullptr;
-SetCursor_t fpSetCursor = nullptr;
-SetRect_t fpSetRect = nullptr;
-AdjustWindowRect_t fpAdjustWindowRect = nullptr;
-
-
-
-//POINT fakecursor;
-POINT fakecursorW;
-POINT startdrag;
-POINT activatewindow;
-POINT scroll;
-bool loop = true;
-HWND hwnd;
-int showmessage = 0; //0 = no message, 1 = initializing, 2 = bmp mode, 3 = bmp and cursor mode, 4 = edit mode   
-int showmessageW = 0; //0 = no message, 1 = initializing, 2 = bmp mode, 3 = bmp and cursor mode, 4 = edit mode 
-int counter = 0;
-
-//syncronization control
-HANDLE hMutex;
-
-int getmouseonkey = 0;
-int message = 0;
-auto hInstance = nullptr;
-
-//hooks
-bool hooksinited = false;   
-int keystatesend = 0; //key to send
-int clipcursorhook = 0;
-int getkeystatehook = 0;
-int getasynckeystatehook = 0;
-int getcursorposhook = 0;
-int setcursorposhook = 0;
-int setcursorhook = 0;
-
-int ignorerect = 0;
-POINT rectignore = { 0,0 }; //for getcursorposhook
-int setrecthook = 0;
-
-int leftrect = 0;
-int toprect = 0;
-int rightrect = 0;
-int bottomrect = 0;
-
-int userealmouse = 0;
-
-int numphotoA = -1;
-int numphotoB = -1;
-int numphotoX = -1;
-int numphotoY = -1;
-int numphotoC = -1;
-int numphotoD = -1;
-int numphotoE = -1;
-int numphotoF = -1;
-
-//fake cursor
-int controllerID = 0;
-int Xf = 20;
-int Yf = 20;
-int OldX = 0;
-int OldY = 0;
-int ydrag;
-int xdrag;
-int Xoffset = 0; //offset for cursor    
-int Yoffset = 0;
-bool scrollmap = false;
-bool pausedraw = false;
-bool gotcursoryet = false;
-int drawfakecursor = 0;
-int alwaysdrawcursor = 0; //always draw cursor even if setcursor set cursor NULL
-HICON hCursor = 0;
-DWORD lastClickTime;
-
-//bmp search
-bool foundit = false;
-
-
-//scroll type 3
-int tick = 0;
-bool doscrollyes = false;   
-
-// 
-//beautiful cursor
-int colorfulSword[20][20] = {
-{1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{1,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{1,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0},
-{1,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0},
-{1,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0},
-{1,2,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0},
-{1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0},
-{1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,0,0,0},
-{1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0},
-{1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0},
-{1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,0,0,0,0},
-{1,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0},
-{1,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0,0},
-{1,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0,0},
-{1,2,2,2,2,2,2,1,1,2,2,2,1,0,0,0,0,0,0,0},
-{1,2,2,2,2,2,1,0,0,1,2,2,2,2,1,0,0,0,0,0},
-{1,2,2,2,2,1,0,0,0,0,1,2,2,2,1,0,0,0,0,0},
-{1,1,2,2,1,0,0,0,0,0,0,1,2,2,2,1,0,0,0,0},
-{1,2,2,1,0,0,0,0,0,0,0,1,2,2,2,1,0,0,0,0},
-{1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0},
-};
-//temporary cursor on success
-
-COLORREF colors[5] = {
-    RGB(0, 0, 0),          // Transparent - won't be drawn
-    RGB(140, 140, 140),    // Gray for blade
-    RGB(255, 255, 255),    // White shine
-    RGB(139, 69, 19),       // Brown handle
-    RGB(50, 150, 255)     // Light blue accent
-
-};
-
-
-bool onoroff = true;
-
-//remember old keystates
-int oldscrollrightaxis = false; //reset 
-int oldscrollleftaxis = false; //reset 
-int oldscrollupaxis = false; //reset 
-int oldscrolldownaxis = false; //reset 
-bool Apressed = false;
-bool Bpressed = false;
-bool Xpressed = false;
-bool Ypressed = false;
-bool leftPressedold;
-bool rightPressedold;
-bool oldA = false; 
-bool oldB = false;
-bool oldX = false;
-bool oldY = false;
-bool oldC = false;
-bool oldD = false;
-bool oldE = false;
-bool oldF = false;
-bool oldup = false;
-bool olddown = false;
-bool oldleft = false;
-bool oldright = false;
-
-int startsearch = 0;
-int startsearchA = 0;
-int startsearchB = 0;
-int startsearchX = 0;
-int startsearchY = 0;
-int startsearchC = 0;
-int startsearchD = 0;
-int startsearchE = 0;
-int startsearchF = 0;
-
-int righthanded = 0;
-int scanoption = 0;
-
-int Atype = 0;
-int Btype = 0;
-int Xtype = 0;
-int Ytype = 0;
-int Ctype = 0;
-int Dtype = 0;
-int Etype = 0;
-int Ftype = 0;
-
-POINT PointA;
-POINT PointB;
-POINT PointX;
-POINT PointY;
-int scantick = 0;
-
-int bmpAtype = 0;
-int bmpBtype = 0;
-int bmpXtype = 0;
-int bmpYtype = 0;
-int bmpCtype = 0;
-int bmpDtype = 0;
-int bmpEtype = 0;
-int bmpFtype = 0;
-
-int uptype = 0;
-int downtype = 0;
-int lefttype = 0;
-int righttype = 0;
-
-
-int x = 0;
-
-HBITMAP hbm;
-
-std::vector<BYTE> largePixels, smallPixels;
-SIZE screenSize;
-int strideLarge, strideSmall;
-int smallW, smallH;
-
-int mode = 0;
-//int sovetid = 16;
-int knappsovetid = 100;
-
-int samekey = 0;
-int samekeyA = 0;
+int scanAtype = 0;
+int scanBtype = 0;
+int scanXtype = 0;
+int scanYtype = 0;
 
 HCURSOR WINAPI HookedSetCursor(HCURSOR hcursor) {
 	    EnterCriticalSection(&critical);
@@ -257,7 +44,28 @@ HCURSOR WINAPI HookedSetCursor(HCURSOR hcursor) {
         return hcursor;
 }
 
+void ShowMemoryUsageMessageBox()
+{
+    PROCESS_MEMORY_COUNTERS pmc;
+    if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
+    {
+        SIZE_T memUsedKB = pmc.WorkingSetSize / 1024;
 
+        std::wstring msg = L"Current memory usage: " + std::to_wstring(memUsedKB) + L" KB";
+
+        MessageBoxW(NULL,
+            msg.c_str(),
+            L"Memory Usage",
+            MB_OK | MB_ICONINFORMATION);
+    }
+    else
+    {
+        MessageBoxW(NULL,
+            L"Unable to retrieve memory usage.",
+            L"Error",
+            MB_OK | MB_ICONERROR);
+    }
+}
 
 
 ////SetRect_t)(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom);
@@ -491,13 +299,11 @@ void vibrateController(int controllerId, WORD strength)
 
 bool SendMouseClick(int x, int y, int z, int many) {
     // Create a named mutex
-    
+    POINT heer;
+    heer.x = x;
+    heer.y = y;
     if (userealmouse == 0) 
         {
-        POINT heer;
-        heer.x = x;
-        heer.y = y;
-        //
         LPARAM clickPos = MAKELPARAM(heer.x, heer.y);
         if ( z == 1){
             
@@ -552,91 +358,81 @@ bool SendMouseClick(int x, int y, int z, int many) {
         }
         return true;
     }
-    else if (z == 1 || z == 2 || z == 3 || z == 6 || z == 10)
+    else //realmouse
     {
-       // ClientToScreen(hwnd, &heer); //need desktop
-        //will fix later
-        if (Mutexlock(true)) {
+        Mutexlock(true);
+        ClientToScreen(hwnd, &heer); //need desktop
+        double screenWidth = GetSystemMetrics(SM_CXSCREEN) - 1;
+        double screenHeight = GetSystemMetrics(SM_CYSCREEN) - 1;
+        double fx = x * (65535.0f / screenWidth);
+        double fy = y * (65535.0f / screenHeight);
 
+        INPUT input[3] = {};
+
+        // Move the mouse to the specified position
+        input[0].type = INPUT_MOUSE;
+        input[0].mi.dx = static_cast<LONG>(fx);
+        input[0].mi.dy = static_cast<LONG>(fy);
+        input[0].mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+        if (z == 1) { //left button press
+            // Simulate mouse left button down
+            input[1].type = INPUT_MOUSE;
+            input[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+            keystatesend = VK_LEFT;
+
+            // Simulate mouse left button up
+            input[2].type = INPUT_MOUSE;
+            input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
         }
-        else
-        {
-            //errorhandling
+        else if (z == 2) { //right button press
+            // Simulate mouse left button down
+            input[1].type = INPUT_MOUSE;
+            input[1].mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
+
+            // Simulate mouse left button up
+            input[2].type = INPUT_MOUSE;
+            input[2].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
         }
-           // SetForegroundWindow(hwnd);
+        else if (z == 3)
+        { //right button press, drag and release
+            // Simulate mouse left button down
+            input[1].type = INPUT_MOUSE;
+            input[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+            keystatesend = VK_LEFT;
+        }
+        else if (z == 5)
+        { //right button press, drag and release
+            // Simulate mouse left button up
+            input[1].type = INPUT_MOUSE;
+            input[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+
+            input[2].type = INPUT_MOUSE;
+            input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+        }
+        else if (z == 6 || z == 8 || z == 10 || z == 11) //only mousemove but 6 no mutex. only make mutex while 10 both make and release
+        { //right button press, drag and release
+            // Simulate mouse left button down
+        }
+        else if (z == 7)
+        { //right button press, drag and release
+            // Simulate mouse left button up
+            input[1].type = INPUT_MOUSE;
+            input[1].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+
+            input[2].type = INPUT_MOUSE;
+            input[2].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+        }
+        else if (z == 4)
+        { //right button press, drag and release
+            // Simulate mouse left button up
+        }
+        //z is 3 or anything just move mouse
+        SendInput(many, input, sizeof(INPUT));
+        Mutexlock(false);
         
     }
     // Convert screen coordinates to absolute values
-    double screenWidth = GetSystemMetrics(SM_CXSCREEN) - 1;
-    double screenHeight = GetSystemMetrics(SM_CYSCREEN) - 1;
-    double fx = x * (65535.0f / screenWidth);
-    double fy = y * (65535.0f / screenHeight);
 
-    INPUT input[3] = {};
-
-    // Move the mouse to the specified position
-    input[0].type = INPUT_MOUSE;
-    input[0].mi.dx = static_cast<LONG>(fx);
-    input[0].mi.dy = static_cast<LONG>(fy);
-    input[0].mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
-    if (z == 1) { //left button press
-        // Simulate mouse left button down
-        input[1].type = INPUT_MOUSE;
-        input[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-        keystatesend = VK_LEFT;
-        
-        // Simulate mouse left button up
-        input[2].type = INPUT_MOUSE;
-        input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
-    }
-    else if (z == 2) { //right button press
-        // Simulate mouse left button down
-        input[1].type = INPUT_MOUSE;
-        input[1].mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
-
-        // Simulate mouse left button up
-        input[2].type = INPUT_MOUSE;
-        input[2].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-    }
-    else if (z == 3)
-    { //right button press, drag and release
-        // Simulate mouse left button down
-        input[1].type = INPUT_MOUSE;
-        input[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-        keystatesend = VK_LEFT;
-    }
-    else if (z == 5)
-    { //right button press, drag and release
-        // Simulate mouse left button up
-        input[1].type = INPUT_MOUSE;
-        input[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
-
-        input[2].type = INPUT_MOUSE;
-        input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
-    }
-    else if (z == 6 || z == 8 || z == 10 || z == 11) //only mousemove but 6 no mutex. only make mutex while 10 both make and release
-    { //right button press, drag and release
-        // Simulate mouse left button down
-    }
-    else if (z == 7)
-    { //right button press, drag and release
-        // Simulate mouse left button up
-        input[1].type = INPUT_MOUSE;
-        input[1].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-
-        input[2].type = INPUT_MOUSE;
-        input[2].mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-    }
-    else if (z == 4)
-    { //right button press, drag and release
-        // Simulate mouse left button up
-    }
-    //z is 3 or anything just move mouse
-    SendInput(many, input, sizeof(INPUT));
-    if (z == 1 || z == 2 || z == 5 || z == 7 || z == 10 || z == 11)
-    {
-        Mutexlock(false);
-    }
     return true;
 }
 
@@ -661,8 +457,6 @@ std::wstring WGetExecutableFolder() {
 
     return exePath.substr(0, lastSlash);
 }
-
-
 
 bool FindSubImage24(
     const BYTE* largeData, int largeW, int largeH, int strideLarge,
@@ -768,11 +562,11 @@ bool LoadBMP24Bit(const wchar_t* filename, std::vector<BYTE>& pixels, int& width
     bmi.bmiHeader.biBitCount = 24;
     bmi.bmiHeader.biCompression = BI_RGB;
 
-   // HDC hdc = GetDC(NULL);
-	HDC hdc = CreateCompatibleDC(NULL);
+    // HDC hdc = GetDC(NULL);
+    HDC hdc = CreateCompatibleDC(NULL);
     GetDIBits(hdc, hbm, 0, height, pixels.data(), &bmi, DIB_RGB_COLORS);
-    ReleaseDC(NULL, hdc);
-    DeleteObject(hbm);
+    if (hdc) DeleteDC(hdc);
+    if (hbm) DeleteObject(hbm);
     return true;
 }
 
@@ -832,17 +626,168 @@ bool SaveWindow10x10BMP(HWND hwnd, const wchar_t* filename, int x, int y) {
 
     // Cleanup
     SelectObject(hdcMem, oldbmp);
-    DeleteObject(hbm24);
-    DeleteDC(hdcMem);
-    ReleaseDC(hwnd, hdcWindow);
+    if (hbm24) DeleteObject(hbm24);
+    if (hdcMem)DeleteDC(hdcMem);
+    if (hdcWindow) ReleaseDC(hwnd, hdcWindow);
 
     return ok;
 }
+HBRUSH transparencyBrush;
 
-HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& pixels, int& strideOut, bool draw) {
+void DrawToHDC(HDC hdcWindow, int X, int Y, int showmessage)
+{
+
+
+    //RECT fill{ WoldX, WoldY, WoldX + cursorWidth, WoldY + cursorHeight };
+    if (drawfakecursor == 2 || drawfakecursor == 3) {
+        if (scanoption)
+        {
+            //erase
+            RECT rect;
+            GetClientRect(pointerWindow, &rect);   // client coordinates
+            FillRect(hdcWindow, &rect, transparencyBrush);
+
+        }
+        else{
+            RECT rect = { WoldX, WoldY, WoldX + 32, WoldY + 32 }; //need bmp width height
+            WoldX = X - Xoffset;
+            WoldY = Y - Yoffset;
+            FillRect(hdcWindow, &rect, transparencyBrush);
+        }
+    }
+
+    
+    if (scanoption == 1){
+        EnterCriticalSection(&critical);
+        POINT pos = { fakecursorW.x, fakecursorW.y };
+        POINT Apos = { PointA.x, PointA.y };
+        POINT Bpos = { PointB.x, PointB.y };
+        POINT Xpos = { PointX.x, PointX.y };
+        POINT Ypos = { PointY.x, PointY.y };
+        //hCursorW = hCursor;
+        LeaveCriticalSection(&critical);
+
+        //draw spots
+        if (Apos.x != 0 && Apos.y != 0)
+            TextOut(hdcWindow, Apos.x, Apos.y, TEXT("A"), 1);
+        if (Bpos.x != 0 && Bpos.y != 0)
+            TextOut(hdcWindow, Bpos.x, Bpos.y, TEXT("B"), 1);
+        if (Xpos.x != 0 && Xpos.y != 0)
+            TextOut(hdcWindow, Xpos.x, Xpos.y, TEXT("X"), 1);
+        if (Ypos.x != 0 && Ypos.y != 0)
+            TextOut(hdcWindow, Ypos.x, Ypos.y, TEXT("Y"), 1);
+
+    }
+
+    if (showmessage == 1)
+    {
+        TextOut(hdcWindow, X, Y, TEXT("BMP MODE"), 8);
+        TextOut(hdcWindow, X, Y + 17, TEXT("only mapping searches"), 21);
+    }
+    else if (showmessage == 2)
+    {
+        TextOut(hdcWindow, X, Y, TEXT("CURSOR MODE"), 11);
+        TextOut(hdcWindow, X, Y + 17, TEXT("mapping searches + cursor"), 25);
+    }
+    else if (showmessage == 3)
+    {
+        TextOut(hdcWindow, X, Y, TEXT("EDIT MODE"), 9);
+        TextOut(hdcWindow, X, Y + 15, TEXT("tap a button to bind it to coordinate"), 37);
+        TextOut(hdcWindow, X, Y + 30, TEXT("A,B,X,Y,R2,R3,L2,L3 can be mapped"), 32);
+    }
+    else if (showmessage == 10)
+    {
+        TextOut(hdcWindow, X, Y, TEXT("BUTTON MAPPED"), 13);
+    }
+    else if (showmessage == 11)
+    {
+        TextOut(hdcWindow, X, Y, TEXT("WAIT FOR MESSAGE EXPIRE!"), 24);
+    }
+    else if (showmessage == 12)
+    {
+        TextOut(hdcWindow, 20, 20, TEXT("DISCONNECTED!"), 14); //14
+    }
+    else if (showmessage == 69)
+    {
+        TextOut(hdcWindow, X, Y, TEXT("SHUTTING DOWN"), 13);
+    }
+    else if (showmessage == 70)
+    {
+        TextOut(hdcWindow, X, Y, TEXT("STARTING!"), 10);
+    }
+    else if (hCursor != 0 && onoroff == true)
+    {
+        gotcursoryet = true;
+        if (X - Xoffset < 0 || Y - Yoffset < 0)
+            DrawIconEx(hdcWindow, X, Y, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
+        else
+            DrawIconEx(hdcWindow, X - Xoffset, Y - Yoffset, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
+
+    }
+    else if (onoroff == true && (alwaysdrawcursor == 1 || gotcursoryet == false))
+    {
+        for (int y = 0; y < 20; y++)
+        {
+            for (int x = 0; x < 20; x++)
+            {
+                int val = colorfulSword[y][x];
+                if (val != 0)
+                {
+                    HBRUSH hBrush = CreateSolidBrush(colors[val]);
+                    RECT rect = { X + x , Y + y , X + x + 1, Y + y + 1 };
+                    FillRect(hdcWindow, &rect, hBrush);
+                    DeleteObject(hBrush);
+                }
+            }
+        }
+    }
+
+
+    return;
+}
+void DblBufferAndCallDraw(HDC cursorhdc, int X, int Y, int showmessage) {
+
+    RECT rcClient;
+    GetClientRect(hwnd, &rcClient);
+    int width = rcClient.right - rcClient.left;
+    int height = rcClient.bottom - rcClient.top;
+
+
+    HDC hdcMem = CreateCompatibleDC(cursorhdc);
+    HBITMAP hbmMem = CreateCompatibleBitmap(cursorhdc, width, height);
+    HGDIOBJ oldBmp = SelectObject(hdcMem, hbmMem);
+
+    DrawToHDC(hdcMem, X, Y, showmessage);
+
+    BitBlt(cursorhdc, 0, 0, width, height, hdcMem, 0, 0, SRCCOPY);
+
+    // cleanup
+    SelectObject(hdcMem, oldBmp);
+    DeleteObject(hbmMem);
+    DeleteDC(hdcMem);
+}
+void GetGameHDCAndCallDraw(HWND hwnd){
+    if (scanoption)
+        EnterCriticalSection(&critical);
+    HDC hdc = GetDC(hwnd);
+    if (hdc)
+    {
+        DrawToHDC(hdc, Xf, Yf, showmessage);
+        ReleaseDC(hwnd, hdc);
+    }
+    
+    if (scanoption)
+        LeaveCriticalSection(&critical);
+    return;
+  }
+
+bool CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& pixels, int& strideOut, bool draw, bool stretchblt) 
+{
+    if (scanoption && drawfakecursor == 1)
+        EnterCriticalSection(&critical);
     HDC hdcWindow = GetDC(hwnd);
     HDC hdcMem = CreateCompatibleDC(hdcWindow);
-    
+
 
     RECT rcClient;
     GetClientRect(hwnd, &rcClient);
@@ -864,105 +809,25 @@ HBITMAP CaptureWindow24Bit(HWND hwnd, SIZE& capturedwindow, std::vector<BYTE>& p
     bmi.bmiHeader.biCompression = BI_RGB;
 
     BYTE* pBits = nullptr;
-
-   
-    
     HBITMAP hbm24  = CreateDIBSection(hdcWindow, &bmi, DIB_RGB_COLORS, (void**)&pBits, NULL, 0);
-    if (hbm24 != 0)   
-    { 
-   
+    if (hbm24)   
+    {
         HGDIOBJ oldBmp = SelectObject(hdcMem, hbm24);
- 
-        // Copy window contents to memory DC
         BitBlt(hdcMem, 0, 0, width, height, hdcWindow, 0, 0, SRCCOPY);
-
-        if (draw) {
-                    RECT rect = { 0, 0, 32, 32 }; //need bmp width height
-                    FillRect(hdcMem, &rect, (HBRUSH)(COLOR_WINDOW + 1));
-
-                    if (showmessage == 1)
-                    {
-                        TextOut(hdcWindow, Xf, Yf, TEXT("BMP MODE"), 8);
-                        TextOut(hdcWindow, Xf, Yf + 17, TEXT("only mapping searches"), 21);
-                    }
-                    else if (showmessage == 2)
-                    {
-                        TextOut(hdcWindow, Xf, Yf, TEXT("CURSOR MODE"), 11);
-                        TextOut(hdcWindow, Xf, Yf + 17, TEXT("mapping searches + cursor"), 25);
-                    }
-                    else if (showmessage == 3)
-                    {
-                        TextOut(hdcWindow, Xf, Yf, TEXT("EDIT MODE"), 9);
-                        TextOut(hdcWindow, Xf, Yf + 15, TEXT("tap a button to bind it to coordinate"), 37);
-                        TextOut(hdcWindow, Xf, Yf + 30, TEXT("A,B,X,Y,R2,R3,L2,L3 can be mapped"), 32);
-                    }
-                    else if (showmessage == 10)
-                    {
-                        TextOut(hdcWindow, Xf, Yf, TEXT("BUTTON MAPPED"), 13);
-                    }
-                    else if (showmessage == 11)
-                    {
-                        TextOut(hdcWindow, Xf, Yf, TEXT("WAIT FOR MESSAGE EXPIRE!"), 24);
-                    }
-                    else if (showmessage == 12)
-                    {
-                        TextOut(hdcWindow, 20, 20, TEXT("DISCONNECTED!"), 14); //14
-                    }
-                    else if (showmessage == 69)
-                    {
-                        TextOut(hdcWindow, Xf, Yf, TEXT("SHUTTING DOWN"), 13);
-                    }
-                    else if (showmessage == 70)
-                    {
-                        TextOut(hdcWindow, Xf, Yf, TEXT("STARTING!"), 10);
-                    }
-                    else if (hCursor != 0 && onoroff == true)
-                    { 
-                        gotcursoryet = true;
-                        if (Xf - Xoffset < 0 || Yf - Yoffset < 0)
-                            DrawIconEx(hdcWindow, 0 + Xf, 0 + Yf, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
-                        else 
-							DrawIconEx(hdcWindow, Xf - Xoffset, Yf - Yoffset, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
-                         
-                    }
-                    else if ( onoroff == true && (alwaysdrawcursor == 1 || gotcursoryet == false))
-                    {
-                        for (int y = 0; y < 20; y++)
-                        {
-                            for (int x = 0; x < 20; x++)
-                            {
-                                int val = colorfulSword[y][x];
-                                if (val != 0)
-                                {
-                                    HBRUSH hBrush = CreateSolidBrush(colors[val]);
-                                    RECT rect = { Xf + x , Yf + y , Xf + x + 1, Yf + y + 1 };
-                                    FillRect(hdcWindow, &rect, hBrush);
-                                    DeleteObject(hBrush);
-                                }
-                            }
-                        }
-                    }
-
-
-                GetDIBits(hdcMem, hbm24, 0, height, pixels.data(), &bmi, DIB_RGB_COLORS);
-                SelectObject(hdcMem, oldBmp);;
-                if (hdcMem) DeleteDC(hdcMem);
-                if (hdcWindow) ReleaseDC(hwnd, hdcWindow);
-                if (hbm24) DeleteObject(hbm24);
-
-                return 0;
-            }
-        
-        // Copy bits out
         GetDIBits(hdcMem, hbm24, 0, height, pixels.data(), &bmi, DIB_RGB_COLORS);
         SelectObject(hdcMem, oldBmp);
-        if (hdcMem) DeleteDC(hdcMem);
-        if (hdcWindow) ReleaseDC(hwnd, hdcWindow);
-        if (hbm24) DeleteObject(hbm24);
-        return hbm24 ? hbm24 : 0;
-        } //hbm24 not null
-	return 0; // Failed to create bitmap    
-    } //function end
+        DeleteObject(hbm24);
+       // hbm24 = nullptr;
+
+    } //hbm24 not null
+
+    if (hdcMem) DeleteDC(hdcMem);
+    if (hdcWindow) ReleaseDC(hwnd, hdcWindow);
+
+    if (scanoption && drawfakecursor == 1)
+        LeaveCriticalSection(&critical);
+    return true;
+} //function end
 // Helper: Get stick magnitude
 float GetStickMagnitude(SHORT x, SHORT y) {
     return sqrtf(static_cast<float>(x) * x + static_cast<float>(y) * y);
@@ -1274,460 +1139,413 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
     return;
 
 }
-void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bool onlysearch)
-{
-    POINT coords = {0,0};
 
+void BmpInputAction(int X, int Y, int type) //moveclickorboth
+{
+
+    if (type == 0) //click and move
+    {
+        Xf = X;
+        Yf = Y;
+        SendMouseClick(X, Y, 8, 1);
+        Sleep(5);
+        SendMouseClick(X, Y, 3, 2);
+        Sleep(5);
+        SendMouseClick(X, Y, 4, 2);
+        movedmouse = true;
+    }
+    else if (type == 1) //only move
+    {
+        Xf = X;
+        Yf = Y;
+        
+        SendMouseClick(X, Y, 8, 1);
+        movedmouse = true;
+    }
+    else if (type == 2) //only click
+    {
+        SendMouseClick(X, Y, 8, 1);
+        Sleep(2);
+        SendMouseClick(X, Y, 3, 2);
+        Sleep(2);
+        SendMouseClick(X, Y, 4, 2);
+        Sleep(2);
+        SendMouseClick(Xf, Yf, 8, 1);
+    }
+}
+void Bmpfound(const char key[3], int X, int Y, int i, bool onlysearch, bool found, int store)
+{
+    int input;
+    if (strcmp(key, "\\A") == 0)
+    {
+        if (found)
+        {
+           // EnterCriticalSection(&critical);
+
+           // LeaveCriticalSection(&critical);
+            if (onlysearch)
+            {
+                EnterCriticalSection(&critical);
+                startsearchA = i;
+                input = scanAtype;
+                staticPointA[i].x = X;
+                staticPointA[i].y = Y;
+                PointA.x = X;
+                PointA.y = Y;
+                LeaveCriticalSection(&critical);
+            }
+            else
+            {
+                input = scanAtype;
+                if (store) {
+                    staticPointA[i].x = X;
+                    staticPointA[i].y = Y;
+
+                }
+                if (startsearchA < numphotoA - 1)
+                    startsearchA = i + 1;
+                else startsearchA = 0;
+            }
+        }
+        else
+        {
+            if (onlysearch)
+            {
+                EnterCriticalSection(&critical);
+                startsearchA = 0;
+                PointA.x = 0;
+                PointA.y = 0;
+                LeaveCriticalSection(&critical);
+            }
+        }
+    }
+    if (strcmp(key, "\\B") == 0)
+    {
+        if (found)
+        {
+            //EnterCriticalSection(&critical);
+
+            //LeaveCriticalSection(&critical);
+            if (onlysearch)
+            {
+                EnterCriticalSection(&critical);
+                startsearchB = i;
+                PointB.x = X;
+                staticPointB[i].x = X;
+                staticPointB[i].y = Y;
+                PointB.y = Y;
+                LeaveCriticalSection(&critical);
+            }
+            else
+            {
+                input = scanBtype;
+                if (store) {
+                    staticPointB[i].x = X;
+                    staticPointB[i].y = Y;
+                }
+                if (startsearchB < numphotoB - 1)
+                    startsearchB = i + 1;
+                else startsearchB = 0;
+            }
+        }
+        else
+        {
+            if (onlysearch)
+            {
+                EnterCriticalSection(&critical);
+                startsearchB = 0;
+                PointB.x = 0;
+                PointB.y = 0;
+                LeaveCriticalSection(&critical);
+            }
+        }
+    }
+    if (strcmp(key, "\\X") == 0)
+    {
+        if (found)
+        {
+           // EnterCriticalSection(&critical);
+
+            //LeaveCriticalSection(&critical);
+            if (onlysearch)
+            {
+                EnterCriticalSection(&critical);
+                startsearchX = i;
+                PointX.x = X;
+                PointX.y = Y;
+                staticPointX[i].x = X;
+                staticPointX[i].y = Y;
+                LeaveCriticalSection(&critical);
+            }
+            else
+            {
+                input = scanXtype;
+                startsearchX = i + 1;
+                if (store) {
+                    staticPointX[i].x = X;
+                    staticPointX[i].y = Y;
+                }
+                if (startsearchX < numphotoX - 1)
+                    startsearchX = i + 1;
+                else startsearchX = 0;
+            }
+        }
+        else
+        {
+            if (onlysearch)
+            {
+                EnterCriticalSection(&critical);
+                startsearchX = 0;
+                PointX.x = 0;
+                PointX.y = 0;
+                LeaveCriticalSection(&critical);
+            }
+        }
+    }
+    if (strcmp(key, "\\Y") == 0)
+    {
+        //EnterCriticalSection(&critical);
+
+        //LeaveCriticalSection(&critical);
+        if (found)
+        {
+            if (onlysearch)
+            {
+                EnterCriticalSection(&critical);
+                startsearchX = i;
+                staticPointY[i].x = X;
+                staticPointY[i].y = Y;
+                PointY.x = X;
+                PointY.y = Y;
+                LeaveCriticalSection(&critical);
+            }
+            else
+            {
+                input = scanYtype;
+                startsearchY = i + 1;
+                if (store) {
+                    staticPointY[i].x = X;
+                    staticPointY[i].y = Y;
+                }
+                if (startsearchY < numphotoY - 1)
+                    startsearchY = i + 1;
+                else startsearchY = 0;
+            }
+        }
+        else
+        {
+            if (onlysearch)
+            {
+                EnterCriticalSection(&critical);
+                startsearchY = 0;
+                //input = scanYtype;
+                PointY.x = 0;
+                PointY.y = 0;
+                LeaveCriticalSection(&critical);
+            }
+        }
+    }
+    if (strcmp(key, "\\C") == 0)
+    {
+        if (found && !onlysearch)
+        {
+            startsearchC = i + 1;
+            input = Ctype;
+        }
+    }
+    if (strcmp(key, "\\D") == 0)
+    {
+        if (found && !onlysearch)
+        {
+            startsearchD = i + 1;
+            input = Dtype;
+        }
+    }
+    if (strcmp(key, "\\E") == 0)
+    {
+        if (found && !onlysearch)
+        {
+            startsearchE = i + 1;
+            input = Etype;
+        }
+    }
+    if (strcmp(key, "\\F") == 0)
+    {
+        if (found && !onlysearch)
+        {
+            startsearchF = i + 1;
+            input = Ftype;
+        }
+    }
+    if (!onlysearch)
+    {
+        if (found)
+        {	//input sent in this function
+            BmpInputAction(X, Y, input);
+        }
+    }
+    return;
+}
+POINT CheckStatics(const char abc[3], int numtocheck)
+{
+    POINT newpoint{0,0};
+    if (strcmp(abc, "\\A") == 0)
+    {
+        if (staticPointA[numtocheck].x != 0)
+        {
+            newpoint.x = staticPointA[numtocheck].x;
+            newpoint.y = staticPointA[numtocheck].y;
+        }
+    }
+    if (strcmp(abc, "\\B") == 0)
+    {
+        if (staticPointB[numtocheck].x != 0)
+        {
+            newpoint.x = staticPointB[numtocheck].x;
+            newpoint.y = staticPointB[numtocheck].y;
+        }
+    }
+    if (strcmp(abc, "\\X") == 0)
+    {
+        if (staticPointX[numtocheck].x != 0)
+        {
+            newpoint.x = staticPointX[numtocheck].x;
+            newpoint.y = staticPointX[numtocheck].y;
+        }
+    }
+    if (strcmp(abc, "\\Y") == 0)
+    {
+        if (staticPointY[numtocheck].x != 0)
+        {
+            newpoint.x = staticPointY[numtocheck].x;
+            newpoint.y = staticPointY[numtocheck].y;
+        }
+    }
+    return newpoint;
+}
+bool ButtonScanAction(const char key[3], int mode, int serchnum, int startsearch, bool onlysearch, POINT currentpoint, int checkarray)
+{
+    //HBITMAP hbbmdsktop;
     //criticals
     //EnterCriticalSection(&critical);
     bool found = false;
     //LeaveCriticalSection(&critical);
     //mode // onlysearch
-
-    if (mode != 2 || onlysearch)
+    POINT pt = { 0,0 };
+    POINT noeder = { 0,0 };
+    //MessageBox(NULL, "some kind of error", "startsearch searchnum error", MB_OK | MB_ICONINFORMATION);
+    int numbmp = 0;
+    if (mode != 2)
     {
-        
-        pausedraw = true;
-        Sleep(25);
-        bool movenotclick = false;
-        bool clicknotmove = false;
-        //int i = startsearch;
-        //RECT rect;
-        HBITMAP hbbmdsktop;
-        //GetWindowRect(hwnd, &rect);
-        //HDC tomakebmp = GetDC(hwnd);
-        //HBITMAP hbmdsktop = CreateCompatibleBitmap(tomakebmp, rect.right, rect.left);
-        //ReleaseDC(hwnd, tomakebmp);
-       // bool found;
-        //char buffer[100];
-        //wsprintf(buffer, "searchnum is %d", serchnum);
-        // MessageBoxA(NULL, buffer, "Info", MB_OK);
-        //wsprintf(buffer, "starting search at %d", startsearch);
-        //MessageBoxA(NULL, buffer, "Info", MB_OK);
-
-        for (int i = startsearch; i < serchnum; i++) //memory problem here somewhere
-        {
-
-            std::string path = UGetExecutableFolder() + key + std::to_string(i) + ".bmp";
-            std::wstring wpath(path.begin(), path.end());
-
-            if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
+        int numphoto = 0;
+        if (checkarray == 1)
+        { 
+            noeder = CheckStatics(key, startsearch);
+            if (noeder.x != 0)
             {
-                // MessageBox(NULL, "some kind of error", "loaded bmp", MB_OK | MB_ICONINFORMATION);
-                 // Capture screen
-                if (hbbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false))
-                {
-                    // MessageBox(NULL, "some kind of error", "captured desktop", MB_OK | MB_ICONINFORMATION);
-
-                    POINT pt;
-                    if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt, 0, 0))
-                    {
-                        Sleep(50);
-                      //  vibrateController(controllerID, 15000);
-                        if (strcmp(key, "\\A") == 0) {
-                            if (bmpAtype == 1)
-                            {
-                                movenotclick = true;
-                            }
-                            if (bmpAtype == 2)
-                            {
-                                clicknotmove = true;
-                            }
-                            if (!onlysearch)
-                                startsearchA = i + 1;
-                            else
-                            {
-                                EnterCriticalSection(&critical);
-                                startsearchA = i;
-                                PointA.x = pt.x;
-                                PointA.y = pt.y;
-                                LeaveCriticalSection(&critical);
-                            }
-                        }
-                        if (strcmp(key, "\\B") == 0) {
-                            if (bmpBtype == 1)
-                            {
-                                movenotclick = true;
-                            }
-                            if (bmpBtype == 2)
-                            {
-                                clicknotmove = true;
-                            }
-                            if (!onlysearch)
-                                startsearchB = i + 1;
-                            else
-                            {
-                                EnterCriticalSection(&critical);
-                                startsearchB = i;
-                                PointB.x = pt.x;
-                                PointB.y = pt.y;
-                                LeaveCriticalSection(&critical);
-                            }
-                        }
-                        if (strcmp(key, "\\X") == 0) {
-                            if (bmpXtype == 1)
-                            {
-                                movenotclick = true;
-                            }
-                            if (bmpXtype == 2)
-                            {
-                                clicknotmove = true;
-                            }
-                            if (!onlysearch)
-                                startsearchX = i + 1;
-                            else
-                            {
-                                EnterCriticalSection(&critical);
-                                startsearchX = i;
-                                PointX.x = pt.x;
-                                PointX.y = pt.y;
-                                LeaveCriticalSection(&critical);
-                            }
-                        }
-                        if (strcmp(key, "\\Y") == 0) {
-                            if (bmpYtype == 1)
-                            {
-                                movenotclick = true;
-                            }
-                            if (bmpYtype == 2)
-                            {
-                                clicknotmove = true;
-                            }
-                            if (!onlysearch)
-                                startsearchY = i + 1;
-                            else
-                            {
-                                EnterCriticalSection(&critical);
-                                startsearchY = i;
-                                PointY.x = pt.x;
-                                PointY.y = pt.y;
-                                LeaveCriticalSection(&critical);
-                            }
-                        }
-                        if (strcmp(key, "\\C") == 0) {
-                            if (bmpCtype == 1)
-                            {
-                                movenotclick = true;
-                            }
-                            if (bmpCtype == 2)
-                            {
-                                clicknotmove = true;
-                            }
-                            startsearchC = i + 1;
-                        }
-                        if (strcmp(key, "\\D") == 0) {
-                            if (bmpDtype == 1)
-                            {
-                                movenotclick = true;
-                            }
-                            if (bmpDtype == 2)
-                            {
-                                clicknotmove = true;
-                            }
-                            startsearchD = i + 1;
-                        }
-                        if (strcmp(key, "\\E") == 0) {
-                            if (bmpEtype == 1)
-                            {
-                                movenotclick = true;
-                            }
-                            if (bmpEtype == 2)
-                            {
-                                clicknotmove = true;
-                            }
-                            startsearchE = i + 1;
-                        }
-                        if (strcmp(key, "\\F") == 0) {
-                            if (bmpFtype == 1)
-                            {
-                                movenotclick = true;
-                            }
-                            if (bmpFtype == 2)
-                            {
-                                clicknotmove = true;
-                            }
-                            startsearchF = i + 1;
-                        }
-                        // else return false;
-                        if (!onlysearch)
-                        { 
-                            if ( clicknotmove == false)
-                            { 
-                                Xf = pt.x;
-                                Yf = pt.y;
-                            }
-                            if (movenotclick == false)
-                            {
-                                Xf = pt.x;
-                                Yf = pt.y;
-                           
-                                SendMouseClick(pt.x, pt.y, 8, 1);
-                                Sleep(10);
-                                SendMouseClick(pt.x, pt.y, 3, 2);
-                                Sleep(10);
-                                SendMouseClick(pt.x, pt.y, 4, 2);
-                         
-                            }
-                            if (clicknotmove == true && movenotclick == true)
-                            {
-                           
-                                SendMouseClick(pt.x, pt.y, 8, 1);
-                           
-                            }
-                        }
-                        else {
-                            coords.x = pt.x;
-                            coords.y = pt.y;
-                        }
-                        found = true;
-                        break;
-                    }
-
-                    // else  return false; 
-                    
-
-                    DeleteObject(hbbmdsktop);
-                }
-                
-                // else  
-
+                Bmpfound(key, noeder.x, noeder.y, startsearch, onlysearch, true, checkarray); //or not found
+                found = true;
+                return true;
             }
-
-            // else  
         }
-        if (found == false)
+        if (!found)
         {
-              
-            for (int i = 0; i < serchnum; i++) //memory problem here somewhere
+            for (int i = startsearch; i < serchnum; i++) //memory problem here somewhere
             {
+                if (checkarray == 1)
+                {
+                    noeder = CheckStatics(key, i);
+                    if (noeder.x != 0)
+                    {
+                        Bmpfound(key, noeder.x, noeder.y, i, onlysearch, true, checkarray); //or not found
+                        found = true;
+                        return true;
+                    }
+                }
+                // if (checkarray)
+
+                // MessageBox(NULL, "some kind of error", "startsearch searchnum error", MB_OK | MB_ICONINFORMATION);
                 std::string path = UGetExecutableFolder() + key + std::to_string(i) + ".bmp";
                 std::wstring wpath(path.begin(), path.end());
-
-                
-                // Load the subimage 
-                if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall))
+                // HDC soke;
+                if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall) && !found)
                 {
-                    // MessageBox(NULL, "Bmp + Emulated cursor mode", "other search", MB_OK | MB_ICONINFORMATION);
+                    // MessageBox(NULL, "some kind of error", "loaded bmp", MB_OK | MB_ICONINFORMATION);
                      // Capture screen
-                    if (hbbmdsktop = CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false))
+                   // HBITMAP hbbmdsktop;
+                    if (CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false, resize))
                     {
-                       
-                        POINT pt;
-                       // wsprintf(buffer, "second A is %d", i);
-                       // MessageBoxA(NULL, buffer, "Info", MB_OK);
-                        // MessageBox(NULL, "some kind of error", "captured desktop", MB_OK | MB_ICONINFORMATION);
-                        if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt, 0, 0))
+                        if (onlysearch)
                         {
-                             //char buffer[100];       if (bmpAtype == 1 coords.x = pt.x;
-                            Sleep(50);//testing
-                            //vibrateController(controllerID, 15000);
-                            if (strcmp(key, "\\A") == 0) 
+                            if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt, currentpoint.x, currentpoint.y))
                             {
-                                if (bmpAtype == 1)
-                                {
-                                    movenotclick = true;
-                                }
-                                if (bmpAtype == 2)
-                                {
-                                    clicknotmove = true;
-                                }
-                                if (!onlysearch)
-                                    startsearchA = i + 1;
-                                else
-                                {
-                                    EnterCriticalSection(&critical);
-                                    startsearchA = i;
-                                    PointA.x = pt.x;
-                                    PointA.y = pt.y;
-                                    LeaveCriticalSection(&critical);
-                                }
+                                numphoto = i;
+                                found = true;
+                                break;
                             }
-                            else if (strcmp(key, "\\B") == 0) {
-                                if (bmpBtype == 1)
-                                {
-                                    movenotclick = true;
-                                }
-                                if (bmpBtype == 2)
-                                {
-                                    clicknotmove = true;
-                                }
-                                if (!onlysearch)
-                                    startsearchB = i + 1;
-                                else {
-                                    EnterCriticalSection(&critical);
-                                    startsearchB = i;
-                                    PointB.x = pt.x;
-                                    PointB.y = pt.y;
-                                    LeaveCriticalSection(&critical);
-                                    }
-                            }
-                            else if (strcmp(key, "\\X") == 0 && scanoption) {
-                                if (bmpXtype == 1)
-                                {
-                                    movenotclick = true;
-                                }
-                                if (bmpXtype == 2)
-                                {
-                                    clicknotmove = true;
-                                }
-                                if (!onlysearch)
-                                    startsearchX = i + 1;
-                                else{
-                                    EnterCriticalSection(&critical);
-                                    startsearchX = i;
-                                    PointX.x = pt.x;
-                                    PointX.y = pt.y;
-                                    LeaveCriticalSection(&critical);
-                                }
-                            }
-                            else if (strcmp(key, "\\Y") == 0)
-                            {
-                                if (bmpYtype == 1)
-                                {
-                                    movenotclick = true;
-                                }
-                                if (bmpYtype == 2)
-                                {
-                                    clicknotmove = true;
-                                }
-                                if (!onlysearch)
-                                    startsearchY = i + 1;
-                                else {
-                                    EnterCriticalSection(&critical);
-                                    startsearchY = i;
-                                    PointY.x = pt.x;
-                                    PointY.y = pt.y;
-                                    LeaveCriticalSection(&critical);
-                                }
-                            }
-                            else if (strcmp(key, "\\C") == 0) {
-                                if (bmpCtype == 1)
-                                {
-                                    movenotclick = true;
-                                }
-                                if (bmpCtype == 2)
-                                {
-                                    clicknotmove = true;
-                                }
-                                startsearchC = i + 1;
-                            }
-                            else if (strcmp(key, "\\D") == 0) {
-                                if (bmpDtype == 1)
-                                {
-                                    movenotclick = true;
-                                }
-                                if (bmpDtype == 2)
-                                {
-                                    clicknotmove = true;
-                                }
-                                startsearchD = i + 1;
-                            }
-                            else if (strcmp(key, "\\E") == 0) {
-                                if (bmpEtype == 1)
-                                {
-                                    movenotclick = true;
-                                }
-                                if (bmpEtype == 2)
-                                {
-                                    clicknotmove = true;
-                                }
-                                startsearchE = i + 1;
-                            }
-                            else if (strcmp(key, "\\F") == 0) {
-                                if (bmpFtype == 1)
-                                {
-                                    movenotclick = true;
-                                }
-                                if (bmpFtype == 2)
-                                {
-                                    clicknotmove = true;
-                                }
-                                startsearchF = i + 1;
-                            }
-                            if (!onlysearch)
-                            {
-                                if (clicknotmove == false)
-                                {
-                                    Xf = pt.x;
-                                    Yf = pt.y;
-                                }
-                                if (movenotclick == false)
-                                {
-                                    Xf = pt.x;
-                                    Yf = pt.y;
-
-                                    SendMouseClick(pt.x, pt.y, 8, 1);
-                                    Sleep(10);
-                                    SendMouseClick(pt.x, pt.y, 3, 2);
-                                    Sleep(10);
-                                    SendMouseClick(pt.x, pt.y, 4, 2);
-
-                                }
-                                if (clicknotmove == true && movenotclick == true)
-                                {
-
-                                    SendMouseClick(pt.x, pt.y, 8, 1);
-
-                                }
-                            }
-                            else
-                            { 
-                                coords.x = pt.x;
-                                coords.y = pt.y;
-                            }
-                            found = true;
-                            break;
                         }
-                        
-                        
-                       // DeleteObject(hbm24);
-                        DeleteObject(hbbmdsktop);
-                    }
-
-
-                    
-
-                }
+                        if (found == false)
+                        {
+                            if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt, 0, 0))
+                            {
+                                // MessageBox(NULL, "some kind of error", "found spot", MB_OK | MB_ICONINFORMATION);
+                                found = true;
+                                numphoto = i;
+                                break;
+                            }
+                        }//found
+                    } //hbmdessktop
+                }//loadbmp
             }
-            if (onlysearch && !found)//not found
+        }
+        if (!found)
+        {
+            for (int i = 0; i < serchnum; i++) //memory problem here somewhere
             {
-                if (strcmp(key, "\\X") == 0)
+                if (checkarray == 1)
                 {
-                    EnterCriticalSection(&critical);
-                    startsearchX = 0;
-                    PointX.x = 0;
-                    PointX.y = 0;
-                    LeaveCriticalSection(&critical);
+                    noeder = CheckStatics(key, i);
+                    if (noeder.x != 0)
+                    {
+                        //MessageBox(NULL, "some kind of error", "startsearch searchnum error", MB_OK | MB_ICONINFORMATION);
+                        Bmpfound(key, noeder.x, noeder.y, i, onlysearch, true, checkarray); //or not found
+                        found = true;
+                        return true;
+                    }
                 }
-                if (strcmp(key, "\\Y") == 0)
+                
+                std::string path = UGetExecutableFolder() + key + std::to_string(i) + ".bmp";
+                std::wstring wpath(path.begin(), path.end());
+                if (LoadBMP24Bit(wpath.c_str(), smallPixels, smallW, smallH, strideSmall) && !found)
                 {
-                    EnterCriticalSection(&critical);
-                    startsearchY = 0;
-                    PointY.x = 0;
-                    PointY.y = 0;
-                    LeaveCriticalSection(&critical);
-                }
-                if (strcmp(key, "\\B") == 0)
-                {
-                    EnterCriticalSection(&critical);
-                    startsearchB = 0;
-                    PointB.x = 0;
-                    PointB.y = 0;
-                    LeaveCriticalSection(&critical);
-                }
-                if (strcmp(key, "\\A") == 0)
-                {
-                    EnterCriticalSection(&critical);
-                    startsearchA = 0;
-                    PointA.x = 0;
-                    PointA.y = 0;
-                    LeaveCriticalSection(&critical);
-                }
+                    //ShowMemoryUsageMessageBox();
+                    if (CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, false, resize))
+                        
+                    {// MessageBox(NULL, "some kind of error", "captured desktop", MB_OK | MB_ICONINFORMATION);
+                        //ShowMemoryUsageMessageBox();
+                        if (FindSubImage24(largePixels.data(), screenSize.cx, screenSize.cy, strideLarge, smallPixels.data(), smallW, smallH, strideSmall, pt, 0, 0))
+                            {
+                                // MessageBox(NULL, "some kind of error", "found spot", MB_OK | MB_ICONINFORMATION);
+                                found = true;
+                                numphoto = i;
+                                break;
+                            }
+
+                    } //hbmdessktop
+                }//loadbmp
             }
 
         }
+        EnterCriticalSection(&critical);
+        bool foundit = found;
+        LeaveCriticalSection(&critical);
+        Bmpfound(key, pt.x, pt.y, numphoto, onlysearch, found, checkarray); //or not found
+        if (found == true)
+            return true;
+        else return false;
     }
-    else if (showmessage == 0) //mode 2 button mapping //showmessage var to make sure no double map or map while message
+
+    if (mode == 2 && showmessage == 0 && onlysearch == false) //mode 2 button mapping //showmessage var to make sure no double map or map while message
     {
 		//RepaintWindow(hwnd, NULL, FALSE); 
         Sleep(100); //to make sure red flicker expired
@@ -1736,19 +1554,11 @@ void Buttonaction(const char key[3], int mode, int serchnum, int startsearch, bo
         SaveWindow10x10BMP(hwnd, wpath.c_str(), Xf, Yf);
        // MessageBox(NULL, "Mapped spot!", key, MB_OK | MB_ICONINFORMATION);
         showmessage = 10;
-        return;
+        return true;
     }
-    else showmessage = 11;
-    EnterCriticalSection(&critical);
-    bool foundit = found;
-    LeaveCriticalSection(&critical);
-    if (!onlysearch)
-    { 
-        Sleep(50); //to avoid double press
-        pausedraw = false; //used?
-    }
-    return;
-     //return not caught here, hopefully no problem
+    else if (mode == 2 && onlysearch == false)
+        showmessage = 11;//wait for mesage expire
+        return true;
 }
 //int akkumulator = 0;    
 
@@ -1777,31 +1587,6 @@ void GetWindowDimensions(HWND pointerWindow)
         ShowWindow(pointerWindow, SW_SHOW);
     }
 }
-int cursoroffsetx, cursoroffsety;
-int offsetSET; //0:sizing 1:offset 2:done
-int cursorWidth = 40;
-int cursorHeight = 40;
-HWND pointerWindow = nullptr;
-bool DrawFakeCursorFix = false;
-static int transparencyKey = RGB(0, 0, 1);
-HBRUSH transparencyBrush;
-HCURSOR oldhCursor = NULL;
-HCURSOR hCursorW = NULL;
-bool nochange = false;
-int WoldX, WoldY;
-bool oldHadShowCursor = true;
-void DrawCursor(int X, int Y, HCURSOR hcursor)
-{
-    HDC hdccw = GetDC(pointerWindow);
-
-    POINT pos = { X, Y };
-
-    DrawIcon(hdccw, pos.x, pos.y, hcursor);
-
-    ReleaseDC(pointerWindow, hdccw);
-    
-    //DeleteObject(hcursor);
-}
 // Window procedure
 bool neederase = false;
 LRESULT CALLBACK FakeCursorWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -1813,245 +1598,11 @@ LRESULT CALLBACK FakeCursorWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
         GetWindowDimensions(hWnd);
         break;
     }
-    case WM_PAINT:
-    {
-        PAINTSTRUCT ps;
-        HDC hdcc = BeginPaint(hWnd, &ps);
-
-        //criticals for windowthread
-        EnterCriticalSection(&critical);
-        POINT pos = { fakecursorW.x, fakecursorW.y };
-        POINT Apos = { PointA.x, PointA.y };
-        POINT Bpos = { PointB.x, PointB.y };
-        POINT Xpos = { PointX.x, PointX.y };
-        POINT Ypos = { PointY.x, PointY.y };
-        hCursorW = hCursor;
-        int showmessageWW = showmessageW;
-        LeaveCriticalSection(&critical);
-        RECT fill{ WoldX, WoldY, WoldX + cursorWidth, WoldY + cursorHeight };
-        if (showmessageWW == 1)
-        {
-            TextOut(hdcc, 20, 20, TEXT("BMP MODE"), 8);
-            TextOut(hdcc, 20, 20 + 17, TEXT("only mapping searches"), 21);
-            neederase = true;
-        }
-        if (Apos.x != 0 && Apos.y != 0)
-        { 
-            TextOut(hdcc, Apos.x, Apos.y, TEXT("A"), 1);
-
-        }
-        if (Bpos.x != 0 && Bpos.y != 0)
-            TextOut(hdcc, Bpos.x, Bpos.y, TEXT("B"), 1);
-        if (Xpos.x != 0 && Xpos.y != 0)
-            TextOut(hdcc, Xpos.x, Xpos.y, TEXT("X"), 1);
-        if (Ypos.x != 0 && Ypos.y != 0)
-            TextOut(hdcc, Ypos.x, Ypos.y, TEXT("Y"), 1);
-        else if (showmessageWW == 2)
-        {
-            TextOut(hdcc, 20, 20, TEXT("CURSOR MODE"), 11);
-            TextOut(hdcc, 20, 20 + 17, TEXT("mapping searches + cursor"), 25);
-            neederase = true;
-        }
-        else if (showmessageWW == 3)
-        {
-            TextOut(hdcc, 20, 20, TEXT("EDIT MODE"), 9);
-            TextOut(hdcc, 20, 20 + 15, TEXT("tap a button to bind it to coordinate"), 37);
-            TextOut(hdcc, 20, 20 + 30, TEXT("A,B,X,Y,R2,R3,L2,L3 can be mapped"), 32);
-            neederase = true;
-        }
-        else if (showmessageWW == 10)
-        {
-            TextOut(hdcc, 20, 20, TEXT("BUTTON MAPPED"), 13);
-            neederase = true;
-        }
-        else if (showmessageWW == 11)
-        {
-            TextOut(hdcc, 20, 20, TEXT("WAIT FOR MESSAGE EXPIRE!"), 24);
-            neederase = true;
-        }
-        else if (showmessageWW == 12)
-        {
-            TextOut(hdcc, 20, 20, TEXT("DISCONNECTED!"), 14); //14
-            neederase = true;
-        }
-        else if (showmessageWW == 69)
-        {
-            TextOut(hdcc, 20, 20, TEXT("SHUTTING DOWN"), 13);
-            neederase = true;
-        }
-        else if (showmessageWW == 70)
-        {
-            TextOut(hdcc, 20, 20, TEXT("STARTING!"), 10);
-            neederase = true;
-        }
-        else if (neederase)
-        {
-            GetWindowRect(pointerWindow, &fill);
-            neederase = false;
-        }
-        FillRect(hdcc, &fill, transparencyBrush); // Note: window, not screen coordinates! 
-
-
-        if (!DrawFakeCursorFix)
-        {
-            if (hCursorW != NULL)
-            {
-                gotcursoryet = true;
-                DrawIcon(hdcc, pos.x, pos.y, hCursorW);
-            }
-            else if (onoroff == true && (alwaysdrawcursor == 1 || gotcursoryet == false))
-            {
-                for (int y = 0; y < 20; y++)
-                {
-                    for (int x = 0; x < 20; x++)
-                    {
-                        int val = colorfulSword[y][x];
-                        if (val != 0)
-                        {
-                            HBRUSH hBrush = CreateSolidBrush(colors[val]);
-                            RECT rect = { Xf + x , Yf + y , Xf + x + 1, Yf + y + 1 };
-                            FillRect(hdcc, &rect, hBrush);
-                            DeleteObject(hBrush);
-                        }
-                    }
-                }
-            }
-        }
-        else if (DrawFakeCursorFix)
-        {
-            pos.x -= cursoroffsetx;
-            pos.y -= cursoroffsety;
-            RECT fill{ pos.x, pos.y, pos.x + cursorWidth, pos.y + cursorHeight };
-            FillRect(hdcc, &fill, transparencyBrush); // Note: window, not screen coordinates! 
-            if (pos.x < 0) pos.x = 0;
-            if (pos.y < 0) pos.y = 0;
-
-            if (hCursorW != NULL)// && hdc && hCursor
-            {
-                if (DrawIconEx(hdcc, pos.x, pos.y, hCursorW, cursorWidth, cursorHeight, 0, transparencyBrush, DI_NORMAL))
-                {
-                    if (hCursorW != oldhCursor && offsetSET > 1 && nochange == false)
-                    {
-                        offsetSET = 0;
-                    }
-                    if (offsetSET == 1 && hCursorW != LoadCursor(NULL, IDC_ARROW) && IsWindowVisible(pointerWindow)) //offset setting
-                    {
-                        HDC hdcMem = CreateCompatibleDC(hdcc);
-                        HBITMAP hbmScreen = CreateCompatibleBitmap(hdcc, cursorWidth, cursorHeight);
-                        SelectObject(hdcMem, hbmScreen);
-                        BitBlt(hdcMem, 0, 0, cursorWidth, cursorHeight, hdcc, pos.x, pos.y, SRCCOPY);
-                        cursoroffsetx = -1;
-                        cursoroffsety = -1;
-                        int leftcursoroffsetx = 0;
-                        int leftcursoroffsety = -1;
-                        int rightcursoroffsetx = 0;
-                        // Scanning
-                        for (int y = 0; y < cursorHeight; y++)
-                        {
-                            for (int x = 0; x < cursorWidth; x++)
-                            {
-                                COLORREF pixelColor = GetPixel(hdcMem, x, y); // scan from left and find common y to use in next scan also
-                                if (pixelColor != transparencyKey)
-                                {
-                                    leftcursoroffsetx = x;
-                                    leftcursoroffsety = y;
-                                    break;
-                                }
-                            }
-                            if (leftcursoroffsetx != -1) break;
-                        }
-
-
-                        for (int x = cursorWidth - 1; x >= 0; x--)
-                        {
-                            COLORREF pixelColor = GetPixel(hdcMem, x, leftcursoroffsety); // scan from right
-                            if (pixelColor != transparencyKey)
-                            {
-                                rightcursoroffsetx = cursorWidth - x;
-                                break;
-                            }
-                        }
-                        //Adjusting possible here if symmetric cursor is not found
-                        if (leftcursoroffsetx == rightcursoroffsetx - 1 || leftcursoroffsetx == rightcursoroffsetx + 1 || leftcursoroffsetx == rightcursoroffsetx) //check for symmetric first only if Y offset is small
-                        {
-                            cursoroffsety = cursorHeight / 2;
-                            cursoroffsetx = cursorWidth / 2;
-                        }
-                        else if (leftcursoroffsety > 2 || leftcursoroffsetx > 2) //is there any other offsets?
-                        {
-                            cursoroffsetx = leftcursoroffsetx;
-                            cursoroffsety = leftcursoroffsety;
-                            nochange = true;
-                        }
-
-                        else { //no offsets
-                            cursoroffsetx = 0;
-                            cursoroffsety = 0;
-                        }
-                        offsetSET++; //offset set to 2 should do drawing only now
-                        DeleteDC(hdcMem);
-                        DeleteObject(hbmScreen);
-
-
-
-                    }
-                    else if (offsetSET == 0 && hCursorW != NULL && IsWindowVisible(pointerWindow)) //size setting
-                    {
-                        ICONINFO ii;
-                        BITMAP bitmap;
-                        cursoroffsetx = 0;
-                        cursoroffsety = 0;
-                        if (GetIconInfo(hCursor, &ii))
-                        {
-                            if (GetObject(ii.hbmMask, sizeof(BITMAP), &bitmap))
-                            {
-                                cursorWidth = bitmap.bmWidth;
-                                if (ii.hbmColor == NULL)
-                                {//For monochrome icons, the hbmMask is twice the height of the icon and hbmColor is NULL
-                                    cursorHeight = bitmap.bmHeight / 2;
-                                }
-                                else
-                                {
-                                    cursorHeight = bitmap.bmHeight;
-                                }
-                                DeleteObject(ii.hbmColor);
-                                DeleteObject(ii.hbmMask);
-                            }
-
-                        }
-                        offsetSET++; //size set, doing offset next run
-                    }
-                    oldhCursor = hCursorW;
-                }
-            }
-            else if (onoroff == true && (alwaysdrawcursor == 1 || gotcursoryet == false))
-            {
-                for (int y = 0; y < 20; y++)
-                {
-                    for (int x = 0; x < 20; x++)
-                    {
-                        int val = colorfulSword[y][x];
-                        if (val != 0)
-                        {
-                            HBRUSH hBrush = CreateSolidBrush(colors[val]);
-                            EnterCriticalSection(&critical);
-                            RECT rect = { Xf + x , Yf + y , Xf + x + 1, Yf + y + 1 };
-                            LeaveCriticalSection(&critical);
-                            FillRect(hdcc, &rect, hBrush);
-                            DeleteObject(hBrush);
-                        }
-                    }
-                }
-            }
-        }
-        WoldX = pos.x;
-        WoldY = pos.y;
-        
-
-        EndPaint(hWnd, &ps);
-        return 0;
-
-    }
+ //   case WM_PAINT:
+ //   {
+   //     return 0;
+//
+   // }
     case WM_DESTROY:
     {
         PostQuitMessage(0);
@@ -2065,47 +1616,88 @@ LRESULT CALLBACK FakeCursorWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
 }
 
 bool scanloop = true;
-DWORD WINAPI ScanThread(LPVOID) 
+DWORD WINAPI ScanThread(LPVOID, int Aisstatic, int Bisstatic, int Xisstatic, int Yisstatic) 
 {
-   // EnterCriticalSection(&critical);
-   // LeaveCriticalSection(&critical);
+    int scantick = 0;
+
     Sleep(3000);
+    int Astatic = Aisstatic;
+    int Bstatic = Bisstatic;
+    int Xstatic = Xisstatic;
+    int Ystatic = Yisstatic;
     while (scanloop)
     { 
-        if (scantick < 41)
+        EnterCriticalSection(&critical);
+        POINT Apos = { PointA.x, PointA.y };
+        POINT Bpos = { PointB.x, PointB.y };
+        POINT Xpos = { PointX.x, PointX.y };
+        POINT Ypos = { PointY.x, PointY.y };
+        int startsearchAW = startsearchA;
+        int startsearchBW = startsearchB;
+        int startsearchXW = startsearchX;
+        int startsearchYW = startsearchY;
+        POINT PointAW = PointA;
+        POINT PointBW = PointB;
+        POINT PointXW = PointX;
+        POINT PointYW = PointY;
+        LeaveCriticalSection(&critical);
+
+
+
+        if (scantick < 3)
             scantick++;
         else scantick = 0;
         if (scanoption == 1)
         {
-            if (scantick == 10)
+            if (scantick == 0 && numphotoA > 0)
             {
-                
-                Buttonaction("\\A", mode, numphotoA, startsearchA, true);
-                
-                InvalidateRect(pointerWindow, NULL, true); //invalidate all
+                if (Astatic == 1)
+                {
+                    if (staticPointA[startsearchAW].x == 0 && staticPointA[startsearchAW].y == 0)
+                        ButtonScanAction("\\A", 1, numphotoA, startsearchAW, true, PointAW, Aisstatic);
+                    else 
+                        Bmpfound("\\A", staticPointA[startsearchAW].x, staticPointA[startsearchAW].y, startsearchAW, true, true, Astatic);
+                }
+                else ButtonScanAction("\\A", 1, numphotoA, startsearchAW, true, PointAW, Aisstatic);
             }
-            if (scantick == 20)
+
+            if (scantick == 1 && numphotoB > 0)
             {
+                if (Bstatic == 1)
+                {
+                    if (staticPointB[startsearchBW].x == 0 && staticPointB[startsearchBW].y == 0)
+                        //MessageBoxA(NULL, "heisann", "A", MB_OK);
+                        ButtonScanAction("\\B", 1, numphotoB, startsearchBW, true, PointAW, Bisstatic);
+                    else
+                        Bmpfound("\\B", staticPointB[startsearchBW].x, staticPointB[startsearchBW].y, startsearchBW, true, true, Astatic);
+                }
+                else ButtonScanAction("\\B", 1, numphotoB, startsearchBW, true, PointBW, Bisstatic);
                 
-                Buttonaction("\\B", mode, numphotoB, startsearchB, true);
-                
-                InvalidateRect(pointerWindow, NULL, true); //invalidate all
             }
-            if (scantick == 30)
+            if (scantick == 2 && numphotoX > 0)
             {
-               
-                Buttonaction("\\X", mode, numphotoX, startsearchX, true);
+                if (Xstatic == 1)
+                {
+                    if (staticPointX[startsearchXW].x == 0 && staticPointX[startsearchXW].y == 0)
+                        ButtonScanAction("\\X", 1, numphotoX, startsearchXW, true, PointXW, Xisstatic);
+                    else Bmpfound("\\X", staticPointX[startsearchXW].x, staticPointX[startsearchXW].y, startsearchXW, true, true, Astatic);
+                }
+                else ButtonScanAction("\\X", 1, numphotoX, startsearchXW, true, PointXW, Xisstatic);
                 
-                InvalidateRect(pointerWindow, NULL, true); //invalidate all
             }
-            if (scantick == 40)
+            if (scantick == 3 && numphotoY > 0)
             {
-                
-                Buttonaction("\\Y", mode, numphotoY, startsearchY, true);
-                
-                InvalidateRect(pointerWindow, NULL, true); //invalidate all
+                if (Ystatic == 1)
+                {
+                    if (staticPointY[startsearchYW].x == 0 && staticPointY[startsearchYW].y == 0)
+                        //MessageBoxA(NULL, "heisann", "A", MB_OK);
+                        ButtonScanAction("\\Y", 1, numphotoY, startsearchYW, true, PointYW, Yisstatic);
+                    else
+                        Bmpfound("\\Y", staticPointY[startsearchYW].x, staticPointY[startsearchYW].y, startsearchYW, true, true, Astatic);
+                }
+                ButtonScanAction("\\Y", 1, numphotoY, startsearchYW, true, PointYW, Yisstatic);
             }
-            Sleep(1);
+            Sleep(10);
         }
         //else Sleep(1000);
     }
@@ -2115,10 +1707,7 @@ DWORD WINAPI ScanThread(LPVOID)
 
 
 // DrawFakeCursorFix. cursor offset scan and cursor size fix
-int scanAtype = 0;
-int scanBtype = 0;
-int scanXtype = 0;
-int scanYtype = 0;
+
 
 // Thread to create and run the window
 DWORD WINAPI WindowThreadProc(LPVOID) {
@@ -2171,22 +1760,649 @@ DWORD WINAPI WindowThreadProc(LPVOID) {
 
 RECT oldrect;
 POINT oldposcheck;
-void ThreadFunction(HMODULE hModule)
+
+void pollbuttons(WORD buttons, RECT rect)
 {
-    Sleep(2000);
-    char buffer[256];
-    
+    if (oldA == true)
+    {
+        if (buttons & XINPUT_GAMEPAD_A && onoroff == true)
+        {
+            // keep posting?
+        }
+        else {
+            oldA = false;
+            PostKeyFunction(hwnd, Atype, false);
+        }
+    }
+    else if (buttons & XINPUT_GAMEPAD_A && onoroff == true)
+    {
+        oldA = true;
+
+        if (!scanoption) {
+            startsearch = startsearchA;
+            ButtonScanAction("\\A", mode, numphotoA, startsearch, false, { 0,0 }, AuseStatic);//buttonacton will be occupied by scanthread
+        }
+        else
+        {
+            EnterCriticalSection(&critical);
+            POINT Cpoint;
+            Cpoint.x = PointA.x;
+            Cpoint.y = PointA.y;
+
+            //LeaveCriticalSection(&critical);
+            if (Cpoint.x != 0 && Cpoint.y != 0)
+            {   
+                if (startsearchA < numphotoA - 1)
+                    startsearchA++; //dont want it to update before input done
+                else startsearchA = 0;
+                PointA.x = 0;
+                PointA.y = 0;
+                BmpInputAction(Cpoint.x, Cpoint.y, scanAtype);
+                foundit = true;
+
+            }
+            LeaveCriticalSection(&critical);
+        }
+
+        EnterCriticalSection(&critical);
+        if (foundit == false && Atype != 0)
+        {
+            PostKeyFunction(hwnd, Atype, true);
+        }
+        LeaveCriticalSection(&critical);
+        if (mode == 2 && showmessage != 11)
+        {
+            numphotoA++;
+            Sleep(500);
+        }
+    }
+
+
+
+    if (oldB == true)
+    {
+        if (buttons & XINPUT_GAMEPAD_B && onoroff == true)
+        {
+            // keep posting?
+        }
+        else {
+            oldB = false;
+            PostKeyFunction(hwnd, Btype, false);
+        }
+    }
+    else if (buttons & XINPUT_GAMEPAD_B && onoroff == true)
+    {
+
+
+        oldB = true;
+        if (!scanoption) {
+            startsearch = startsearchB;
+            ButtonScanAction("\\B", mode, numphotoB, startsearch, false, { 0,0 }, BuseStatic);
+        }
+        else
+        {
+            EnterCriticalSection(&critical);
+            POINT Cpoint;
+            Cpoint.x = PointB.x;
+            Cpoint.y = PointB.y;
+
+            LeaveCriticalSection(&critical);
+
+            if (Cpoint.x != 0 && Cpoint.y != 0)
+            {
+                EnterCriticalSection(&critical);
+                if (startsearchB < numphotoB -1)
+                    startsearchB++; //dont want it to update before input done
+                else startsearchB = 0;
+                PointB.x = 0;
+                PointB.y = 0;
+                BmpInputAction(Cpoint.x, Cpoint.y, scanBtype);
+                LeaveCriticalSection(&critical);
+            }
+
+        }
+        EnterCriticalSection(&critical);
+        if (foundit == false)
+        {
+            PostKeyFunction(hwnd, Btype, true);
+        }
+        LeaveCriticalSection(&critical);
+        if (mode == 2 && showmessage != 11)
+        {
+            numphotoB++;
+            Sleep(500);
+        }
+
+    }
+
+
+
+    if (oldX == true)
+    {
+        if (buttons & XINPUT_GAMEPAD_X && onoroff == true)
+        {
+            // keep posting?
+        }
+        else {
+            oldX = false;
+            PostKeyFunction(hwnd, Xtype, false);
+        }
+    }
+    else if (buttons & XINPUT_GAMEPAD_X && onoroff == true)
+    {
+        oldX = true;
+
+
+        if (!scanoption)
+        {
+            startsearch = startsearchX;
+            ButtonScanAction("\\X", mode, numphotoX, startsearch, false, { 0,0 }, XuseStatic);
+        }
+        else
+        {
+            EnterCriticalSection(&critical);
+            POINT Cpoint;
+            Cpoint.x = PointX.x;
+            Cpoint.y = PointX.y;
+
+            LeaveCriticalSection(&critical);
+            movedmouse = true;
+            if (Cpoint.x != 0 && Cpoint.y != 0)
+            {
+                EnterCriticalSection(&critical);
+                if (startsearchX < numphotoX - 1)
+                    startsearchX++; //dont want it to update before input done
+                else startsearchX = 0;
+                PointX.x = 0;
+                PointX.y = 0;
+                BmpInputAction(Cpoint.x, Cpoint.y, scanXtype);
+                LeaveCriticalSection(&critical);
+            }
+
+        }
+        EnterCriticalSection(&critical);
+        if (foundit == false)
+        {
+            PostKeyFunction(hwnd, Xtype, true);
+        }
+        LeaveCriticalSection(&critical);
+        if (mode == 2 && showmessage != 11)
+        {
+            numphotoX++;
+            Sleep(500);
+        }
+    }
+
+
+
+    if (oldY == true)
+    {
+        if (buttons & XINPUT_GAMEPAD_Y && onoroff == true)
+        {
+            // keep posting?
+        }
+        else {
+            oldY = false;
+            PostKeyFunction(hwnd, Ytype, false);
+        }
+    }
+    else if (buttons & XINPUT_GAMEPAD_Y && onoroff == true)
+    {
+        oldY = true;
+
+
+        if (!scanoption) {
+            startsearch = startsearchY;
+            ButtonScanAction("\\Y", mode, numphotoY, startsearch, false, { 0,0 }, false);
+        }
+        else
+        {
+            EnterCriticalSection(&critical);
+            POINT Cpoint;
+            Cpoint.x = PointY.x;
+            Cpoint.y = PointY.y;
+
+            LeaveCriticalSection(&critical);
+            if (Cpoint.x != 0 && Cpoint.y != 0)
+            {
+                EnterCriticalSection(&critical);
+                if (startsearchY < numphotoY - 1)
+                    startsearchY++; //dont want it to update before input done
+                else startsearchY = 0;
+                PointY.x = 0;
+                PointY.y = 0;
+                BmpInputAction(Cpoint.x, Cpoint.y, scanYtype);
+                LeaveCriticalSection(&critical);
+            }
+        }
+        if (mode == 2 && showmessage != 11)
+        { //mapping mode
+            numphotoY++;
+            Sleep(500);
+        }
+        EnterCriticalSection(&critical);
+        if (foundit == false)
+        {
+            PostKeyFunction(hwnd, Ytype, true);
+        }
+        LeaveCriticalSection(&critical);
+    }
+
+
+
+    if (oldC == true)
+    {
+        if (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER && onoroff == true)
+        {
+            // keep posting?
+        }
+        else {
+            oldC = false;
+            PostKeyFunction(hwnd, Ctype, false);
+        }
+    }
+    else if (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER && onoroff == true)
+    {
+        oldC = true;
+        
+        if (ShoulderNextbmp == 1)
+        {
+            EnterCriticalSection(&critical);
+            if (startsearchA < numphotoA - 1)
+                startsearchA++; //dont want it to update before input done
+            else startsearchA = 0;
+            if (startsearchB < numphotoB - 1)
+                startsearchB++; //dont want it to update before input done
+            else startsearchB = 0;
+            if (startsearchX < numphotoX - 1)
+                startsearchX++; //dont want it to update before input done
+            else startsearchX = 0;
+            LeaveCriticalSection(&critical);
+        }
+        startsearch = startsearchC;
+        if (!scanoption)
+            ButtonScanAction("\\C", mode, numphotoC, startsearch, false, { 0,0 }, false);
+        EnterCriticalSection(&critical);
+        if (foundit == false)
+        {
+            PostKeyFunction(hwnd, Ctype, true);
+        }
+        LeaveCriticalSection(&critical);
+        if (mode == 2 && showmessage == 0)
+        {
+            numphotoC++;
+            Sleep(500);
+        }
+    }
+
+
+
+    if (oldD == true)
+    {
+        if (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && onoroff == true)
+        {
+            // keep posting?
+        }
+        else {
+            oldD = false;
+            PostKeyFunction(hwnd, Dtype, false);
+        }
+    }
+    else if (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && onoroff == true)
+    {
+        oldD = true;
+
+        startsearch = startsearchD;
+        if (!scanoption)
+            ButtonScanAction("\\D", mode, numphotoD, startsearch, false, { 0,0 }, false);
+        EnterCriticalSection(&critical);
+        if (ShoulderNextbmp)
+        {
+            
+            if (startsearchA > 0)
+                startsearchA--;
+            else startsearchA = numphotoA;
+            if (startsearchB > 0)
+                startsearchB--;
+            else startsearchB = numphotoB;
+            if (startsearchX > 0)
+                startsearchX--;
+            else startsearchX = numphotoX;
+            if (startsearchY > 0)
+                startsearchY--;
+            else startsearchY = numphotoY;
+            
+        }
+        if (foundit == false)
+        {
+            PostKeyFunction(hwnd, Dtype, true);
+        }
+        LeaveCriticalSection(&critical);
+        if (mode == 2 && showmessage != 11)
+        {
+            numphotoD++;
+            Sleep(500);
+        }
+    }
+
+
+
+
+    if (oldE == true)
+    {
+        if (buttons & XINPUT_GAMEPAD_RIGHT_THUMB && onoroff == true)
+        {
+            // keep posting?
+        }
+        else {
+            oldE = false;
+            PostKeyFunction(hwnd, Etype, false);
+        }
+    }
+    else if (buttons & XINPUT_GAMEPAD_RIGHT_THUMB && onoroff == true)
+    {
+        oldE = true;
+
+        startsearch = startsearchE;
+        if (!scanoption)
+            ButtonScanAction("\\E", mode, numphotoE, startsearch, false, { 0,0 }, false);
+        EnterCriticalSection(&critical);
+        if (foundit == false)
+        {
+            PostKeyFunction(hwnd, Etype, true);
+        }
+        LeaveCriticalSection(&critical);
+        if (mode == 2 && showmessage != 11)
+        {
+            numphotoE++;
+            Sleep(500);
+        }
+    }
+
+
+
+    if (oldF == true)
+    {
+        if (buttons & XINPUT_GAMEPAD_LEFT_THUMB && onoroff == true)
+        {
+            // keep posting?
+        }
+        else {
+            oldF = false;
+            PostKeyFunction(hwnd, Ftype, false);
+        }
+    }
+    else if (buttons & XINPUT_GAMEPAD_LEFT_THUMB && onoroff == true)
+    {
+        oldF = true;
+
+        startsearch = startsearchF;
+        if (!scanoption)
+            ButtonScanAction("\\F", mode, numphotoF, startsearch, false, { 0,0 }, false);
+        EnterCriticalSection(&critical);
+        if (foundit == false)
+        {
+            PostKeyFunction(hwnd, Ftype, true);
+        }
+        LeaveCriticalSection(&critical);
+        if (mode == 2 && showmessage != 11)
+        {
+            numphotoF++;
+            Sleep(500);
+        }
+    }
+
+
+
+
+    if (oldup)
+    {
+        if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
+        {
+            //post keep?
+            if (scrolloutsidewindow >= 3 && quickMW == 1) {
+
+                SendMouseClick(Xf, Yf, 20, 1);
+
+            }
+        }
+        else {
+            oldup = false;
+            PostKeyFunction(hwnd, uptype, false);
+        }
+    }
+    else if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
+    {
+
+        scroll.x = rect.left + (rect.right - rect.left) / 2;
+        if (scrolloutsidewindow == 0)
+            scroll.y = rect.top + 1;
+        if (scrolloutsidewindow == 1)
+            scroll.y = rect.top - 1;
+        scrollmap = true;
+        if (scrolloutsidewindow == 2) {
+            oldup = true;
+            PostKeyFunction(hwnd, uptype, true);
+        }
+        if (scrolloutsidewindow >= 3) {
+            oldup = true;
+            scrollmap = false;
+
+            SendMouseClick(Xf, Yf, 20, 1);
+
+
+        }
+    }
+
+
+
+
+    else if (olddown)
+    {
+        if (buttons & XINPUT_GAMEPAD_DPAD_DOWN && onoroff == true)
+        {
+            //post keep?
+            if (scrolloutsidewindow >= 3 && quickMW == 1) {
+
+                SendMouseClick(Xf, Yf, 21, 1);
+
+            }
+        }
+        else {
+            olddown = false;
+            PostKeyFunction(hwnd, downtype, false);
+        }
+    }
+    else if (buttons & XINPUT_GAMEPAD_DPAD_DOWN && onoroff == true)
+    {
+
+        scroll.x = rect.left + (rect.right - rect.left) / 2;
+        if (scrolloutsidewindow == 0)
+            scroll.y = rect.bottom - 1;
+        if (scrolloutsidewindow == 1)
+            scroll.y = rect.bottom + 1;
+        scrollmap = true;
+        if (scrolloutsidewindow == 2) {
+            olddown = true;
+            PostKeyFunction(hwnd, downtype, true);
+        }
+        if (scrolloutsidewindow >= 3) {
+            olddown = true;
+            scrollmap = false;
+
+            SendMouseClick(Xf, Yf, 21, 1);
+
+
+        }
+    }
+
+
+
+
+
+    else if (oldleft)
+    {
+        if (buttons & XINPUT_GAMEPAD_DPAD_LEFT && onoroff == true)
+        {
+            //post keep?
+        }
+        else {
+            oldleft = false;
+            PostKeyFunction(hwnd, lefttype, false);
+        }
+    }
+    else if (buttons & XINPUT_GAMEPAD_DPAD_LEFT && onoroff == true)
+    {
+        if (scrolloutsidewindow == 0)
+            scroll.x = rect.left + 1;
+        if (scrolloutsidewindow == 1)
+            scroll.x = rect.left - 1;
+        scroll.y = rect.top + (rect.bottom - rect.top) / 2;
+
+        scrollmap = true;
+        if (scrolloutsidewindow == 2 || scrolloutsidewindow == 4) {
+            oldleft = true;
+            PostKeyFunction(hwnd, lefttype, true);
+        }
+
+    }
+
+
+
+
+
+    else if (oldright)
+    {
+        if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT && onoroff == true)
+        {
+            //post keep?
+        }
+        else {
+            oldright = false;
+            PostKeyFunction(hwnd, righttype, false);
+        }
+    }
+    else if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT && onoroff == true)
+    {
+        if (scrolloutsidewindow == 0)
+            scroll.x = rect.right - 1;
+        if (scrolloutsidewindow == 1)
+            scroll.x = rect.right + 1;
+        scroll.y = rect.top + (rect.bottom - rect.top) / 2;
+        scrollmap = true;
+        if (scrolloutsidewindow == 2 || scrolloutsidewindow == 4) {
+            oldright = true;
+            PostKeyFunction(hwnd, righttype, true);
+        }
+    }
+    else
+    {
+        scrollmap = false;
+    }
+
+
+
+
+    if (buttons & XINPUT_GAMEPAD_START && showmessage == 0)
+    {
+        Sleep(100);
+        if (onoroff == true && buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER)
+        {
+            //MessageBox(NULL, "Bmp mode", "shutdown", MB_OK | MB_ICONINFORMATION);
+            showmessage = 69;
+        }
+        else if (onoroff == false && buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER)
+        {
+            //MessageBox(NULL, "Bmp mode", "starting", MB_OK | MB_ICONINFORMATION);
+            showmessage = 70;
+        }
+        else if (mode == 0 && Modechange == 1 && onoroff == true)
+        {
+            mode = 1;
+
+            // MessageBox(NULL, "Bmp + Emulated cursor mode", "Move the flickering red dot and use right trigger for left click. left trigger for right click", MB_OK | MB_ICONINFORMATION);
+            showmessage = 2;
+        }
+        else if (mode == 1 && Modechange == 1 && onoroff == true)
+        {
+            mode = 2;
+            //MessageBox(NULL, "Edit Mode", "Button mapping. will map buttons you click with the flickering red dot as an input coordinate", MB_OK | MB_ICONINFORMATION);
+            showmessage = 3;
+
+
+        }
+        else if (mode == 2 && Modechange == 1 && onoroff == true)
+        {
+            // mode = 0;
+            // MessageBox(NULL, "Bmp mode", "only send input on bmp match", MB_OK | MB_ICONINFORMATION);
+            showmessage = 1;
+        }
+
+        else if (onoroff == true) { //assume modechange not allowed. send escape key instead
+            keystatesend = VK_ESCAPE;
+        }
+        // Sleep(1000); //have time to release button. this is no hurry anyway
+
+    }
+}
+int HowManyBmps(std::wstring path)
+{
+    int start = -1;
+    int x = 0;
+    std::wstring filename;
+    while (x < 50 && start == -1)
+    {
+        filename = path + std::to_wstring(x) + L".bmp";
+        if (HBITMAP hbm = (HBITMAP)LoadImageW(NULL, filename.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
+        {
+            x++;
+            DeleteObject(hbm);
+
+        }
+        else
+            start = x;
+    }
+    return start;
+}
+bool enumeratebmps()
+{
+
+
+        std::wstring path = WGetExecutableFolder() + L"\\A";
+        numphotoA = HowManyBmps(path);
+        path = WGetExecutableFolder() + L"\\B";
+        numphotoB = HowManyBmps(path);
+        path = WGetExecutableFolder() + L"\\X";
+        numphotoX = HowManyBmps(path);
+        path = WGetExecutableFolder() + L"\\Y";
+        numphotoY = HowManyBmps(path);
+        path = WGetExecutableFolder() + L"\\C";
+        numphotoC = HowManyBmps(path);
+        path = WGetExecutableFolder() + L"\\D";
+        numphotoD = HowManyBmps(path);
+        path = WGetExecutableFolder() + L"\\E";
+        numphotoE = HowManyBmps(path);
+        path = WGetExecutableFolder() + L"\\F";
+        numphotoF = HowManyBmps(path);
+  
+        if (numphotoA < 0 && numphotoB < 0 && numphotoX < 0 && numphotoY < 00)
+            return false;
+        return true;
+}
+bool readsettings(){
+    char buffer[16]; //or only 4 maybe
+
     // settings reporting
     std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
     std::string iniSettings = "Settings";
 
     //controller settings
     controllerID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", -9999, iniPath.c_str()); //simple test if settings read but write it wont work.
-    int AxisLeftsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisLeftsens", -7849, iniPath.c_str());
-    int AxisRightsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisRightsens", 12000, iniPath.c_str());
-    int AxisUpsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisUpsens", 0, iniPath.c_str());
-    int AxisDownsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisDownsens", -16049, iniPath.c_str());
-    int scrollspeed3 = GetPrivateProfileInt(iniSettings.c_str(), "Scrollspeed", 150, iniPath.c_str());
+    AxisLeftsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisLeftsens", -7849, iniPath.c_str());
+    AxisRightsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisRightsens", 12000, iniPath.c_str());
+    AxisUpsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisUpsens", 0, iniPath.c_str());
+    AxisDownsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisDownsens", -16049, iniPath.c_str());
+    scrollspeed3 = GetPrivateProfileInt(iniSettings.c_str(), "Scrollspeed", 150, iniPath.c_str());
     righthanded = GetPrivateProfileInt(iniSettings.c_str(), "Righthanded", 0, iniPath.c_str());
     scanoption = GetPrivateProfileInt(iniSettings.c_str(), "Scan", 0, iniPath.c_str());
     GetPrivateProfileString(iniSettings.c_str(), "Radial_Deadzone", "0.2", buffer, sizeof(buffer), iniPath.c_str());
@@ -2205,214 +2421,233 @@ void ThreadFunction(HMODULE hModule)
     Yoffset = GetPrivateProfileInt(iniSettings.c_str(), "Yoffset", 0, iniPath.c_str());
 
     //mode
-    int InitialMode = GetPrivateProfileInt(iniSettings.c_str(), "Initial Mode", 1, iniPath.c_str());
-    int Modechange = GetPrivateProfileInt(iniSettings.c_str(), "Allow modechange", 1, iniPath.c_str());
+    InitialMode = GetPrivateProfileInt(iniSettings.c_str(), "Initial Mode", 1, iniPath.c_str());
+    Modechange = GetPrivateProfileInt(iniSettings.c_str(), "Allow modechange", 1, iniPath.c_str());
 
-    int sendfocus = GetPrivateProfileInt(iniSettings.c_str(), "Sendfocus", 0, iniPath.c_str());
-    int responsetime = GetPrivateProfileInt(iniSettings.c_str(), "Responsetime", 0, iniPath.c_str());
-    int doubleclicks = GetPrivateProfileInt(iniSettings.c_str(), "Doubleclicks", 0, iniPath.c_str());
-    int scrollenddelay = GetPrivateProfileInt(iniSettings.c_str(), "DelayEndScroll", 50, iniPath.c_str());
-    int quickMW = GetPrivateProfileInt(iniSettings.c_str(), "MouseWheelContinous", 0, iniPath.c_str());
+    sendfocus = GetPrivateProfileInt(iniSettings.c_str(), "Sendfocus", 0, iniPath.c_str());
+    responsetime = GetPrivateProfileInt(iniSettings.c_str(), "Responsetime", 0, iniPath.c_str());
+    doubleclicks = GetPrivateProfileInt(iniSettings.c_str(), "Doubleclicks", 0, iniPath.c_str());
+    scrollenddelay = GetPrivateProfileInt(iniSettings.c_str(), "DelayEndScroll", 50, iniPath.c_str());
+    quickMW = GetPrivateProfileInt(iniSettings.c_str(), "MouseWheelContinous", 0, iniPath.c_str());
 
-    //clicknotmove 2
-    //movenotclick 1
-    Atype = GetPrivateProfileInt(iniSettings.c_str(), "Ainputtype", 0, iniPath.c_str());
-    Btype = GetPrivateProfileInt(iniSettings.c_str(), "Binputtype", 0, iniPath.c_str());
-    Xtype = GetPrivateProfileInt(iniSettings.c_str(), "Xinputtype", 1, iniPath.c_str());
-    Ytype = GetPrivateProfileInt(iniSettings.c_str(), "Yinputtype", 0, iniPath.c_str());
-    Ctype = GetPrivateProfileInt(iniSettings.c_str(), "Cinputtype", 2, iniPath.c_str());
-    Dtype = GetPrivateProfileInt(iniSettings.c_str(), "Dinputtype", 0, iniPath.c_str());
-    Etype = GetPrivateProfileInt(iniSettings.c_str(), "Einputtype", 0, iniPath.c_str());
-    Ftype = GetPrivateProfileInt(iniSettings.c_str(), "Finputtype", 0, iniPath.c_str());
-
-    bmpAtype = GetPrivateProfileInt(iniSettings.c_str(), "AbmpAction", 0, iniPath.c_str());
-    bmpBtype = GetPrivateProfileInt(iniSettings.c_str(), "BbmpAction", 0, iniPath.c_str());
-    bmpXtype = GetPrivateProfileInt(iniSettings.c_str(), "XbmpAction", 0, iniPath.c_str());
-    bmpYtype = GetPrivateProfileInt(iniSettings.c_str(), "YbmpAction", 0, iniPath.c_str());
-    bmpCtype = GetPrivateProfileInt(iniSettings.c_str(), "CbmpAction", 0, iniPath.c_str());
-    bmpDtype = GetPrivateProfileInt(iniSettings.c_str(), "DbmpAction", 0, iniPath.c_str());
-    bmpEtype = GetPrivateProfileInt(iniSettings.c_str(), "EbmpAction", 0, iniPath.c_str());
-    bmpFtype = GetPrivateProfileInt(iniSettings.c_str(), "FbmpAction", 0, iniPath.c_str());
-    //need a copy to be read if scanoption
-    if (scanoption)
+    //clicknotmove 2000 + keyboard key code
+    //movenotclick 1000 + keyboard key code
+    Atype = GetPrivateProfileInt(iniSettings.c_str(), "A", 0, iniPath.c_str());
+    Btype = GetPrivateProfileInt(iniSettings.c_str(), "B", 0, iniPath.c_str());
+    Xtype = GetPrivateProfileInt(iniSettings.c_str(), "X", 1, iniPath.c_str());
+    Ytype = GetPrivateProfileInt(iniSettings.c_str(), "Y", 0, iniPath.c_str());
+    Ctype = GetPrivateProfileInt(iniSettings.c_str(), "RightShoulder", 2, iniPath.c_str());
+    Dtype = GetPrivateProfileInt(iniSettings.c_str(), "LeftShoulder", 0, iniPath.c_str());
+    Etype = GetPrivateProfileInt(iniSettings.c_str(), "RightThumb", 0, iniPath.c_str());
+    Ftype = GetPrivateProfileInt(iniSettings.c_str(), "LeftThumb", 0, iniPath.c_str());
+    AuseStatic = GetPrivateProfileInt(iniSettings.c_str(), "ScanAstatic", 0, iniPath.c_str());
+    BuseStatic = GetPrivateProfileInt(iniSettings.c_str(), "ScanBstatic", 0, iniPath.c_str());
+    XuseStatic = GetPrivateProfileInt(iniSettings.c_str(), "ScanXstatic", 0, iniPath.c_str());
+    YuseStatic = GetPrivateProfileInt(iniSettings.c_str(), "ScanYstatic", 0, iniPath.c_str());
+    //setting bmp search type like flag values
+    if (Atype > 1999)
     {
-        scanAtype = GetPrivateProfileInt(iniSettings.c_str(), "AbmpAction", 0, iniPath.c_str());
-        scanBtype = GetPrivateProfileInt(iniSettings.c_str(), "BbmpAction", 0, iniPath.c_str());
-        scanXtype = GetPrivateProfileInt(iniSettings.c_str(), "XbmpAction", 0, iniPath.c_str());
-        scanYtype = GetPrivateProfileInt(iniSettings.c_str(), "YbmpAction", 0, iniPath.c_str());
+        bmpAtype = 2;
+        scanAtype = 2;
+        Atype = Atype - 2000;
+
     }
+    else if (Atype > 999)
+    {
+        bmpAtype = 1;
+        scanAtype = 1;
+        Atype = Atype - 1000;
+    }
+    else
+    {
+        bmpAtype = 0;
+        scanAtype = 0;
+    }
+
+    if (Btype > 1999)
+    {
+        bmpBtype = 2;
+        scanBtype = 2;
+        Btype = Btype - 2000;
+    }
+    else if (Btype > 999)
+    {
+        bmpBtype = 1;
+        scanBtype = 1;
+        Btype = Btype - 1000;
+    }
+    else
+    {
+        bmpBtype = 0;
+        scanBtype = 0;
+    }
+
+    if (Xtype > 1999)
+    {
+        scanXtype = 2;
+        bmpXtype = 2;
+        Xtype = Xtype - 2000;
+    }
+    else if (Xtype > 999)
+    {
+        bmpXtype = 1;
+        scanXtype = 1;
+        Xtype = Xtype - 1000;
+    }
+    else
+    {
+        bmpXtype = 0;
+        scanXtype = 0;
+    }
+
+    if (Ytype > 1999)
+    {
+        bmpYtype = 2;
+        scanYtype = 2;
+        Ytype = Ytype - 2000;
+    }
+    else if (Ytype > 999)
+    {
+        bmpYtype = 1;
+        scanYtype = 1;
+        Ytype = Ytype - 1000;
+    }
+    else
+    {
+        bmpYtype = 0;
+        scanYtype = 0;
+    }
+
+    if (Ctype > 1999)
+    {
+        bmpCtype = 2;
+        Ctype = Ctype - 2000;
+    }
+    else if (Ctype > 999)
+    {
+        bmpCtype = 1;
+        Ctype = Ctype - 1000;
+    }
+    else
+    {
+        bmpCtype = 0;
+    }
+
+    if (Dtype > 1999)
+    {
+        bmpDtype = 2;
+        Dtype = Dtype - 2000;
+    }
+    else if (Dtype > 999)
+    {
+        bmpDtype = 1;
+        Dtype = Dtype - 1000;
+    }
+    else
+    {
+        bmpDtype = 0;
+    }
+
+    if (Etype > 1999)
+    {
+        bmpEtype = 2;
+        Etype = Etype - 2000;
+    }
+    else if (Etype > 999)
+    {
+        bmpEtype = 1;
+        Etype = Etype - 1000;
+    }
+    else
+    {
+        bmpEtype = 0;
+    }
+
+    if (Ftype > 1999)
+    {
+        Ftype = Ftype - 2000;
+    }
+    else if (Ftype > 999)
+    {
+        bmpFtype = 1;
+        Ftype = Ftype - 1000;
+    }
+    else
+    {
+        bmpFtype = 0;
+    }
+
     uptype = GetPrivateProfileInt(iniSettings.c_str(), "Upkey", -1, iniPath.c_str());
     downtype = GetPrivateProfileInt(iniSettings.c_str(), "Downkey", -2, iniPath.c_str());
     lefttype = GetPrivateProfileInt(iniSettings.c_str(), "Leftkey", -3, iniPath.c_str());
     righttype = GetPrivateProfileInt(iniSettings.c_str(), "Rightkey", -4, iniPath.c_str());
-    int ShoulderNextbmp = GetPrivateProfileInt(iniSettings.c_str(), "ShouldersNextBMP", 0, iniPath.c_str());
+    ShoulderNextbmp = GetPrivateProfileInt(iniSettings.c_str(), "ShouldersNextBMP", 0, iniPath.c_str());
 
     //hooks
     drawfakecursor = GetPrivateProfileInt(iniSettings.c_str(), "DrawFakeCursor", 1, iniPath.c_str());
     alwaysdrawcursor = GetPrivateProfileInt(iniSettings.c_str(), "DrawFakeCursorAlways", 1, iniPath.c_str());
-	userealmouse = GetPrivateProfileInt(iniSettings.c_str(), "UseRealMouse", 0, iniPath.c_str());   //scrolloutsidewindow
+    userealmouse = GetPrivateProfileInt(iniSettings.c_str(), "UseRealMouse", 0, iniPath.c_str());   //scrolloutsidewindow
     ignorerect = GetPrivateProfileInt(iniSettings.c_str(), "IgnoreRect", 0, iniPath.c_str());
 
-    int scrolloutsidewindow = GetPrivateProfileInt(iniSettings.c_str(), "Scrollmapfix", 1, iniPath.c_str());   //scrolloutsidewindow
-    
+    scrolloutsidewindow = GetPrivateProfileInt(iniSettings.c_str(), "Scrollmapfix", 1, iniPath.c_str());   //scrolloutsidewindow
+    mode = InitialMode;
     if (drawfakecursor == 3)
-		DrawFakeCursorFix = true;
-
-    Sleep(1000);
-    hwnd = GetMainWindowHandle(GetCurrentProcessId());
-    int mode = InitialMode;
-
-
+        DrawFakeCursorFix = true;
     if (controllerID == -9999)
     {
-        MessageBoxA(NULL, "Warning. Settings file Xinput.ini not read. All settings standard. Or maybe ControllerID is missing from ini", "Error", MB_OK | MB_ICONERROR);
-		controllerID = 0; //default controller  
+        return false;
+        controllerID = 0; //default controller  
 
-	}
-
-    HBITMAP hbmdsktop = NULL; //memory corruption?
-
-    //image numeration
-    while (numphotoA == -1 && x < 50)
-    {
-        std::wstring wpath = WGetExecutableFolder() + L"\\A" + std::to_wstring(x) + L".bmp";
-        if (hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
-        {
-            x++;
-            DeleteObject(hbm);
-        }
-        else
-            numphotoA = x;
-       // char buffer[100];
-      // wsprintf(buffer, "A is %d", numphotoA);
-      //  MessageBoxA(NULL, buffer, "Info", MB_OK);
-        Sleep(2);
     }
-    x = 0;
-    while (numphotoB == -1 && x < 50)
+    return true;
+}   
+void ThreadFunction(HMODULE hModule)
+{
+    Sleep(2000);
+
+    if (readsettings() == false)
     {
-        std::string path = UGetExecutableFolder() + "\\B" + std::to_string(x) + ".bmp";
-        std::wstring wpath(path.begin(), path.end());
-        if (HBITMAP hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
-        {
-            x++;
-            DeleteObject(hbm);
-        }
-        else {
-            numphotoB = x;
-
-        }
-        Sleep(2);
+        //messagebox? settings not read
     }
-    x = 0;
-    while (numphotoY == -1 && x < 50)
-    {
-        std::string path = UGetExecutableFolder() + "\\Y" + std::to_string(x) + ".bmp";
-        std::wstring wpath(path.begin(), path.end());
-        if (HBITMAP hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
-        {
-            x++;
-            DeleteObject(hbm);
-        }
-        else
-            numphotoY = x;
-        Sleep(2);
+    Sleep(1000);
+    if (!enumeratebmps())
+    { 
+        if (scanoption)
+            MessageBoxA(NULL, "Error. scanoption disabled", "No BMPS found", MB_OK);
+        scanoption = 0;
     }
-    x = 0;
-    while (numphotoX == -1 && x < 50)
-    {
-        std::string path = UGetExecutableFolder() + "\\X" + std::to_string(x) + ".bmp";
-        std::wstring wpath(path.begin(), path.end());
-        if (HBITMAP hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
-        {
-            x++;
-            DeleteObject(hbm);
-        }
-
-
-        else
-            numphotoX = x;
-
-        Sleep(2);
+    else {
+        staticPointA.assign(numphotoA + 1, POINT{ 0, 0 });
+        staticPointB.assign(numphotoB + 1, POINT{ 0, 0 });
+        staticPointX.assign(numphotoX + 1, POINT{ 0, 0 });
+        staticPointY.assign(numphotoY + 1, POINT{ 0, 0 });
     }
-    while (numphotoC == -1 && x < 50)
-    {
-        std::string path = UGetExecutableFolder() + "\\C" + std::to_string(x) + ".bmp";
-        std::wstring wpath(path.begin(), path.end());
-        if (HBITMAP hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
-        {
-            x++;
-            DeleteObject(hbm);
-        }
+    hwnd = GetMainWindowHandle(GetCurrentProcessId());
 
-
-        else
-            numphotoC = x;
-
-        Sleep(2);
-    }
-    while (numphotoD == -1 && x < 50)
-    {
-        std::string path = UGetExecutableFolder() + "\\D" + std::to_string(x) + ".bmp";
-        std::wstring wpath(path.begin(), path.end());
-        if (HBITMAP hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
-        {
-            x++;
-            DeleteObject(hbm);
-        }
-
-
-        else
-            numphotoD = x;
-
-        Sleep(2);
-    }
-    while (numphotoE == -1 && x < 50)
-    {
-        std::string path = UGetExecutableFolder() + "\\E" + std::to_string(x) + ".bmp";
-        std::wstring wpath(path.begin(), path.end());
-        if (HBITMAP hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
-        {
-            x++;
-            DeleteObject(hbm);
-        }
-
-
-        else
-            numphotoE = x;
-
-        Sleep(2);
-    }
-    while (numphotoF == -1 && x < 50)
-    {
-        std::string path = UGetExecutableFolder() + "\\F" + std::to_string(x) + ".bmp";
-        std::wstring wpath(path.begin(), path.end());
-        if (HBITMAP hbm = (HBITMAP)LoadImageW(NULL, wpath.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION))
-        {
-            x++;
-            DeleteObject(hbm);
-        }
-
-
-        else
-            numphotoF = x;
-
-        Sleep(2);
-    }
-    ///////////////////////////////////////////////////////////////////////////////////LLLLLLLOOOOOOOOOOOOOPPPPPPPPPPPPP
     bool Aprev = false;
 
-    if (scanoption == 1 && drawfakecursor > 1)
-    {
-        std::thread tree(ScanThread, g_hModule);
+    if (scanoption == 1)
+    { //starting bmp conttinous scanner
+
+
+      //  if (numphotoB >= 0)
+      //      staticPointB.resize(numphotoB);  // allocate space
+      //  if (numphotoX >= 0)
+      //      staticPointX.resize(numphotoX);  // allocate space
+      //  if (numphotoY >= 0)
+      //      staticPointY.resize(numphotoY);  // allocate space
+
+        std::thread tree(ScanThread, g_hModule, AuseStatic, BuseStatic, XuseStatic, YuseStatic);
         tree.detach();
        // InitializeCriticalSection(&criticalA);
     }
- 
+
+
+
 	bool window = false;
     while (loop == true)
     {
-        bool movedmouse = false; //reset
+        movedmouse = false; //reset
         keystatesend = 0; //reset keystate
 		foundit = false; //reset foundit the bmp search found or not
         if (hwnd == NULL)
@@ -2441,7 +2676,9 @@ void ThreadFunction(HMODULE hModule)
                         MessageBoxA(NULL, "No pointerwindow", "ohno", MB_OK);
                         Sleep(1000); 
                     }
-					
+                    if (pointerWindow){}
+                        //Sleep(500);
+                        PointerWnd = GetDC(pointerWindow);
 					SendMessage(pointerWindow, WM_MOVE_pointerWindow, 0, 0); //focus to avoid alt tab issues
                     LeaveCriticalSection(&critical);
 
@@ -2453,6 +2690,7 @@ void ThreadFunction(HMODULE hModule)
                     SendMessage(pointerWindow, WM_MOVE_pointerWindow, 0, 0); //focus to avoid alt tab issues
 					//MessageBoxA(NULL, "Resized/moved window - adjust fake cursor window", "Info", MB_OK);
                     //ShowWindow(pointerWindow, SW_SHOW);
+                    Sleep(200);
                     LeaveCriticalSection(&critical);
                 }
                 
@@ -2494,13 +2732,8 @@ void ThreadFunction(HMODULE hModule)
             DWORD dwResult = XInputGetState(controllerID, &state);
             bool leftPressed = IsTriggerPressed(state.Gamepad.bLeftTrigger);
             bool rightPressed = IsTriggerPressed(state.Gamepad.bRightTrigger);
-            if (drawfakecursor == 2 || drawfakecursor == 3)
-            {
-                EnterCriticalSection(&critical);
-                InvalidateRect(pointerWindow, NULL, false);
-                LeaveCriticalSection(&critical);
-            }
-			
+
+            
 
 
 
@@ -2523,673 +2756,14 @@ void ThreadFunction(HMODULE hModule)
 				
                 // Controller is connected
                 WORD buttons = state.Gamepad.wButtons;
-                bool currA = (buttons & XINPUT_GAMEPAD_A) != 0;
-                bool Apressed = (buttons & XINPUT_GAMEPAD_A);
-
-                if (showmessage == 12) //was disconnected?
+                pollbuttons(buttons, rect); //all buttons exept triggers and axises
+                if (showmessage == 12) //was disconnected last scan?
                 {
                     showmessage = 0;
 				}
 
 
-                if (oldA == true)
-                {
-                    if (buttons & XINPUT_GAMEPAD_A && onoroff == true)
-                    {
-                        // keep posting?
-                    }
-                    else {
-                        oldA = false;
-                        PostKeyFunction(hwnd, Atype, false);
-                    }
-                }
-                else if (buttons & XINPUT_GAMEPAD_A && onoroff == true)
-                {
-                    oldA = true;
-                    
-                    if (!scanoption) {
-                        startsearch = startsearchA;
-                        Buttonaction("\\A", mode, numphotoA, startsearch, false); //buttonacton will be occupied by scanthread
-                    }
-                    else
-                    {
-                        EnterCriticalSection(&critical);
-                        POINT Cpoint;
-                        Cpoint.x = PointA.x;
-                        Cpoint.y = PointA.y;
-                        
-                        //LeaveCriticalSection(&critical);
-                        if (Cpoint.x != 0 && Cpoint.y != 0)
-                        {
-                            //EnterCriticalSection(&critical);
-                            startsearchA++; //dont want it to update before input done
-                            
-                           
-                            movedmouse = true;
-                            if (scanAtype == 0) //click and move
-                            {
-                                Xf = Cpoint.x;
-                                Yf = Cpoint.y;
-                                SendMouseClick(Cpoint.x, Cpoint.y, 8, 1);
-                                Sleep(5);
-                                SendMouseClick(Cpoint.x, Cpoint.y, 3, 2);
-                                Sleep(5);
-                                SendMouseClick(Cpoint.x, Cpoint.y, 4, 2);
-                            }
-                            else if (scanAtype == 1) //only move
-                            {
-                                //SendMouseClick(Cpoint.x, Cpoint.y, 8, 1);
-                                //MessageBoxA(NULL, "Mousemove", "Info", MB_OK);
-                                Xf = Cpoint.x;
-                                Yf = Cpoint.y;
-                            }
-                            else if (scanAtype == 2) //only click
-                            {
-                                SendMouseClick(Cpoint.x, Cpoint.y, 8, 1);
-                                Sleep(5);
-                                SendMouseClick(Cpoint.x, Cpoint.y, 3, 2);
-                                Sleep(5);
-                                SendMouseClick(Cpoint.x, Cpoint.y, 4, 2);
-                                Sleep(5);
-                                SendMouseClick(Xf, Yf, 8, 1);
-                            }
-                            
-                        }
-                        LeaveCriticalSection(&critical);
-                    }
-                    
-                    
-                    if (foundit == false)
-                    {
-                        PostKeyFunction(hwnd, Atype, true);
-                    }
-                    if (mode == 2 && showmessage != 11)
-                    {
-                       numphotoA++;
-                       Sleep(500);
-                    }
-                }
-
-
-
-                if (oldB == true)
-                {
-                    if (buttons & XINPUT_GAMEPAD_B && onoroff == true)
-                    {
-                        // keep posting?
-                    }
-                    else {
-                        oldB = false;
-                        PostKeyFunction(hwnd, Btype, false);
-                    }
-                }
-                else if (buttons & XINPUT_GAMEPAD_B && onoroff == true)
-                {
-                    
-
-                    oldB = true;
-                    if (!scanoption) {
-                        startsearch = startsearchB;
-                        Buttonaction("\\B", mode, numphotoB, startsearch, false);
-                    }
-                    else
-                    {
-                        EnterCriticalSection(&critical);
-                        POINT Cpoint;
-                        Cpoint.x = PointB.x;
-                        Cpoint.y = PointB.y;
-                        LeaveCriticalSection(&critical);
-                        
-                        if (Cpoint.x != 0 && Cpoint.y != 0)
-                        {
-                            EnterCriticalSection(&critical);
-                            startsearchB++;
-                            
-                            movedmouse = true;
-                    
-                            if (scanBtype == 0) //click and move
-                            {
-                                Xf = Cpoint.x;
-                                Yf = Cpoint.y;
-                                SendMouseClick(Cpoint.x, Cpoint.y, 8, 1);
-                                Sleep(5);
-                                SendMouseClick(Cpoint.x, Cpoint.y, 3, 2);
-                                Sleep(5);
-                                SendMouseClick(Cpoint.x, Cpoint.y, 4, 2);
-                            }
-                            else if (scanBtype == 1) //only move
-                            {
-                                Xf = Cpoint.x;
-                                Yf = Cpoint.y;
-                                //(NULL, "Resized/moved window - adjust fake cursor window", "Info", MB_OK);
-                                //SendMouseClick(Cpoint.x, Cpoint.y, 8, 1);
-                            }
-                            else if (scanBtype == 2) //only click
-                            {
-                                SendMouseClick(Cpoint.x, Cpoint.y, 8, 1);
-                                Sleep(5);
-                                SendMouseClick(Cpoint.x, Cpoint.y, 3, 2);
-                                Sleep(5);
-                                SendMouseClick(Cpoint.x, Cpoint.y, 4, 2);
-                                Sleep(5);
-                                SendMouseClick(Xf, Yf, 8, 1);
-                            }
-                            LeaveCriticalSection(&critical);
-                        }
-                        
-                    }
                 
-                    if (foundit == false)
-                    {
-                        PostKeyFunction(hwnd, Btype, true);
-                    }
-                    if (mode == 2 && showmessage != 11)
-                    {
-                        numphotoB++;
-                        Sleep(500);
-                    }
-                    
-                }
-
-
-
-                if (oldX == true)
-                {
-                    if (buttons & XINPUT_GAMEPAD_X && onoroff == true)
-                    {
-                        // keep posting?
-                    }
-                    else {
-                        oldX = false;
-                        PostKeyFunction(hwnd, Xtype, false);
-                    }
-                }
-                else if (buttons & XINPUT_GAMEPAD_X && onoroff == true)
-                {
-                    oldX = true;
-                    
-                    
-                    if (!scanoption)
-                    { 
-                        startsearch = startsearchX;
-                        Buttonaction("\\X", mode, numphotoX, startsearch, false);
-                    }
-                    else
-                    {
-                        EnterCriticalSection(&critical);
-                        POINT Cpoint;
-                        Cpoint.x = PointX.x;
-                        Cpoint.y = PointX.y;
-                        LeaveCriticalSection(&critical);
-                        movedmouse = true;
-                        if (Cpoint.x != 0 && Cpoint.y != 0)
-                        {
-                            EnterCriticalSection(&critical);
-                            startsearchX++;
-                            
-        
-                            if (scanXtype == 0) //click and move
-                            {
-                                Xf = Cpoint.x;
-                                Yf = Cpoint.y;
-                                SendMouseClick(Cpoint.x, Cpoint.y, 8, 1);
-                                Sleep(5);
-                                SendMouseClick(Cpoint.x, Cpoint.y, 3, 2);
-                                Sleep(5);
-                                SendMouseClick(Cpoint.x, Cpoint.y, 4, 2);
-                            }
-                            else if (scanXtype == 1) //only move
-                            {
-                                Xf = Cpoint.x;
-                                Yf = Cpoint.y;
-                                movedmouse = true;
-                               // MessageBoxA(NULL, "Resized/moved window - adjust fake cursor window", "Info", MB_OK);
-                                //SendMouseClick(Cpoint.x, Cpoint.y, 8, 1);
-                            }
-                            else if (scanXtype == 2) //only click
-                            {
-                                SendMouseClick(Cpoint.x, Cpoint.y, 8, 1);
-                                Sleep(5);
-                                SendMouseClick(Cpoint.x, Cpoint.y, 3, 2);
-                                Sleep(5);
-                                SendMouseClick(Cpoint.x, Cpoint.y, 4, 2);
-                                Sleep(5);
-                                SendMouseClick(Xf, Yf, 8, 1);
-                            }
-                            LeaveCriticalSection(&critical);
-                        }
-
-                    }
-                    if (foundit == false)
-                    {
-                        PostKeyFunction(hwnd, Xtype, true);
-                    }
-                    if (mode == 2 && showmessage != 11)
-                    {
-                        numphotoX++;
-                        Sleep(500);
-                    }
-                }
-
-
-
-                if (oldY == true)
-                {
-                    if (buttons & XINPUT_GAMEPAD_Y && onoroff == true)
-                    {
-                        // keep posting?
-                    }
-                    else {
-                        oldY = false;
-                        PostKeyFunction(hwnd, Ytype, false);
-                    }
-                }
-                else if (buttons & XINPUT_GAMEPAD_Y && onoroff == true)
-                {
-                    oldY = true;
-                    
-                    
-                    if (!scanoption) {
-                        startsearch = startsearchY;
-                        Buttonaction("\\Y", mode, numphotoY, startsearch, false);
-                    }
-                    else
-                    {
-                        EnterCriticalSection(&critical);
-                        POINT Cpoint;
-                        Cpoint.x = PointY.x;
-                        Cpoint.y = PointY.y;
-                        LeaveCriticalSection(&critical);
-                        if (Cpoint.x != 0 && Cpoint.y != 0)
-                        {
-                            EnterCriticalSection(&critical);
-                            startsearchY++;
-                            
-                            movedmouse = true;
-        
-                            if (scanYtype == 0 ) //click and move
-                            { 
-                                Xf = Cpoint.x;
-                                Yf = Cpoint.y;
-                                SendMouseClick(Cpoint.x, Cpoint.y, 8, 1);
-                                Sleep(5);
-                                SendMouseClick(Cpoint.x, Cpoint.y, 3, 2);
-                                Sleep(5);
-                                SendMouseClick(Cpoint.x, Cpoint.y, 4, 2);
-                            }
-                            else if (scanYtype == 1) //only move
-                            {
-                                Xf = Cpoint.x;
-                                Yf = Cpoint.y;
-                                //MessageBoxA(NULL, "Resized/moved window - adjust fake cursor window", "Info", MB_OK);
-                                //SendMouseClick(Cpoint.x, Cpoint.y, 8, 1);
-                            }
-                            else if (scanYtype == 2) //only click
-                            {
-                                SendMouseClick(Cpoint.x, Cpoint.y, 8, 1);
-                                Sleep(5);
-                                SendMouseClick(Cpoint.x, Cpoint.y, 3, 2);
-                                Sleep(5);
-                                SendMouseClick(Cpoint.x, Cpoint.y, 4, 2);
-                                Sleep(5);
-                                SendMouseClick(Xf, Yf, 8, 1);
-                            }
-                            LeaveCriticalSection(&critical);
-                        }
-                    }
-                    if (mode == 2 && showmessage != 11)
-                    {
-                        numphotoY++;
-                        Sleep(500);
-                    }
-                    if (foundit == false)
-                    {
-                        PostKeyFunction(hwnd, Ytype, true);
-                    }
-                }
-
-
-
-                if (oldC == true)
-                {
-                    if (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER && onoroff == true)
-                    {
-                        // keep posting?
-                    }
-                    else {
-                        oldC = false;
-                        PostKeyFunction(hwnd, Ctype, false);
-                    }
-                }
-                else if (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER && onoroff == true)
-                {
-                    oldC = true;
-                    if (ShoulderNextbmp == 1)
-                    { 
-                        EnterCriticalSection(&critical);
-                        //if (startsearchA < NumPhotoA)
-                            startsearchA++;
-                        //if (startsearchB < NumPhotoB)
-                            startsearchB++;
-                        //if (startsearchX < NumPhotoX)
-                            startsearchX++;
-                        //if (startsearchY < NumPhotoY)
-                            startsearchY++;
-                        LeaveCriticalSection(&critical);
-                    }
-                    startsearch = startsearchC;
-                    if (!scanoption)
-                        Buttonaction("\\C", mode, numphotoC, startsearch, false);
-                    if (foundit == false)
-                    {
-                        PostKeyFunction(hwnd, Ctype, true);
-                    }
-                    if (mode == 2 && showmessage == 0)
-                    {
-                        numphotoC++;
-                        Sleep(500);
-                    }
-                }
-
-
-
-                if (oldD == true)
-                {
-                    if (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && onoroff == true)
-                    {
-                        // keep posting?
-                    }
-                    else {
-                        oldD = false;
-                        PostKeyFunction(hwnd, Dtype, false);
-                    }
-                }
-                else if (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && onoroff == true)
-                {
-                    oldD = true;
-                    
-                    startsearch = startsearchD;
-                    if (!scanoption)
-                        Buttonaction("\\D", mode, numphotoD, startsearch, false);
-                    if (ShoulderNextbmp)
-                    { 
-                        EnterCriticalSection(&critical);
-                        if (startsearchA > 0)
-                        startsearchA--;
-                        if (startsearchB > 0)
-                        startsearchB--;
-                        if (startsearchX > 0)
-                        startsearchX--;
-                        if (startsearchY > 0)
-                        startsearchY--;
-                        LeaveCriticalSection(&critical);
-                    }
-                    if (foundit == false)
-                    {
-                        PostKeyFunction(hwnd, Dtype, true);
-                    }
-                    if (mode == 2 && showmessage != 11)
-                    {
-                        numphotoD++;
-                        Sleep(500);
-                    }
-                }
-
-
-
-
-                if (oldE == true)
-                {
-                    if (buttons & XINPUT_GAMEPAD_RIGHT_THUMB && onoroff == true)
-                    {
-                        // keep posting?
-                    }
-                    else {
-                        oldE = false;
-                        PostKeyFunction(hwnd, Etype, false);
-                    }
-                }
-                else if (buttons & XINPUT_GAMEPAD_RIGHT_THUMB && onoroff == true)
-                {
-                    oldE = true;
-                    
-                    startsearch = startsearchE;
-                    if (!scanoption)
-                        Buttonaction("\\E", mode, numphotoE, startsearch, false);
-                    if (foundit == false)
-                    {
-                        PostKeyFunction(hwnd, Etype, true);
-                    }
-                    if (mode == 2 && showmessage != 11)
-                    {
-                        numphotoE++;
-                        Sleep(500);
-                    }
-                }
-
-
-
-                if (oldF == true)
-                {
-                    if (buttons & XINPUT_GAMEPAD_LEFT_THUMB && onoroff == true)
-                    {
-                        // keep posting?
-                    }
-                    else {
-                        oldF = false;
-                        PostKeyFunction(hwnd, Ftype, false);
-                    }
-                }
-                else if (buttons & XINPUT_GAMEPAD_LEFT_THUMB && onoroff == true)
-                {
-                    oldF = true;
-                    
-                    startsearch = startsearchF;
-                    if (!scanoption)
-                        Buttonaction("\\F", mode, numphotoF, startsearch, false);
-                    if (foundit == false)
-                    {
-                        PostKeyFunction(hwnd, Ftype, true);
-                    }
-                    if (mode == 2 && showmessage != 11)
-                    {
-                        numphotoF++;
-                        Sleep(500);
-                    }
-                }
- 
-
-
-
-                if (oldup)
-                {
-                    if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
-                    {
-                        //post keep?
-                        if (scrolloutsidewindow >= 3 && quickMW == 1) {
-                        
-                            SendMouseClick(Xf, Yf, 20, 1);
-                        
-                        }
-                    }
-                    else {
-                        oldup = false;
-                        PostKeyFunction(hwnd, uptype, false);
-                    }
-                }
-                else if (buttons & XINPUT_GAMEPAD_DPAD_UP && onoroff == true)
-                {
-                    
-                    scroll.x = rect.left + (rect.right - rect.left) / 2;
-                    if (scrolloutsidewindow == 0)
-                        scroll.y = rect.top + 1;
-                    if (scrolloutsidewindow == 1)
-                        scroll.y = rect.top - 1;
-                    scrollmap = true;
-                    if (scrolloutsidewindow == 2){
-                        oldup = true;
-                        PostKeyFunction(hwnd, uptype, true);
-                    }
-                    if (scrolloutsidewindow >= 3) {
-                        oldup = true;
-                        scrollmap = false;
-                    
-                        SendMouseClick(Xf, Yf, 20, 1);
-                     
-                        
-                    }
-                }
-
-
-
-
-                else if (olddown)
-                {
-                    if (buttons & XINPUT_GAMEPAD_DPAD_DOWN && onoroff == true)
-                    {
-                        //post keep?
-                        if (scrolloutsidewindow >= 3 && quickMW == 1) {
-                        
-                            SendMouseClick(Xf, Yf, 21, 1);
-                       
-                        }
-                    }
-                    else {
-                        olddown = false;
-                        PostKeyFunction(hwnd, downtype, false);
-                    }
-                }
-               else if (buttons & XINPUT_GAMEPAD_DPAD_DOWN && onoroff == true)
-                {
-                    
-                    scroll.x = rect.left + (rect.right - rect.left) / 2;
-                    if (scrolloutsidewindow == 0)
-                        scroll.y = rect.bottom - 1;
-                    if (scrolloutsidewindow == 1)
-                        scroll.y = rect.bottom + 1;
-                    scrollmap = true;
-                    if (scrolloutsidewindow == 2) {
-                        olddown = true;
-                        PostKeyFunction(hwnd, downtype, true);
-                    }
-                    if (scrolloutsidewindow >= 3) {
-                        olddown = true;
-                        scrollmap = false;
-               
-                        SendMouseClick(Xf, Yf, 21, 1);
-                   
-                        
-                    }
-                }
-
-
-
-
-
-               else if (oldleft)
-               {
-                   if (buttons & XINPUT_GAMEPAD_DPAD_LEFT && onoroff == true)
-                   {
-                       //post keep?
-                   }
-                   else {
-                       oldleft = false;
-                       PostKeyFunction(hwnd, lefttype, false);
-                   }
-               }
-               else if (buttons & XINPUT_GAMEPAD_DPAD_LEFT && onoroff == true)
-                {
-                    if (scrolloutsidewindow == 0)
-                        scroll.x = rect.left + 1;
-                    if (scrolloutsidewindow == 1)
-                        scroll.x = rect.left - 1;
-                    scroll.y = rect.top + (rect.bottom - rect.top) / 2;
-
-                    scrollmap = true;
-                    if (scrolloutsidewindow == 2 || scrolloutsidewindow == 4) {
-                        oldleft = true;
-                        PostKeyFunction(hwnd, lefttype, true);
-                    }
-
-                }
-
-
-
-
-
-                else if (oldright)
-                {
-                    if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT && onoroff == true)
-                    {
-                        //post keep?
-                    }
-                    else {
-                        oldright = false;
-                        PostKeyFunction(hwnd, righttype, false);
-                    }
-                }
-                else if (buttons & XINPUT_GAMEPAD_DPAD_RIGHT && onoroff == true)
-                {
-                    if (scrolloutsidewindow == 0)
-                        scroll.x = rect.right - 1;
-                    if (scrolloutsidewindow == 1)
-                        scroll.x = rect.right + 1;
-                    scroll.y = rect.top + (rect.bottom - rect.top) / 2;
-                    scrollmap = true;
-                    if (scrolloutsidewindow == 2 || scrolloutsidewindow == 4) {
-                        oldright = true;
-                        PostKeyFunction(hwnd, righttype, true);
-                    }
-                }
-                else
-                {
-                    scrollmap = false;
-                }
-
-
-
-
-                if (buttons & XINPUT_GAMEPAD_START && showmessage == 0)
-                {
-                    Sleep(100);
-                    if (onoroff == true && buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER)
-                    {
-                         //MessageBox(NULL, "Bmp mode", "shutdown", MB_OK | MB_ICONINFORMATION);
-                        showmessage = 69;
-                    }
-                    else if (onoroff == false && buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER)
-                    {
-                         //MessageBox(NULL, "Bmp mode", "starting", MB_OK | MB_ICONINFORMATION);
-                        showmessage = 70;
-                    }
-                    else if (mode == 0 && Modechange == 1 && onoroff == true)
-                    {
-                        mode = 1;
-
-                       // MessageBox(NULL, "Bmp + Emulated cursor mode", "Move the flickering red dot and use right trigger for left click. left trigger for right click", MB_OK | MB_ICONINFORMATION);
-                        showmessage = 2;
-                    }
-                    else if (mode == 1 && Modechange == 1 && onoroff == true)
-                    {
-                        mode = 2;
-                        //MessageBox(NULL, "Edit Mode", "Button mapping. will map buttons you click with the flickering red dot as an input coordinate", MB_OK | MB_ICONINFORMATION);
-                        showmessage = 3;
-                        
-
-                    }
-                    else if (mode == 2 && Modechange == 1 && onoroff == true)
-                    {
-                       // mode = 0;
-                       // MessageBox(NULL, "Bmp mode", "only send input on bmp match", MB_OK | MB_ICONINFORMATION);
-                        showmessage = 1;
-                    }
-
-                    else if (onoroff == true) { //assume modechange not allowed. send escape key instead
-                        keystatesend = VK_ESCAPE;
-                    }
-                   // Sleep(1000); //have time to release button. this is no hurry anyway
-                    
-                }
                 if (mode > 0 && onoroff == true)
                 { 
                     //fake cursor poll
@@ -3478,14 +3052,11 @@ void ThreadFunction(HMODULE hModule)
                     {
                         if (userealmouse == 0)
                         {
-                          //  if ( !leftPressed && !rightPressed)
-                                //fakecursor.x = Xf;
-                                //fakecursor.y = Yf;
                                 SendMouseClick(Xf, Yf, 8, 1);
-                         //   else if (leftPressed && !rightPressed)
-                          //      SendMouseClick(fakecursor.x, fakecursor.y, 8, 1);
                         }
+
                     }
+
                 if (leftPressed)
                 { 
 
@@ -3546,7 +3117,7 @@ void ThreadFunction(HMODULE hModule)
                         if (userealmouse == 0)
                         {
                             DWORD currentTime = GetTickCount64();
-                            if (currentTime - lastClickTime < GetDoubleClickTime() && movedmouse == false && doubleclicks == 1)
+                            if (currentTime - lastClickTime < GetDoubleClickTime() && doubleclicks == 1) //movedmouse?
                             {
                                 SendMouseClick(Xf, Yf, 30, 2); //4 skal vere 3
                                 
@@ -3588,6 +3159,7 @@ void ThreadFunction(HMODULE hModule)
                         rightPressedold = false;
                     }
                 } //rightpress
+
                 } // mode above 0
             } //no controller
             else {
@@ -3595,9 +3167,15 @@ void ThreadFunction(HMODULE hModule)
 				//MessageBoxA(NULL, "Controller not connected", "Error", MB_OK | MB_ICONERROR);
                // CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw message
             }
+            //drawing
             if (drawfakecursor == 1 || showmessage != 0)
-                CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw fake cursor
-
+                GetGameHDCAndCallDraw(hwnd); //calls DrawToHdc in here
+            if (drawfakecursor == 2 || showmessage != 0)
+            {
+                if (scanoption)
+                    DblBufferAndCallDraw(PointerWnd, Xf, Yf, showmessage);
+                else if (movedmouse) DrawToHDC(PointerWnd, Xf, Yf, showmessage);
+            }
         } // no hwnd
         if (showmessage != 0 && showmessage != 12)
         {
