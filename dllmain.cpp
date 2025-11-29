@@ -2061,16 +2061,16 @@ void pollbuttons(WORD buttons, RECT rect)
             
             if (startsearchA > 0)
                 startsearchA--;
-            else startsearchA = numphotoA;
+            else startsearchA = numphotoA - 1;
             if (startsearchB > 0)
                 startsearchB--;
-            else startsearchB = numphotoB;
+            else startsearchB = numphotoB -1;
             if (startsearchX > 0)
                 startsearchX--;
-            else startsearchX = numphotoX;
+            else startsearchX = numphotoX -1;
             if (startsearchY > 0)
                 startsearchY--;
-            else startsearchY = numphotoY;
+            else startsearchY = numphotoY -1;
             
         }
         if (foundit == false)
