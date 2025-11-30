@@ -197,6 +197,24 @@ BOOL WINAPI HookedClipCursor(const RECT* lpRect) {
     //return originalClipCursor(nullptr);
 
 }
+bool drawsnake() {
+    return true;
+}
+void snake()
+{ 
+    bool buttonleft, buttondown, buttonright, buttonup;
+    int snakedirection;
+    if (buttonleft)
+        snakedirection = 3;
+    if (buttonright)
+        snakedirection = 2;
+    if (buttonup)
+        snakedirection = 0;
+    if (buttondown)
+        snakedirection = 4;
+    drawsnake();
+    return;
+}
 
 bool Mutexlock(bool lock) {
     // Create a named mutex
@@ -2345,9 +2363,10 @@ void pollbuttons(WORD buttons, RECT rect)
 
     }
 }
-int HowManyBmps(std::wstring path)
+int HowManyBmps(std::wstring path, bool andstatics)
 {
     int start = -1;
+  
     int x = 0;
     std::wstring filename;
     while (x < 50 && start == -1)
@@ -2358,35 +2377,179 @@ int HowManyBmps(std::wstring path)
             x++;
             DeleteObject(hbm);
 
-        }
-        else
+        } //    std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
+        // settings reporting
+
+        //controller settings
+        //controllerID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", -9999, iniPath.c_str()); //simple test if settings read but write it wont work.
+        else{
             start = x;
+        }
     }
-    return start;
+
+    //searching statics
+    x = 0;
+    int inistart = -1;
+    while (x < 50 && inistart == -1)
+    {
+        std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
+        std::string iniSettings = "Statics";
+
+        std::string name(path.end() - 1, path.end());
+        std::string string = name.c_str() + std::to_string(x) + "X";
+       
+       // MessageBoxA(NULL, string.c_str(), "aaaha", MB_OK);
+        int sjekkX = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str()); //simple test if settings read but write it wont work.
+        if (sjekkX != 0)
+        {
+            string = name.c_str() + std::to_string(x) + "X";
+           // int sjekkY = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str()); //simple test if settings read but write it wont work.
+           // staticPointA
+           // MessageBoxA(NULL, string.c_str(), "aaahaAAAHAA", MB_OK);
+            x++;
+           // IniToStatic(path, int x, sjekkX )
+        } //    std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
+        //controller settings
+        //controllerID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", -9999, iniPath.c_str()); //simple test if settings read but write it wont work.
+        else inistart = x;
+    }
+    //if (inistart > start)
+    //    return inistart;
+    //else return start;
+    if (!andstatics)      
+        return start;
+    if (inistart != 0)
+    {
+        return start + inistart + 1;
+    }
+    else return start;
+    //else return start;
+}
+bool initovector()
+{
+    std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
+    std::string iniSettings = "Statics";
+    std::string name = "A";
+    int y = -1;
+    int sjekkx = 0;
+    bool test = false;
+    int x = -1;
+    while (x < 50 && y == -1)
+    {
+        x++;
+        std::string string = name.c_str() + std::to_string(x) + "X";
+        sjekkx = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+        if (sjekkx != 0)
+        {
+            test = true;
+            staticPointA[x + numphotoAbmps].x = sjekkx;
+            string = name.c_str() + std::to_string(x) + "Y";
+            staticPointA[x + numphotoAbmps].y = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+
+        }
+        else y = 10;
+    }
+    y = -1;
+    name = "B";
+    sjekkx = 0;
+    x = -1;
+    while (x < 50 && y == -1)
+    {
+        x++;
+        std::string string = name.c_str() + std::to_string(x) + "X";
+        sjekkx = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+        if (sjekkx != 0)
+        {
+            test = true;
+            staticPointB[x + numphotoBbmps].x = sjekkx;
+            string = name.c_str() + std::to_string(x) + "Y";
+            staticPointB[x + numphotoBbmps].y = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+
+        }
+        
+        else y = 10;
+    }
+    y = -1;
+    name = "X";
+    sjekkx = 0;
+    x = -1;
+    while (x < 50 && y == -1)
+    {
+        x++;
+        std::string string = name.c_str() + std::to_string(x) + "X";
+        //MessageBoxA(NULL, "no bmps", "aaahaAAAHAA", MB_OK);
+        sjekkx = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+        //std::string test = name.c_str() + std::to_string(x) + "and thism any entries" + std::to_string(numphotoX);
+       // test2 = name.c_str() + std::to_string() + "and thism any entries" + std::to_string(numphotoX);
+        if (sjekkx != 0)
+        {
+           // char buffer[100];
+           // sprintf_s(buffer, "X: %d Y: ",x + numphotoXbmps);
+           // MessageBoxA(NULL, buffer, "Info", MB_OK | MB_ICONINFORMATION);
+            test = true;
+          //  MessageBox(NULL, test.c_str(), "hh", MB_OK);
+            staticPointX[x + numphotoXbmps].x = sjekkx;
+            string = name.c_str() + std::to_string(x) + "Y";
+            staticPointX[x + numphotoXbmps].y = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+
+        }
+        
+        else y = 10;
+    }
+    y = -1;
+    name = "Y";
+    sjekkx = 0;
+    x = -1;
+    while (x < 50 && y == -1)
+    {
+        x++;
+        std::string string = name.c_str() + std::to_string(x) + "X";
+        sjekkx = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+        if (sjekkx != 0)
+        {
+            test = true;
+            staticPointY[x + numphotoYbmps].x = sjekkx;
+            string = name.c_str() + std::to_string(x) + "Y";
+            staticPointY[x + numphotoYbmps].y = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+
+        }
+        else y = 10;
+    }
+    if (test == true)
+        return true;
+    else return false; //no points
 }
 bool enumeratebmps()
 {
 
 
         std::wstring path = WGetExecutableFolder() + L"\\A";
-        numphotoA = HowManyBmps(path);
+        numphotoA = HowManyBmps(path, true);
+        numphotoAbmps = HowManyBmps(path, false);
         path = WGetExecutableFolder() + L"\\B";
-        numphotoB = HowManyBmps(path);
+        numphotoB = HowManyBmps(path, true);
+        numphotoBbmps = HowManyBmps(path, false);
         path = WGetExecutableFolder() + L"\\X";
-        numphotoX = HowManyBmps(path);
+        numphotoX = HowManyBmps(path, true);
+        numphotoXbmps = HowManyBmps(path, false);
         path = WGetExecutableFolder() + L"\\Y";
-        numphotoY = HowManyBmps(path);
+        numphotoY = HowManyBmps(path, true);
+        numphotoYbmps = HowManyBmps(path, false);
         path = WGetExecutableFolder() + L"\\C";
-        numphotoC = HowManyBmps(path);
+        numphotoC = HowManyBmps(path, false);
         path = WGetExecutableFolder() + L"\\D";
-        numphotoD = HowManyBmps(path);
+        numphotoD = HowManyBmps(path, false);
         path = WGetExecutableFolder() + L"\\E";
-        numphotoE = HowManyBmps(path);
+        numphotoE = HowManyBmps(path, false);
         path = WGetExecutableFolder() + L"\\F";
-        numphotoF = HowManyBmps(path);
+        numphotoF = HowManyBmps(path, false);
   
         if (numphotoA < 0 && numphotoB < 0 && numphotoX < 0 && numphotoY < 00)
+        {
+            
             return false;
+        }
+            
         return true;
 }
 bool readsettings(){
@@ -2619,9 +2782,11 @@ void ThreadFunction(HMODULE hModule)
     else {
         staticPointA.assign(numphotoA + 1, POINT{ 0, 0 });
         staticPointB.assign(numphotoB + 1, POINT{ 0, 0 });
-        staticPointX.assign(numphotoX + 1, POINT{ 0, 0 });
+        staticPointX.assign(numphotoX + 3, POINT{ 0, 0 });
         staticPointY.assign(numphotoY + 1, POINT{ 0, 0 });
+        initovector();
     }
+   
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
 
     bool Aprev = false;

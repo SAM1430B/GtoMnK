@@ -103,6 +103,11 @@ int numphotoD = -1;
 int numphotoE = -1;
 int numphotoF = -1;
 
+int numphotoAbmps;
+int numphotoBbmps;
+int numphotoXbmps;
+int numphotoYbmps;
+
 bool AuseStatic = 1;
 bool BuseStatic = 1;
 bool XuseStatic = 1;
