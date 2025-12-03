@@ -11,13 +11,12 @@ int scrollspeed3;
 
 int InitialMode;
 int Modechange;
-
 int sendfocus;
 int responsetime;
 int doubleclicks;
 int scrollenddelay;
 int quickMW;
-
+bool inithere = false;
 int ShoulderNextbmp;
 
 int scrolloutsidewindow;

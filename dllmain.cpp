@@ -526,6 +526,15 @@ int CalculateStride(int width) {
     return ((width * 3 + 3) & ~3);
 }
 
+POINT windowres(HWND window)
+{
+    POINT res;
+    RECT recte;
+    GetClientRect(window, &recte);
+    res.x = recte.right - recte.left;
+    res.y = recte.bottom - recte.top;
+    return res;
+}
 bool Save24BitBMP(const wchar_t* filename, const BYTE* pixels, int width, int height) { //for testing purposes
     int stride = ((width * 3 + 3) & ~3);
     int imageSize = stride * height;
@@ -564,6 +573,7 @@ bool LoadBMP24Bit(const wchar_t* filename, std::vector<BYTE>& pixels, int& width
     HBITMAP hbm = (HBITMAP)LoadImageW(NULL, filename, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
     if (!hbm) return false;
 
+    //BITMAP scaledbmp;
     BITMAP bmp;
     GetObject(hbm, sizeof(BITMAP), &bmp);
     width = bmp.bmWidth - 1;
@@ -580,19 +590,38 @@ bool LoadBMP24Bit(const wchar_t* filename, std::vector<BYTE>& pixels, int& width
     bmi.bmiHeader.biBitCount = 24;
     bmi.bmiHeader.biCompression = BI_RGB;
 
-    // HDC hdc = GetDC(NULL);
-    HDC hdc = CreateCompatibleDC(NULL);
+    BYTE* pBits = nullptr;
+
+
+
+    //resize fro here
+
+    //width = 10;
+    //height = 10;
+    //stride = ((width * 3 + 3) & ~3);
+    //std::vector<BYTE> pixels(stride * height);
+    //header okay
+    //new dc + new bmp
+   // HDC hdc = CreateCompatibleDC(NULL);
+    //HDC hdcscaled = CreateCompatibleDC(NULL);
+    //BITMAP bmpscaled;
+    //HBITMAP oldone = (HBITMAP)SelectObject()
+
+
+   // (Graphics g = Graphics.FromImage(newBitmap));
+    //g.DrawImage(bmp,rect(0,0,100,100));
+     HDC hdc = GetDC(NULL);
+
+
+    ////to here
+    
     GetDIBits(hdc, hbm, 0, height, pixels.data(), &bmi, DIB_RGB_COLORS);
+    //StretchBlt() //StretchDIBits
     if (hdc) DeleteDC(hdc);
     if (hbm) DeleteObject(hbm);
     return true;
 }
 
-std::string getIniString(const std::string& section, const std::string& key, const std::string& defaultValue, const std::string& iniPath) {
-    char buffer[256]; // Buffer to hold the retrieved string
-    GetPrivateProfileString(section.c_str(), key.c_str(), defaultValue.c_str(), buffer, sizeof(buffer), iniPath.c_str());
-    return std::string(buffer);
-}
 bool SaveWindow10x10BMP(HWND hwnd, const wchar_t* filename, int x, int y) {
     HDC hdcWindow = GetDC(hwnd);
     HDC hdcMem = CreateCompatibleDC(hdcWindow);
@@ -658,7 +687,7 @@ void DrawToHDC(HDC hdcWindow, int X, int Y, int showmessage)
 
     //RECT fill{ WoldX, WoldY, WoldX + cursorWidth, WoldY + cursorHeight };
     if (drawfakecursor == 2 || drawfakecursor == 3) {
-        if (scanoption)
+        if (scanoption || drawfakecursor == 3)
         {
             //erase
             RECT rect;
@@ -759,17 +788,14 @@ void DrawToHDC(HDC hdcWindow, int X, int Y, int showmessage)
             }
         }
     }
-
-
     return;
 }
+
 void DblBufferAndCallDraw(HDC cursorhdc, int X, int Y, int showmessage) {
 
-    RECT rcClient;
-    GetClientRect(hwnd, &rcClient);
-    int width = rcClient.right - rcClient.left;
-    int height = rcClient.bottom - rcClient.top;
-
+    POINT res = windowres(hwnd);
+    int width = res.x;
+    int height = res.y;
 
     HDC hdcMem = CreateCompatibleDC(cursorhdc);
     HBITMAP hbmMem = CreateCompatibleBitmap(cursorhdc, width, height);
@@ -1404,6 +1430,7 @@ void Bmpfound(const char key[3], int X, int Y, int i, bool onlysearch, bool foun
     }
     return;
 }
+
 POINT CheckStatics(const char abc[3], int numtocheck)
 {
     POINT newpoint{0,0};
@@ -1411,6 +1438,7 @@ POINT CheckStatics(const char abc[3], int numtocheck)
     {
         if (staticPointA[numtocheck].x != 0)
         {
+           // 
             newpoint.x = staticPointA[numtocheck].x;
             newpoint.y = staticPointA[numtocheck].y;
         }
@@ -1456,8 +1484,8 @@ bool ButtonScanAction(const char key[3], int mode, int serchnum, int startsearch
     if (mode != 2)
     {
         int numphoto = 0;
-        if (checkarray == 1)
-        { 
+        //if (checkarray == 1)
+        //{ 
             noeder = CheckStatics(key, startsearch);
             if (noeder.x != 0)
             {
@@ -1465,7 +1493,7 @@ bool ButtonScanAction(const char key[3], int mode, int serchnum, int startsearch
                 found = true;
                 return true;
             }
-        }
+        //}
         if (!found)
         {
             for (int i = startsearch; i < serchnum; i++) //memory problem here somewhere
@@ -1637,7 +1665,6 @@ bool scanloop = true;
 DWORD WINAPI ScanThread(LPVOID, int Aisstatic, int Bisstatic, int Xisstatic, int Yisstatic) 
 {
     int scantick = 0;
-
     Sleep(3000);
     int Astatic = Aisstatic;
     int Bstatic = Bisstatic;
@@ -2377,11 +2404,7 @@ int HowManyBmps(std::wstring path, bool andstatics)
             x++;
             DeleteObject(hbm);
 
-        } //    std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
-        // settings reporting
-
-        //controller settings
-        //controllerID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", -9999, iniPath.c_str()); //simple test if settings read but write it wont work.
+        } 
         else{
             start = x;
         }
@@ -2398,33 +2421,52 @@ int HowManyBmps(std::wstring path, bool andstatics)
         std::string name(path.end() - 1, path.end());
         std::string string = name.c_str() + std::to_string(x) + "X";
        
-       // MessageBoxA(NULL, string.c_str(), "aaaha", MB_OK);
+       
         int sjekkX = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str()); //simple test if settings read but write it wont work.
         if (sjekkX != 0)
         {
             string = name.c_str() + std::to_string(x) + "X";
-           // int sjekkY = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str()); //simple test if settings read but write it wont work.
-           // staticPointA
-           // MessageBoxA(NULL, string.c_str(), "aaahaAAAHAA", MB_OK);
             x++;
-           // IniToStatic(path, int x, sjekkX )
-        } //    std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
-        //controller settings
-        //controllerID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", -9999, iniPath.c_str()); //simple test if settings read but write it wont work.
+        } 
         else inistart = x;
     }
-    //if (inistart > start)
-    //    return inistart;
-    //else return start;
-    if (!andstatics)      
+    if (!andstatics || inistart == 0)
         return start;
-    if (inistart != 0)
-    {
-        return start + inistart + 1;
-    }
-    else return start;
-    //else return start;
+    else return start + inistart;
 }
+
+POINT GetStaticFactor(POINT pp, int doscale)
+{
+    FLOAT ny;
+    POINT currentres = windowres(hwnd);
+    FLOAT currentwidth = static_cast<float>(currentres.x);
+    FLOAT currentheight = static_cast<float>(currentres.y);
+    if (doscale == 1) 
+    {
+        float scalex = currentwidth / 1024.0f;
+        float scaley = currentheight / 768.0f;
+
+        pp.x = static_cast<int>(std::lround(pp.x * scalex));
+        pp.y = static_cast<int>(std::lround(pp.y * scaley));
+    }
+    if (doscale == 2) //4:3 blackbar only x
+    {
+        float difference = 0.0f;
+        float newwidth = currentwidth;
+        float curraspect = currentheight / currentwidth;
+        if (curraspect < 0.75f)
+        { 
+            newwidth = currentheight / 0.75f;
+            difference = (currentwidth - newwidth) / 2;
+        }
+        float scalex = newwidth / 1024.0f;
+        float scaley = currentheight / 768.0f;
+        pp.x = static_cast<int>(std::lround(pp.x * scalex) + difference);
+        pp.y = static_cast<int>(std::lround(pp.y * scaley));
+    }
+    return pp;
+}
+
 bool initovector()
 {
     std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
@@ -2434,18 +2476,27 @@ bool initovector()
     int sjekkx = 0;
     bool test = false;
     int x = -1;
+    int scalemethod = 0;
+    POINT inipoint;
     while (x < 50 && y == -1)
     {
         x++;
-        std::string string = name.c_str() + std::to_string(x) + "X";
+        std::string string = name + std::to_string(x) + "X";
         sjekkx = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
         if (sjekkx != 0)
         {
             test = true;
-            staticPointA[x + numphotoAbmps].x = sjekkx;
-            string = name.c_str() + std::to_string(x) + "Y";
-            staticPointA[x + numphotoAbmps].y = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+            inipoint.x = sjekkx;
 
+            string = name + std::to_string(x) + "Y";
+            inipoint.y = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+
+            string = name + std::to_string(x) + "Z";
+            scalemethod = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+            if (scalemethod != 0)
+                inipoint = GetStaticFactor(inipoint, scalemethod);
+            staticPointA[x + numphotoYbmps].y = inipoint.y;
+            staticPointA[x + numphotoYbmps].x = inipoint.x;
         }
         else y = 10;
     }
@@ -2456,15 +2507,22 @@ bool initovector()
     while (x < 50 && y == -1)
     {
         x++;
-        std::string string = name.c_str() + std::to_string(x) + "X";
+        std::string string = name + std::to_string(x) + "X";
         sjekkx = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
         if (sjekkx != 0)
         {
             test = true;
-            staticPointB[x + numphotoBbmps].x = sjekkx;
-            string = name.c_str() + std::to_string(x) + "Y";
-            staticPointB[x + numphotoBbmps].y = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+            inipoint.x = sjekkx;
 
+            string = name + std::to_string(x) + "Y";
+            inipoint.y = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+
+            string = name + std::to_string(x) + "Z";
+            scalemethod = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+            if (scalemethod != 0)
+                inipoint = GetStaticFactor(inipoint, scalemethod);
+            staticPointB[x + numphotoYbmps].y = inipoint.y;
+            staticPointB[x + numphotoYbmps].x = inipoint.x;
         }
         
         else y = 10;
@@ -2479,18 +2537,20 @@ bool initovector()
         std::string string = name.c_str() + std::to_string(x) + "X";
         //MessageBoxA(NULL, "no bmps", "aaahaAAAHAA", MB_OK);
         sjekkx = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
-        //std::string test = name.c_str() + std::to_string(x) + "and thism any entries" + std::to_string(numphotoX);
-       // test2 = name.c_str() + std::to_string() + "and thism any entries" + std::to_string(numphotoX);
         if (sjekkx != 0)
         {
-           // char buffer[100];
-           // sprintf_s(buffer, "X: %d Y: ",x + numphotoXbmps);
-           // MessageBoxA(NULL, buffer, "Info", MB_OK | MB_ICONINFORMATION);
             test = true;
-          //  MessageBox(NULL, test.c_str(), "hh", MB_OK);
-            staticPointX[x + numphotoXbmps].x = sjekkx;
-            string = name.c_str() + std::to_string(x) + "Y";
-            staticPointX[x + numphotoXbmps].y = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+            inipoint.x = sjekkx;
+
+            string = name + std::to_string(x) + "Y";
+            inipoint.y = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+
+            string = name + std::to_string(x) + "Z";
+            scalemethod = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+            if (scalemethod != 0)
+                inipoint = GetStaticFactor(inipoint, scalemethod);
+            staticPointX[x + numphotoYbmps].y = inipoint.y;
+            staticPointX[x + numphotoYbmps].x = inipoint.x;
 
         }
         
@@ -2508,10 +2568,17 @@ bool initovector()
         if (sjekkx != 0)
         {
             test = true;
-            staticPointY[x + numphotoYbmps].x = sjekkx;
-            string = name.c_str() + std::to_string(x) + "Y";
-            staticPointY[x + numphotoYbmps].y = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+            inipoint.x = sjekkx;
 
+            string = name + std::to_string(x) + "Y";
+            inipoint.y = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+
+            string = name + std::to_string(x) + "Z";
+            scalemethod = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
+            if (scalemethod != 0)
+                inipoint = GetStaticFactor(inipoint, scalemethod);
+            staticPointY[x + numphotoYbmps].y = inipoint.y;
+            staticPointY[x + numphotoYbmps].x = inipoint.x;
         }
         else y = 10;
     }
@@ -2519,6 +2586,8 @@ bool initovector()
         return true;
     else return false; //no points
 }
+
+
 bool enumeratebmps()
 {
 
@@ -2773,19 +2842,7 @@ void ThreadFunction(HMODULE hModule)
         //messagebox? settings not read
     }
     Sleep(1000);
-    if (!enumeratebmps())
-    { 
-        if (scanoption)
-            MessageBoxA(NULL, "Error. scanoption disabled", "No BMPS found", MB_OK);
-        scanoption = 0;
-    }
-    else {
-        staticPointA.assign(numphotoA + 1, POINT{ 0, 0 });
-        staticPointB.assign(numphotoB + 1, POINT{ 0, 0 });
-        staticPointX.assign(numphotoX + 3, POINT{ 0, 0 });
-        staticPointY.assign(numphotoY + 1, POINT{ 0, 0 });
-        initovector();
-    }
+
    
     hwnd = GetMainWindowHandle(GetCurrentProcessId());
 
@@ -2793,21 +2850,9 @@ void ThreadFunction(HMODULE hModule)
 
     if (scanoption == 1)
     { //starting bmp conttinous scanner
-
-
-      //  if (numphotoB >= 0)
-      //      staticPointB.resize(numphotoB);  // allocate space
-      //  if (numphotoX >= 0)
-      //      staticPointX.resize(numphotoX);  // allocate space
-      //  if (numphotoY >= 0)
-      //      staticPointY.resize(numphotoY);  // allocate space
-
         std::thread tree(ScanThread, g_hModule, AuseStatic, BuseStatic, XuseStatic, YuseStatic);
         tree.detach();
-       // InitializeCriticalSection(&criticalA);
     }
-
-
 
 	bool window = false;
     while (loop == true)
@@ -2821,6 +2866,24 @@ void ThreadFunction(HMODULE hModule)
         }
         else
         {
+            if (!inithere)
+            {
+                if (!enumeratebmps()) //always this before initovector
+                {
+                    if (scanoption)
+                        MessageBoxA(NULL, "Error. scanoption disabled", "No BMPS found", MB_OK);
+                    scanoption = 0;
+                }
+                else {
+
+                    staticPointA.assign(numphotoA + 1, POINT{ 0, 0 });
+                    staticPointB.assign(numphotoB + 1, POINT{ 0, 0 });
+                    staticPointX.assign(numphotoX + 1, POINT{ 0, 0 });
+                    staticPointY.assign(numphotoY + 1, POINT{ 0, 0 });
+                    initovector();
+                }
+                inithere = true;
+            }
 			//   
             RECT rect;
 			POINT poscheck;
@@ -2838,7 +2901,7 @@ void ThreadFunction(HMODULE hModule)
 					Sleep(100); //give time to create window
                     EnterCriticalSection(&critical);
                     while (!pointerWindow) { 
-                        MessageBoxA(NULL, "No pointerwindow", "ohno", MB_OK);
+                        MessageBoxA(NULL, "No pointerwindow", "ohno,try old method?", MB_OK);
                         Sleep(1000); 
                     }
                     if (pointerWindow){}
@@ -2852,10 +2915,13 @@ void ThreadFunction(HMODULE hModule)
                 else if (oldrect.left != rect.left || oldrect.right != rect.right || oldrect.top != rect.top || oldrect.bottom != rect.bottom || oldposcheck.x != poscheck.x || oldposcheck.y != poscheck.y)
                 {
                     EnterCriticalSection(&critical);
-                    SendMessage(pointerWindow, WM_MOVE_pointerWindow, 0, 0); //focus to avoid alt tab issues
-					//MessageBoxA(NULL, "Resized/moved window - adjust fake cursor window", "Info", MB_OK);
-                    //ShowWindow(pointerWindow, SW_SHOW);
+                    SendMessage(pointerWindow, WM_MOVE_pointerWindow, 0, 0); 
                     Sleep(200);
+                    staticPointA.clear();
+                    staticPointB.clear();
+                    staticPointX.clear();
+                    staticPointY.clear();
+                    initovector(); //this also call for scaling if needed
                     LeaveCriticalSection(&critical);
                 }
                 
@@ -2899,26 +2965,17 @@ void ThreadFunction(HMODULE hModule)
             bool rightPressed = IsTriggerPressed(state.Gamepad.bRightTrigger);
 
             
-
-
-
             if (dwResult == ERROR_SUCCESS)
             {
                 
-                //fakecursor.x = Xf;
-               // fakecursor.y = Yf;
-               // //fakecursor obsolete. use Xf and Yf
-               // ClientToScreen(hwnd, &fakecursor);
-               // Screen
-                //criticals for windowthread
+                //criticals for windowthread // now only scanthread.
+                // //window rendering handled by current thread
                 EnterCriticalSection(&critical);
                 fakecursorW.x = Xf;
                 fakecursorW.y = Yf;
 				showmessageW = showmessage;
                 LeaveCriticalSection(&critical);
-
-                
-				
+			
                 // Controller is connected
                 WORD buttons = state.Gamepad.wButtons;
                 pollbuttons(buttons, rect); //all buttons exept triggers and axises
@@ -2927,8 +2984,6 @@ void ThreadFunction(HMODULE hModule)
                     showmessage = 0;
 				}
 
-
-                
                 if (mode > 0 && onoroff == true)
                 { 
                     //fake cursor poll
@@ -2942,9 +2997,7 @@ void ThreadFunction(HMODULE hModule)
                     int Xscroll = 0;
                     bool didscroll = false;
 
-
-					
-					 
+				 
                     if (righthanded == 1) {
                         Xaxis = state.Gamepad.sThumbRX;
                         Yaxis = state.Gamepad.sThumbRY;
@@ -2958,7 +3011,6 @@ void ThreadFunction(HMODULE hModule)
 						scrollXaxis = state.Gamepad.sThumbRX;   
 						scrollYaxis = state.Gamepad.sThumbRY;   
                     }
-
 
                     if (scrolloutsidewindow == 2 || scrolloutsidewindow == 3 || scrolloutsidewindow == 4)
                     {
@@ -3177,9 +3229,6 @@ void ThreadFunction(HMODULE hModule)
 
                         }
 
-
-
-
                         else if (scrollYaxis > AxisUpsens + 10000) //up
                         {
                             scroll.x = rect.left + (rect.right - rect.left) / 2;
@@ -3330,17 +3379,18 @@ void ThreadFunction(HMODULE hModule)
             else {
                 showmessage = 12;
 				//MessageBoxA(NULL, "Controller not connected", "Error", MB_OK | MB_ICONERROR);
-               // CaptureWindow24Bit(hwnd, screenSize, largePixels, strideLarge, true); //draw message
             }
             //drawing
             if (drawfakecursor == 1 || showmessage != 0)
                 GetGameHDCAndCallDraw(hwnd); //calls DrawToHdc in here
-            if (drawfakecursor == 2 || showmessage != 0)
-            {
+            else if (drawfakecursor == 2 || showmessage != 0)
+                {
                 if (scanoption)
-                    DblBufferAndCallDraw(PointerWnd, Xf, Yf, showmessage);
-                else if (movedmouse) DrawToHDC(PointerWnd, Xf, Yf, showmessage);
-            }
+                    DblBufferAndCallDraw(PointerWnd, Xf, Yf, showmessage); //full redraw
+                else if (movedmouse) DrawToHDC(PointerWnd, Xf, Yf, showmessage); //partial, faster
+                }
+            else if (drawfakecursor == 3 || showmessage != 0)
+                DblBufferAndCallDraw(PointerWnd, Xf, Yf, showmessage); //full redraw
         } // no hwnd
         if (showmessage != 0 && showmessage != 12)
         {
@@ -3394,7 +3444,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
             std::string iniSettings = "Hooks";
-            // std::string controllerID = getIniString(iniSettings.c_str(), "Controller ID", "0", iniPath);
 
              //hook settings
             clipcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "ClipCursorHook", 0, iniPath.c_str());
@@ -3413,15 +3462,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             int hooksoninit = GetPrivateProfileInt(iniSettings.c_str(), "hooksoninit", 1, iniPath.c_str());
             if (hooksoninit)
                 {
-               // WaitForInputIdle(GetCurrentProcess(), 1000); //wait for input to be ready
-               // DisableThreadLibraryCalls(hModule);
                 SetupHook();
 			}
            InitializeCriticalSection(&critical);
            std::thread one (ThreadFunction, g_hModule);
            one.detach();
-
-
 			//CloseHandle(one);
             break;
         }
