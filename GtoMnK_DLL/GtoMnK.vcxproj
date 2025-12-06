@@ -291,6 +291,7 @@ copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="OverlayMenu.h" />
     <ClInclude Include="CursorVisibilityHooks.h" />
     <ClInclude Include="FakeCursor.h" />
     <ClInclude Include="framework.h" />
@@ -311,6 +312,7 @@ copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
     <ClInclude Include="RawInput.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="OverlayMenu.cpp" />
     <ClCompile Include="CursorVisibilityHooks.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="FakeCursor.cpp" />
