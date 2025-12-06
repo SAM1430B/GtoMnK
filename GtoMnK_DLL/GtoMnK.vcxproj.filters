@@ -37,6 +37,9 @@
     <ClCompile Include="MessageFilterHooks.cpp">
       <Filter>Files\Imported</Filter>
     </ClCompile>
+    <ClCompile Include="OverlayMenu.cpp">
+      <Filter>Files\Overlay</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -89,6 +92,9 @@
     <ClInclude Include="ProtoMessageFilterIDs.h">
       <Filter>Files\Imported</Filter>
     </ClInclude>
+    <ClInclude Include="OverlayMenu.h">
+      <Filter>Files\Overlay</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Files">
@@ -102,6 +108,9 @@
     </Filter>
     <Filter Include="Files\Imported">
       <UniqueIdentifier>{6a7d1011-90ae-44a1-b7a0-51353c617552}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Files\Overlay">
+      <UniqueIdentifier>{d53a98ff-d9a8-4da3-8b17-f91202dbea42}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

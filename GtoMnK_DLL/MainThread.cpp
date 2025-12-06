@@ -8,6 +8,7 @@
 #include <easyhook.h>
 #include "MainThread.h"
 #include "FakeCursor.h"
+#include "OverlayMenu.h"
 
 using namespace GtoMnK;
 
@@ -19,6 +20,7 @@ bool hooksinited = false;
 bool loop = true;
 int startUpDelay = 0;
 bool recheckHWND = true;
+bool disableOverlayOptions = false;
 
 // For Controller Input
 std::string A_Action, B_Action, X_Action, Y_Action;
@@ -51,12 +53,12 @@ int keystatesend = 0;
 int controllerID = 0;
 float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, accel_multiplier, horizontal_sensitivity, vertical_sensitivity;
 float stick_as_button_deadzone;
-BYTE g_TriggerThreshold = 175;
+float g_TriggerThreshold = 175;
 
 // Others
 HWND hwnd = nullptr;
 HANDLE hMutex = nullptr;
-int responsetime;
+int responsetime = 4;
 
 // Drawing & cursor state
 int drawfakecursor = 0;
@@ -224,6 +226,7 @@ void LoadIniSettings() {
     // [Settings]
 	startUpDelay = GetPrivateProfileIntA("Settings", "StartUpDelay", 0, iniPath.c_str());
     recheckHWND = GetPrivateProfileIntA("Settings", "RecheckHWND", 1, iniPath.c_str()) == 1;
+    disableOverlayOptions = (GetPrivateProfileIntA("Settings", "DisableOverlayOptions", 0, iniPath.c_str()) != 0);
     controllerID = GetPrivateProfileIntA("Settings", "Controllerid", 0, iniPath.c_str());
     mode = GetPrivateProfileIntA("Settings", "Mode", 1, iniPath.c_str());
     drawfakecursor = GetPrivateProfileIntA("Settings", "drawfakecursor", 0, iniPath.c_str());
@@ -236,7 +239,7 @@ void LoadIniSettings() {
             drawfakecursor = 0; // Force the old cursor to be disabled.
         }
     }
-    responsetime = GetPrivateProfileIntA("Settings", "Responsetime", 0, iniPath.c_str());
+    responsetime = GetPrivateProfileIntA("Settings", "Responsetime", 4, iniPath.c_str());
 
     // [StickToMouse]
     righthanded = GetPrivateProfileIntA("StickToMouse", "Righthanded", 2, iniPath.c_str());
@@ -252,7 +255,7 @@ void LoadIniSettings() {
 
     // [KeyMapping] Section
     g_EnableMouseDoubleClick = GetPrivateProfileIntA("KeyMapping", "EnableMouseDoubleClick", 0, iniPath.c_str()) == 1;
-    g_TriggerThreshold = (BYTE)GetPrivateProfileIntA("KeyMapping", "TriggerThreshold", 175, iniPath.c_str());
+    GetPrivateProfileStringA("KeyMapping", "TriggerThreshold", "175", buffer, sizeof(buffer), iniPath.c_str()); g_TriggerThreshold = std::stof(buffer);
     GetPrivateProfileStringA("KeyMapping", "StickAsButtonDeadzone", "0.25", buffer, sizeof(buffer), iniPath.c_str()); stick_as_button_deadzone = std::stof(buffer);
 
     GetPrivateProfileStringA("KeyMapping", "A", "13", buffer, sizeof(buffer), iniPath.c_str());
@@ -510,6 +513,18 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         LOG("Simple Fake Cursor is enabled.");
     }
 
+	// Overlay Options
+    if (!disableOverlayOptions)
+    {
+        OverlayMenu::state.Initialise();
+        LOG("Overlay Options Initialized.");
+    }
+    else {
+        LOG("Overlay Options is disabled.");
+    }
+    ULONGLONG menuToggleTimer = 0;
+    bool menuTogglePending = false;
+
     ULONGLONG lastMoveTime = 0;
     const DWORD MOVE_UPDATE_INTERVAL = 8;
 
@@ -539,95 +554,136 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
 
         XINPUT_STATE state;
         if (XInputGetState(controllerID, &state) == ERROR_SUCCESS) {
+
+            if (!disableOverlayOptions)
+            {
+                // Buttons to open the overlay window
+                bool backDown = (state.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) != 0;
+                bool dpadDown = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0;
+
+                if (backDown && dpadDown) {
+                    if (!menuTogglePending) {
+                        menuToggleTimer = GetTickCount64();
+                        menuTogglePending = true;
+                    }
+                    else if (GetTickCount64() - menuToggleTimer > 50) {
+                        // Toggle the State
+                        bool newState = !OverlayMenu::state.isMenuOpen;
+                        OverlayMenu::state.EnableDisableMenu(newState);
+
+                        menuTogglePending = false;
+                        Mouse::Xf = Mouse::Xf;
+                        XINPUT_STATE waitState;
+                        do {
+                            Sleep(100); // Important
+                            if (XInputGetState(controllerID, &waitState) != ERROR_SUCCESS) {
+                                break;
+                            }
+                        } while ((waitState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ||
+                            (waitState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN));
+                        continue;
+                    }
+                }
+                else {
+                    menuTogglePending = false;
+                }
+            }
+
             if (showmessage == 12) showmessage = 0; // "disconnected" message on reconnect
 
-            // Buttons
-            ProcessButton(XINPUT_GAMEPAD_A, (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) != 0);
-            ProcessButton(XINPUT_GAMEPAD_B, (state.Gamepad.wButtons & XINPUT_GAMEPAD_B) != 0);
-            ProcessButton(XINPUT_GAMEPAD_X, (state.Gamepad.wButtons & XINPUT_GAMEPAD_X) != 0);
-            ProcessButton(XINPUT_GAMEPAD_Y, (state.Gamepad.wButtons & XINPUT_GAMEPAD_Y) != 0);
-            ProcessButton(XINPUT_GAMEPAD_RIGHT_SHOULDER, (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0);
-            ProcessButton(XINPUT_GAMEPAD_LEFT_SHOULDER, (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0);
-            ProcessButton(XINPUT_GAMEPAD_RIGHT_THUMB, (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) != 0);
-            ProcessButton(XINPUT_GAMEPAD_LEFT_THUMB, (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) != 0);
-            ProcessButton(XINPUT_GAMEPAD_DPAD_UP, (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) != 0);
-            ProcessButton(XINPUT_GAMEPAD_DPAD_DOWN, (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0);
-            ProcessButton(XINPUT_GAMEPAD_DPAD_LEFT, (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) != 0);
-            ProcessButton(XINPUT_GAMEPAD_DPAD_RIGHT, (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0);
-            ProcessButton(XINPUT_GAMEPAD_START, (state.Gamepad.wButtons & XINPUT_GAMEPAD_START) != 0);
-            ProcessButton(XINPUT_GAMEPAD_BACK, (state.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) != 0);
-
-            // Triggers
-            ProcessTrigger(CUSTOM_ID_LT, state.Gamepad.bLeftTrigger);
-            ProcessTrigger(CUSTOM_ID_RT, state.Gamepad.bRightTrigger);
-
-            // Analog Sticks (as buttons)
-            // Left Stick
-            if (onoroff && (mode == 0 || (mode == 1 && righthanded == 1))) {
-                float normLX = static_cast<float>(state.Gamepad.sThumbLX) / 32767.0f;
-                float normLY = static_cast<float>(state.Gamepad.sThumbLY) / 32767.0f;
-                float magnitudeL = static_cast<float>(sqrt(normLX * normLX + normLY * normLY));
-
-                bool isLSU = false, isLSD = false, isLSL = false, isLSR = false;
-                if (magnitudeL > stick_as_button_deadzone) {
-                    float angleDeg = atan2(normLY, normLX) * 180.0f / 3.1415926535f;
-                    if (angleDeg < 0) angleDeg += 360.0f;
-                    if (angleDeg > 22.5f && angleDeg < 157.5f) isLSU = true;
-                    if (angleDeg > 202.5f && angleDeg < 337.5f) isLSD = true;
-                    if (angleDeg > 112.5f && angleDeg < 247.5f) isLSL = true;
-                    if (angleDeg > 292.5f || angleDeg < 67.5f) isLSR = true;
-                }
-                ProcessButton(CUSTOM_ID_LSU, isLSU);
-                ProcessButton(CUSTOM_ID_LSD, isLSD);
-                ProcessButton(CUSTOM_ID_LSL, isLSL);
-                ProcessButton(CUSTOM_ID_LSR, isLSR);
-            }
-            // Right Stick
-            if (onoroff && (mode == 0 || (mode == 1 && righthanded == 0))) {
-                float normRX = static_cast<float>(state.Gamepad.sThumbRX) / 32767.0f;
-                float normRY = static_cast<float>(state.Gamepad.sThumbRY) / 32767.0f;
-                float magnitudeR = static_cast<float>(sqrt(normRX * normRX + normRY * normRY));
-                bool isRSU = false, isRSD = false, isRSL = false, isRSR = false;
-                if (magnitudeR > stick_as_button_deadzone) {
-                    float angleDeg = atan2(normRY, normRX) * 180.0f / 3.1415926535f;
-                    if (angleDeg < 0) angleDeg += 360.0f;
-                    if (angleDeg > 22.5f && angleDeg < 157.5f) isRSU = true;
-                    if (angleDeg > 202.5f && angleDeg < 337.5f) isRSD = true;
-                    if (angleDeg > 112.5f && angleDeg < 247.5f) isRSL = true;
-                    if (angleDeg > 292.5f || angleDeg < 67.5f) isRSR = true;
-                }
-                ProcessButton(CUSTOM_ID_RSU, isRSU);
-                ProcessButton(CUSTOM_ID_RSD, isRSD);
-                ProcessButton(CUSTOM_ID_RSL, isRSL);
-                ProcessButton(CUSTOM_ID_RSR, isRSR);
+            if (!disableOverlayOptions && OverlayMenu::state.isMenuOpen) {
+                OverlayMenu::state.ProcessInput(state.Gamepad.wButtons);
             }
 
-            // Mouse MOVEMENT
-            if (mode == 1 && onoroff) {
-                SHORT thumbX = (righthanded == 1) ? state.Gamepad.sThumbRX : state.Gamepad.sThumbLX;
-                SHORT thumbY = (righthanded == 1) ? state.Gamepad.sThumbRY : state.Gamepad.sThumbLY;
-                POINT delta = ThumbstickMouseMove(thumbX, thumbY);
-                if (delta.x != 0 || delta.y != 0) {
-                    Mouse::Xf += delta.x; Mouse::Yf += delta.y;
-                    Mouse::Xf = std::max((LONG)rect.left, std::min((LONG)Mouse::Xf, (LONG)rect.right));
-                    Mouse::Yf = std::max((LONG)rect.top, std::min((LONG)Mouse::Yf, (LONG)rect.bottom));
-                    movedmouse = true;
+            else {
+                // Buttons
+                ProcessButton(XINPUT_GAMEPAD_A, (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) != 0);
+                ProcessButton(XINPUT_GAMEPAD_B, (state.Gamepad.wButtons & XINPUT_GAMEPAD_B) != 0);
+                ProcessButton(XINPUT_GAMEPAD_X, (state.Gamepad.wButtons & XINPUT_GAMEPAD_X) != 0);
+                ProcessButton(XINPUT_GAMEPAD_Y, (state.Gamepad.wButtons & XINPUT_GAMEPAD_Y) != 0);
+                ProcessButton(XINPUT_GAMEPAD_RIGHT_SHOULDER, (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0);
+                ProcessButton(XINPUT_GAMEPAD_LEFT_SHOULDER, (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0);
+                ProcessButton(XINPUT_GAMEPAD_RIGHT_THUMB, (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) != 0);
+                ProcessButton(XINPUT_GAMEPAD_LEFT_THUMB, (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) != 0);
+                ProcessButton(XINPUT_GAMEPAD_DPAD_UP, (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) != 0);
+                ProcessButton(XINPUT_GAMEPAD_DPAD_DOWN, (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0);
+                ProcessButton(XINPUT_GAMEPAD_DPAD_LEFT, (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) != 0);
+                ProcessButton(XINPUT_GAMEPAD_DPAD_RIGHT, (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0);
+                ProcessButton(XINPUT_GAMEPAD_START, (state.Gamepad.wButtons & XINPUT_GAMEPAD_START) != 0);
+                ProcessButton(XINPUT_GAMEPAD_BACK, (state.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) != 0);
 
-					//ProtoInput Fake Cursor update
-                    if (drawProtoFakeCursor == 1) {
-                        FakeCursor::NotifyUpdatedCursorPosition();
+                // Triggers
+                ProcessTrigger(CUSTOM_ID_LT, state.Gamepad.bLeftTrigger);
+                ProcessTrigger(CUSTOM_ID_RT, state.Gamepad.bRightTrigger);
+
+                // Analog Sticks (as buttons)
+                // Left Stick
+                if (onoroff && (mode == 0 || (mode == 1 && righthanded == 1))) {
+                    float normLX = static_cast<float>(state.Gamepad.sThumbLX) / 32767.0f;
+                    float normLY = static_cast<float>(state.Gamepad.sThumbLY) / 32767.0f;
+                    float magnitudeL = static_cast<float>(sqrt(normLX * normLX + normLY * normLY));
+
+                    bool isLSU = false, isLSD = false, isLSL = false, isLSR = false;
+                    if (magnitudeL > stick_as_button_deadzone) {
+                        float angleDeg = atan2(normLY, normLX) * 180.0f / 3.1415926535f;
+                        if (angleDeg < 0) angleDeg += 360.0f;
+                        if (angleDeg > 22.5f && angleDeg < 157.5f) isLSU = true;
+                        if (angleDeg > 202.5f && angleDeg < 337.5f) isLSD = true;
+                        if (angleDeg > 112.5f && angleDeg < 247.5f) isLSL = true;
+                        if (angleDeg > 292.5f || angleDeg < 67.5f) isLSR = true;
                     }
+                    ProcessButton(CUSTOM_ID_LSU, isLSU);
+                    ProcessButton(CUSTOM_ID_LSD, isLSD);
+                    ProcessButton(CUSTOM_ID_LSL, isLSL);
+                    ProcessButton(CUSTOM_ID_LSR, isLSR);
+                }
+                // Right Stick
+                if (onoroff && (mode == 0 || (mode == 1 && righthanded == 0))) {
+                    float normRX = static_cast<float>(state.Gamepad.sThumbRX) / 32767.0f;
+                    float normRY = static_cast<float>(state.Gamepad.sThumbRY) / 32767.0f;
+                    float magnitudeR = static_cast<float>(sqrt(normRX * normRX + normRY * normRY));
+                    bool isRSU = false, isRSD = false, isRSL = false, isRSR = false;
+                    if (magnitudeR > stick_as_button_deadzone) {
+                        float angleDeg = atan2(normRY, normRX) * 180.0f / 3.1415926535f;
+                        if (angleDeg < 0) angleDeg += 360.0f;
+                        if (angleDeg > 22.5f && angleDeg < 157.5f) isRSU = true;
+                        if (angleDeg > 202.5f && angleDeg < 337.5f) isRSD = true;
+                        if (angleDeg > 112.5f && angleDeg < 247.5f) isRSL = true;
+                        if (angleDeg > 292.5f || angleDeg < 67.5f) isRSR = true;
+                    }
+                    ProcessButton(CUSTOM_ID_RSU, isRSU);
+                    ProcessButton(CUSTOM_ID_RSD, isRSD);
+                    ProcessButton(CUSTOM_ID_RSL, isRSL);
+                    ProcessButton(CUSTOM_ID_RSR, isRSR);
+                }
 
-                    ULONGLONG currentTime = GetTickCount64();
-                    if (currentTime - lastMoveTime > MOVE_UPDATE_INTERVAL) {
-                        lastMoveTime = currentTime;
-                        if (g_InputMethod == InputMethod::RawInput) {
-                            Input::SendActionDelta(delta.x, delta.y);
+                // Mouse MOVEMENT
+                if (mode == 1 && onoroff) {
+                    SHORT thumbX = (righthanded == 1) ? state.Gamepad.sThumbRX : state.Gamepad.sThumbLX;
+                    SHORT thumbY = (righthanded == 1) ? state.Gamepad.sThumbRY : state.Gamepad.sThumbLY;
+                    POINT delta = ThumbstickMouseMove(thumbX, thumbY);
+                    if (delta.x != 0 || delta.y != 0) {
+                        Mouse::Xf += delta.x; Mouse::Yf += delta.y;
+                        Mouse::Xf = std::max((LONG)rect.left, std::min((LONG)Mouse::Xf, (LONG)rect.right));
+                        Mouse::Yf = std::max((LONG)rect.top, std::min((LONG)Mouse::Yf, (LONG)rect.bottom));
+                        movedmouse = true;
+
+                        //ProtoInput Fake Cursor update
+                        if (drawProtoFakeCursor == 1) {
+                            FakeCursor::NotifyUpdatedCursorPosition();
                         }
-                        else {
-                            POINT screenPos = { (LONG)Mouse::Xf, (LONG)Mouse::Yf };
-                            ClientToScreen(hwnd, &screenPos);
-                            Input::SendAction(screenPos.x, screenPos.y);
+
+                        ULONGLONG currentTime = GetTickCount64();
+                        if (currentTime - lastMoveTime > MOVE_UPDATE_INTERVAL) {
+                            lastMoveTime = currentTime;
+                            if (g_InputMethod == InputMethod::RawInput) {
+                                Input::SendActionDelta(delta.x, delta.y);
+                            }
+                            else {
+                                POINT screenPos = { (LONG)Mouse::Xf, (LONG)Mouse::Yf };
+                                ClientToScreen(hwnd, &screenPos);
+                                Input::SendAction(screenPos.x, screenPos.y);
+                            }
                         }
                     }
                 }
@@ -645,8 +701,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                 counter = 0;
             }
         }
-
-        Sleep(responsetime + 1);
+        
+        if (responsetime <= 0)
+            responsetime = 1;
+        Sleep(responsetime);
     }
 
     LOG("ThreadFunction gracefully exiting.");
