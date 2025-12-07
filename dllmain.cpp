@@ -43,31 +43,6 @@ HCURSOR WINAPI HookedSetCursor(HCURSOR hcursor) {
 		LeaveCriticalSection(&critical);
         return hcursor;
 }
-
-void ShowMemoryUsageMessageBox()
-{
-    PROCESS_MEMORY_COUNTERS pmc;
-    if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
-    {
-        SIZE_T memUsedKB = pmc.WorkingSetSize / 1024;
-
-        std::wstring msg = L"Current memory usage: " + std::to_wstring(memUsedKB) + L" KB";
-
-        MessageBoxW(NULL,
-            msg.c_str(),
-            L"Memory Usage",
-            MB_OK | MB_ICONINFORMATION);
-    }
-    else
-    {
-        MessageBoxW(NULL,
-            L"Unable to retrieve memory usage.",
-            L"Error",
-            MB_OK | MB_ICONERROR);
-    }
-}
-
-
 ////SetRect_t)(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom);
 BOOL WINAPI HookedSetRect(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom) {
 	xLeft = leftrect; // Set the left coordinate to Xrect  
@@ -114,6 +89,141 @@ SHORT WINAPI HookedGetAsyncKeyState(int vKey)
         return result;
     }
 }
+HWND g_rawInputHwnd = nullptr;
+LRESULT WINAPI RawInputWindowWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    switch (msg) {
+    case WM_INPUT: {
+      //  ProcessRealRawInput((HRAWINPUT)lParam);
+        break;
+    }
+    case WM_DESTROY: {
+        PostQuitMessage(0);
+        return 0;
+    }
+    }
+    return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+DWORD WINAPI RawInputWindowThread(LPVOID lpParameter) {
+    HANDLE hWindowReadyEvent = (HANDLE)lpParameter;
+
+    WNDCLASSW wc = { 0 };
+    wc.lpfnWndProc = RawInputWindowWndProc;
+    wc.hInstance = GetModuleHandle(NULL);
+    wc.lpszClassName = L"GtoMnK_RawInput_Window";
+
+    if (RegisterClassW(&wc)) {
+        g_rawInputHwnd = CreateWindowW(wc.lpszClassName, L"GtoMnK RI Sink", 0, 0, 0, 0, 0, NULL, NULL, wc.hInstance, NULL);
+    }
+
+    if (!g_rawInputHwnd) {
+        SetEvent(hWindowReadyEvent);
+        return 1;
+    }
+
+    SetEvent(hWindowReadyEvent);
+
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0) > 0) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+
+    return 0;
+}
+
+const int RAWINPUT_BUFFER_SIZE = 20;
+RAWINPUT g_inputBuffer[RAWINPUT_BUFFER_SIZE]{};
+std::vector<HWND> g_forwardingWindows{};
+
+
+//LRESULT WINAPI RawInputWindowWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+//DWORD WINAPI RawInputWindowThread(LPVOID lpParameter);
+
+UINT WINAPI HookedGetRawInputData(HRAWINPUT hRawInput, UINT uiCommand, LPVOID pData, PUINT pcbSize, UINT cbSizeHeader) {
+    UINT handleValue = (UINT)(UINT_PTR)hRawInput;
+    if ((handleValue & 0xFF000000) == 0xAB000000) {
+        UINT bufferIndex = handleValue & 0x00FFFFFF;
+
+        if (bufferIndex >= RAWINPUT_BUFFER_SIZE) {
+            return fpGetRawInputData(hRawInput, uiCommand, pData, pcbSize, cbSizeHeader);
+        }
+
+        if (pData == NULL) {
+            *pcbSize = sizeof(RAWINPUT);
+            return 0;
+        }
+
+        RAWINPUT* storedData = &g_inputBuffer[bufferIndex];
+        memcpy(pData, storedData, sizeof(RAWINPUT));
+        return sizeof(RAWINPUT);
+
+    }
+    else {
+        return fpGetRawInputData(hRawInput, uiCommand, pData, pcbSize, cbSizeHeader);
+    }
+}
+
+void InjectFakeRawInput(const RAWINPUT& fakeInput) {
+    static size_t bufferCounter = 0;
+    bufferCounter = (bufferCounter + 1) % RAWINPUT_BUFFER_SIZE;
+    g_inputBuffer[bufferCounter] = fakeInput;
+
+    const LPARAM magicLParam = (bufferCounter) | 0xAB000000;
+
+    PostMessageW(hwnd, WM_INPUT, 0, magicLParam);
+}
+void GenerateRawMouse(int actionCode, bool press, int X, int Y) {
+    RAWINPUT ri = {};
+    ri.header.dwType = RIM_TYPEMOUSE;
+    ri.header.hDevice = NULL;
+    if (actionCode == -8) {
+        GenerateRawMouse(-1, true, 0, 0); GenerateRawMouse(-1, false, 0, 0);
+        GenerateRawMouse(-1, press, 0, 0); return;
+    }
+    switch (actionCode) {
+    case -1: ri.data.mouse.usButtonFlags = press ? RI_MOUSE_LEFT_BUTTON_DOWN : RI_MOUSE_LEFT_BUTTON_UP; break;
+    case -2: ri.data.mouse.usButtonFlags = press ? RI_MOUSE_RIGHT_BUTTON_DOWN : RI_MOUSE_RIGHT_BUTTON_UP; break;
+    case -3: ri.data.mouse.usButtonFlags = press ? RI_MOUSE_MIDDLE_BUTTON_DOWN : RI_MOUSE_MIDDLE_BUTTON_UP; break;
+    case -4: ri.data.mouse.usButtonFlags = press ? RI_MOUSE_BUTTON_4_DOWN : RI_MOUSE_BUTTON_4_UP; break;
+    case -5: ri.data.mouse.usButtonFlags = press ? RI_MOUSE_BUTTON_5_DOWN : RI_MOUSE_BUTTON_5_UP; break;
+    case -6: if (press) ri.data.mouse.usButtonFlags = RI_MOUSE_WHEEL; ri.data.mouse.usButtonData = WHEEL_DELTA; break;
+    case -7: if (press) ri.data.mouse.usButtonFlags = RI_MOUSE_WHEEL; ri.data.mouse.usButtonData = -WHEEL_DELTA; break;
+    case -9: ri.data.mouse.usFlags = MOUSE_MOVE_RELATIVE; ri.data.mouse.lLastX = X; ri.data.mouse.lLastY = Y; break; //move
+    }
+    InjectFakeRawInput(ri);
+}
+void GenerateRawKey(int vkCode, bool press, bool isExtended) {
+    if (vkCode == 0) return;
+
+    RAWINPUT ri = {};
+    ri.header.dwType = RIM_TYPEKEYBOARD;
+    ri.header.hDevice = NULL;
+
+    UINT scanCode = MapVirtualKey(vkCode, MAPVK_VK_TO_VSC);
+    ri.data.keyboard.MakeCode = scanCode;
+    ri.data.keyboard.Message = press ? WM_KEYDOWN : WM_KEYUP;
+    ri.data.keyboard.VKey = vkCode;
+    ri.data.keyboard.Flags = press ? RI_KEY_MAKE : RI_KEY_BREAK;
+
+    if (isExtended) {
+        ri.data.keyboard.Flags |= RI_KEY_E0;
+    }
+
+    InjectFakeRawInput(ri);
+}
+void RawInputInitialize() {
+
+    HANDLE hWindowReadyEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    if (hWindowReadyEvent == NULL) {
+        return;
+    }
+    std::thread fore(RawInputWindowThread, hWindowReadyEvent);
+    fore.detach();
+
+    WaitForSingleObject(hWindowReadyEvent, 2000);
+    
+    CloseHandle(hWindowReadyEvent);
+}
 
 // Hooked GetKeyState
 SHORT WINAPI HookedGetKeyState(int nVirtKey) {
@@ -151,11 +261,11 @@ BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
             else {
                 mpos.x = Xf; //hwnd coordinates 0-800 on a 800x600 window
                 mpos.y = Yf;//hwnd coordinate s0-600 on a 800x600 window
+
                 ClientToScreen(hwnd, &mpos);
 		
                 lpPoint->x = mpos.x; //desktop coordinates
                 lpPoint->y = mpos.y;
-                ScreenToClient(hwnd, &mpos); //revert so i am sure its done
             }
         }
             
@@ -163,11 +273,10 @@ BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
 		{
             mpos.x = scroll.x;
             mpos.y = scroll.y;
+
             ClientToScreen(hwnd, &mpos);
 			lpPoint->x = mpos.x;
 			lpPoint->y = mpos.y;
-
-            ScreenToClient(hwnd, &mpos);
 		}
         return true;
     }
@@ -175,21 +284,15 @@ BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
 }
 POINT mpos;
 BOOL WINAPI MySetCursorPos(int X, int Y) {
-    POINT point;
-    point.x = X;
-    point.y = Y;
-    char buffer[256];
-    
-
-    ScreenToClient(hwnd, &point);
-    sprintf_s(buffer, "X: %d Y: %d", point.x, point.y);
-    Xf = point.x; // Update the global X coordinate
-    Yf = point.y; // Update the global Y coordinate
-
-	//MessageBoxA(NULL, buffer, "Info", MB_OK | MB_ICONINFORMATION);
-   // movedmouse = true;
-    //crash fixme!
-  //  Sleep(20);
+    if (hwnd)
+    {
+        POINT point;
+        point.x = X;
+        point.y = Y;
+        ScreenToClient(hwnd, &point);
+        Xf = point.x; 
+        Yf = point.y; 
+    }
     return true; //fpSetCursorPos(lpPoint); // Call the original SetCursorPos function
 }
 BOOL WINAPI HookedClipCursor(const RECT* lpRect) {
@@ -197,23 +300,82 @@ BOOL WINAPI HookedClipCursor(const RECT* lpRect) {
     //return originalClipCursor(nullptr);
 
 }
-bool drawsnake() {
-    return true;
+POINT windowres(HWND window, int ignorerect)
+{
+    POINT res = {0,0};
+    if (ignorerect == 0)
+    {
+        RECT recte;
+        GetClientRect(window, &recte);
+        res.x = recte.right - recte.left;
+        res.y = recte.bottom - recte.top;
+    }
+    else
+    {
+        RECT frameBounds;
+        HRESULT hr = DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &frameBounds, sizeof(frameBounds));
+        if (SUCCEEDED(hr))
+        {
+            // These are the actual visible edges of the window in client coordinates
+            POINT upper;
+            upper.x = frameBounds.left;
+            upper.y = frameBounds.top;
+
+
+            res.x = frameBounds.right - frameBounds.left;
+            res.y = frameBounds.bottom - frameBounds.top;
+        }
+
+    }
+    return res;
 }
-void snake()
-{ 
-    bool buttonleft, buttondown, buttonright, buttonup;
-    int snakedirection;
-    if (buttonleft)
-        snakedirection = 3;
-    if (buttonright)
-        snakedirection = 2;
-    if (buttonup)
-        snakedirection = 0;
-    if (buttondown)
-        snakedirection = 4;
-    drawsnake();
-    return;
+POINT GetStaticFactor(POINT pp, int doscale, bool isnotbmp)
+{
+   // FLOAT ny;
+    POINT currentres = windowres(hwnd, ignorerect);
+    FLOAT currentwidth = static_cast<float>(currentres.x);
+    FLOAT currentheight = static_cast<float>(currentres.y);
+    if (doscale == 1)
+    {
+        float scalex = currentwidth / 1024.0f;
+        float scaley = currentheight / 768.0f;
+
+        pp.x = static_cast<int>(std::lround(pp.x * scalex));
+        pp.y = static_cast<int>(std::lround(pp.y * scaley));
+    }
+    if (doscale == 2) //4:3 blackbar only x
+    {
+        float difference = 0.0f;
+        float newwidth = currentwidth;
+        float curraspect = currentheight / currentwidth;
+        if (curraspect < 0.75f)
+        {
+            newwidth = currentheight / 0.75f;
+            if (isnotbmp) //cant pluss blackbars on bmps
+                difference = (currentwidth - newwidth) / 2;
+        }
+        float scalex = newwidth / 1024.0f;
+        float scaley = currentheight / 768.0f;
+        pp.x = static_cast<int>(std::lround(pp.x * scalex) + difference);
+        pp.y = static_cast<int>(std::lround(pp.y * scaley));
+    }
+    if (doscale == 3) //only vertical stretch equal
+    {
+        float difference = 0.0f;
+        float newwidth = currentwidth;
+        float curraspect = currentheight / currentwidth;
+        if (curraspect < 0.5625f)
+        {
+            newwidth = currentheight / 0.5625f;
+            if (isnotbmp) //cant pluss blackbars on bmps
+                difference = (currentwidth - newwidth) / 2;
+        }
+        float scalex = newwidth / 1337.0f;
+        float scaley = currentheight / 768.0f;
+        pp.x = static_cast<int>(std::lround(pp.x * scalex) + difference);
+        pp.y = static_cast<int>(std::lround(pp.y * scaley));
+    }
+    return pp;
 }
 
 bool Mutexlock(bool lock) {
@@ -259,7 +421,7 @@ void SetupHook() {
 
     //each of there hooks have a high chance of crashing the game
 
-    if (getcursorposhook == 1) {
+    if (getcursorposhook == 1 || getcursorposhook == 2) {
         MH_CreateHookApi(L"user32", "GetCursorPos", &MyGetCursorPos, reinterpret_cast<LPVOID*>(&fpGetCursorPos));
         MH_EnableHook(&GetCursorPos);
     }
@@ -291,6 +453,11 @@ void SetupHook() {
         MH_CreateHook(&SetCursor, &HookedSetCursor, reinterpret_cast<LPVOID*>(&fpSetCursor));
         MH_EnableHook(&SetCursor);
     }
+    if (rawinputhook == 1)
+    {
+        MH_CreateHook(&GetRawInputData, &HookedGetRawInputData,reinterpret_cast<LPVOID*>(&fpGetRawInputData));
+        MH_EnableHook(&GetRawInputData);
+    }
     //MessageBox(NULL, "Bmp + last setcursor. done", "other search", MB_OK | MB_ICONINFORMATION);
     hooksinited = true;
     //MH_EnableHook(MH_ALL_HOOKS);
@@ -320,6 +487,8 @@ bool SendMouseClick(int x, int y, int z, int many) {
     POINT heer;
     heer.x = x;
     heer.y = y;
+    if (getcursorposhook == 2)
+        ClientToScreen(hwnd, &heer);
     if (userealmouse == 0) 
         {
         LPARAM clickPos = MAKELPARAM(heer.x, heer.y);
@@ -327,6 +496,11 @@ bool SendMouseClick(int x, int y, int z, int many) {
             
             PostMessage(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, clickPos);
             PostMessage(hwnd, WM_LBUTTONUP, 0, clickPos);
+
+			//rawmouse[0] = true;
+			//Sleep(5);
+           // rawmouse[0] = false;
+
             keystatesend = VK_LEFT;
         }
         if (z == 2) {
@@ -337,19 +511,27 @@ bool SendMouseClick(int x, int y, int z, int many) {
         if (z == 3) {
             PostMessage(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, clickPos);
             keystatesend = VK_LEFT;
+            if (rawinputhook == 1)
+                GenerateRawMouse(-1, true, 0, 0);
         }
         if (z == 4)
         {
             PostMessage(hwnd, WM_LBUTTONUP, 0, clickPos);
+            if (rawinputhook == 1)
+                GenerateRawMouse(-1, false, 0, 0);
 
         }
         if (z == 5) {
             PostMessage(hwnd, WM_RBUTTONDOWN, MK_RBUTTON, clickPos);
             keystatesend = VK_RIGHT;
+			if (rawinputhook == 1)
+                GenerateRawMouse(-2, true, 0, 0);
         }
         if (z == 6)
         {
             PostMessage(hwnd, WM_RBUTTONUP, 0, clickPos);
+			if (rawinputhook == 1)
+                GenerateRawMouse(-2, false, 0, 0);
 
         }
         if (z == 20 || z == 21) //WM_mousewheel need desktop coordinates
@@ -370,6 +552,7 @@ bool SendMouseClick(int x, int y, int z, int many) {
         }
         else if (z == 8 || z == 10 || z == 11) //only mousemove
         {
+            
             PostMessage(hwnd, WM_MOUSEMOVE, 0, clickPos);
             //PostMessage(hwnd, WM_SETCURSOR, (WPARAM)hwnd, MAKELPARAM(HTCLIENT, WM_MOUSEMOVE));
 
@@ -526,16 +709,8 @@ int CalculateStride(int width) {
     return ((width * 3 + 3) & ~3);
 }
 
-POINT windowres(HWND window)
-{
-    POINT res;
-    RECT recte;
-    GetClientRect(window, &recte);
-    res.x = recte.right - recte.left;
-    res.y = recte.bottom - recte.top;
-    return res;
-}
-bool Save24BitBMP(const wchar_t* filename, const BYTE* pixels, int width, int height) { //for testing purposes
+
+bool Save24BitBMP(std::wstring filename, const BYTE* pixels, int width, int height) { //for testing purposes
     int stride = ((width * 3 + 3) & ~3);
     int imageSize = stride * height;
 
@@ -553,7 +728,7 @@ bool Save24BitBMP(const wchar_t* filename, const BYTE* pixels, int width, int he
     bih.biCompression = BI_RGB;
     bih.biSizeImage = imageSize;
 
-    HANDLE hFile = CreateFileW(filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE hFile = CreateFileW(filename.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE) return false;
 
     DWORD written;
@@ -569,8 +744,8 @@ bool IsTriggerPressed(BYTE triggerValue) {
     BYTE threshold = 175;
     return triggerValue > threshold;
 }
-bool LoadBMP24Bit(const wchar_t* filename, std::vector<BYTE>& pixels, int& width, int& height, int& stride) {
-    HBITMAP hbm = (HBITMAP)LoadImageW(NULL, filename, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+bool LoadBMP24Bit(std::wstring filename, std::vector<BYTE>& pixels, int& width, int& height, int& stride) {
+    HBITMAP hbm = (HBITMAP)LoadImageW(NULL, filename.c_str(), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
     if (!hbm) return false;
 
     //BITMAP scaledbmp;
@@ -591,38 +766,15 @@ bool LoadBMP24Bit(const wchar_t* filename, std::vector<BYTE>& pixels, int& width
     bmi.bmiHeader.biCompression = BI_RGB;
 
     BYTE* pBits = nullptr;
-
-
-
-    //resize fro here
-
-    //width = 10;
-    //height = 10;
-    //stride = ((width * 3 + 3) & ~3);
-    //std::vector<BYTE> pixels(stride * height);
-    //header okay
-    //new dc + new bmp
-   // HDC hdc = CreateCompatibleDC(NULL);
-    //HDC hdcscaled = CreateCompatibleDC(NULL);
-    //BITMAP bmpscaled;
-    //HBITMAP oldone = (HBITMAP)SelectObject()
-
-
-   // (Graphics g = Graphics.FromImage(newBitmap));
-    //g.DrawImage(bmp,rect(0,0,100,100));
-     HDC hdc = GetDC(NULL);
-
-
-    ////to here
-    
+    HDC hdc = GetDC(NULL);
     GetDIBits(hdc, hbm, 0, height, pixels.data(), &bmi, DIB_RGB_COLORS);
-    //StretchBlt() //StretchDIBits
+
     if (hdc) DeleteDC(hdc);
     if (hbm) DeleteObject(hbm);
     return true;
 }
 
-bool SaveWindow10x10BMP(HWND hwnd, const wchar_t* filename, int x, int y) {
+bool SaveWindow10x10BMP(HWND hwnd, std::wstring filename, int x, int y) {
     HDC hdcWindow = GetDC(hwnd);
     HDC hdcMem = CreateCompatibleDC(hdcWindow);
     
@@ -669,7 +821,7 @@ bool SaveWindow10x10BMP(HWND hwnd, const wchar_t* filename, int x, int y) {
     GetDIBits(hdcMem, hbm24, 0, height, pixels.data(), (BITMAPINFO*)&bih, DIB_RGB_COLORS);
 
     // Save
-    bool ok = Save24BitBMP(filename, pixels.data(), width, height);
+    bool ok = Save24BitBMP(filename.c_str(), pixels.data(), width, height);
 
     // Cleanup
     SelectObject(hdcMem, oldbmp);
@@ -680,6 +832,75 @@ bool SaveWindow10x10BMP(HWND hwnd, const wchar_t* filename, int x, int y) {
     return ok;
 }
 HBRUSH transparencyBrush;
+
+void DrawRedX(HDC hdc, int x, int y) //blue
+{
+    HPEN hPen = CreatePen(PS_SOLID, 3, RGB(0, 0, 255));
+    HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+
+    MoveToEx(hdc, x - 15, y - 15, NULL);
+    LineTo(hdc, x + 15, y + 15);
+
+    MoveToEx(hdc, x + 15, y - 15, NULL);
+    LineTo(hdc, x - 15, y + 15);
+
+    SelectObject(hdc, hOldPen);
+    DeleteObject(hPen);
+    return;
+}
+void DrawBlueCircle(HDC hdc, int x, int y) //red
+{
+    // Create a NULL brush (hollow fill)
+    HBRUSH hBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+    HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrush);
+
+    HPEN hPen = CreatePen(PS_SOLID, 3, RGB(255, 0, 0));
+    HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+
+    Ellipse(hdc, x - 15, y - 15, x + 15, y + 15);
+
+    SelectObject(hdc, hOldBrush);
+    SelectObject(hdc, hOldPen);
+    DeleteObject(hPen);
+}
+void DrawGreenTriangle(HDC hdc, int x, int y)
+{
+    // Use a NULL brush for hollow
+    HBRUSH hBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+    HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrush);
+
+    HPEN hPen = CreatePen(PS_SOLID, 3, RGB(0, 255, 0));
+    HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+
+    POINT pts[3];
+    pts[0].x = x + 10; pts[0].y = y;        // top center
+    pts[1].x = x;      pts[1].y = y + 20;   // bottom left
+    pts[2].x = x + 20; pts[2].y = y + 20;   // bottom right
+
+    Polygon(hdc, pts, 3);
+
+    SelectObject(hdc, hOldBrush);
+    SelectObject(hdc, hOldPen);
+    DeleteObject(hPen);
+}
+
+void DrawPinkSquare(HDC hdc, int x, int y)
+{
+    // Create a NULL brush (hollow fill)
+    HBRUSH hBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+    HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrush);
+
+    HPEN hPen = CreatePen(PS_SOLID, 3, RGB(255, 192, 203));
+    HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+
+    // Draw hollow rectangle (square) 20x20
+    Rectangle(hdc, x - 15, y - 15, x + 15, y + 15);
+
+    SelectObject(hdc, hOldBrush);
+    SelectObject(hdc, hOldPen);
+    DeleteObject(hPen);
+}
+
 
 void DrawToHDC(HDC hdcWindow, int X, int Y, int showmessage)
 {
@@ -716,13 +937,16 @@ void DrawToHDC(HDC hdcWindow, int X, int Y, int showmessage)
 
         //draw spots
         if (Apos.x != 0 && Apos.y != 0)
-            TextOut(hdcWindow, Apos.x, Apos.y, TEXT("A"), 1);
+            DrawRedX(hdcWindow, Apos.x, Apos.y);
+
         if (Bpos.x != 0 && Bpos.y != 0)
-            TextOut(hdcWindow, Bpos.x, Bpos.y, TEXT("B"), 1);
+            DrawBlueCircle(hdcWindow, Bpos.x, Bpos.y);
+
         if (Xpos.x != 0 && Xpos.y != 0)
-            TextOut(hdcWindow, Xpos.x, Xpos.y, TEXT("X"), 1);
+            DrawGreenTriangle(hdcWindow, Xpos.x, Xpos.y);
+
         if (Ypos.x != 0 && Ypos.y != 0)
-            TextOut(hdcWindow, Ypos.x, Ypos.y, TEXT("Y"), 1);
+            DrawPinkSquare(hdcWindow, Ypos.x, Ypos.y);
 
     }
 
@@ -741,6 +965,39 @@ void DrawToHDC(HDC hdcWindow, int X, int Y, int showmessage)
         TextOut(hdcWindow, X, Y, TEXT("EDIT MODE"), 9);
         TextOut(hdcWindow, X, Y + 15, TEXT("tap a button to bind it to coordinate"), 37);
         TextOut(hdcWindow, X, Y + 30, TEXT("A,B,X,Y,R2,R3,L2,L3 can be mapped"), 32);
+    }
+    else if (showmessage == 4)
+    {
+        TextOut(hdcWindow, 20, 5, TEXT("Z0 no scale, Z1 stretch, Z2 4:3 stretch, Z3 16:9"), 49);
+
+        TCHAR buf[32];
+        wsprintf(buf, TEXT("Z0: X: %d Y: %d"), X, Y);
+        TextOut(hdcWindow, 20, 20, TEXT(buf), lstrlen(buf));
+
+
+		POINT staticpoint = GetStaticFactor({ X, Y }, 1, true);
+        TextOut(hdcWindow, staticpoint.x, staticpoint.y, TEXT("1"), 1);
+
+        staticpoint = GetStaticFactor({ X, Y }, 2, true);
+        TextOut(hdcWindow, staticpoint.x, staticpoint.y, TEXT("2"), 1);
+
+        staticpoint = GetStaticFactor({ X, Y }, 3, true);
+        TextOut(hdcWindow, staticpoint.x, staticpoint.y, TEXT("3"), 1);
+
+        for (int y = 0; y < 20; y++)
+        {
+            for (int x = 0; x < 20; x++)
+            {
+                int val = colorfulSword[y][x];
+                if (val != 0)
+                {
+                    HBRUSH hBrush = CreateSolidBrush(colors[val]);
+                    RECT rect = { X + x , Y + y , X + x + 1, Y + y + 1 };
+                    FillRect(hdcWindow, &rect, hBrush);
+                    DeleteObject(hBrush);
+                }
+            }
+        }
     }
     else if (showmessage == 10)
     {
@@ -793,7 +1050,7 @@ void DrawToHDC(HDC hdcWindow, int X, int Y, int showmessage)
 
 void DblBufferAndCallDraw(HDC cursorhdc, int X, int Y, int showmessage) {
 
-    POINT res = windowres(hwnd);
+    POINT res = windowres(hwnd, ignorerect);
     int width = res.x;
     int height = res.y;
 
@@ -1176,7 +1433,9 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
 
     keystatesend = mykey;
     PostMessage(hwnd, presskey, mykey, lParam);
-    PostMessage(hwnd, WM_INPUT, VK_RIGHT, lParam);
+   // PostMessage(hwnd, WM_INPUT, VK_RIGHT, lParam);
+    if (rawinputhook == 1)
+        GenerateRawKey(mykey, press, false);
     if (keytype == 63) {
         PostMessage(hwnd, presskey, 0x43, lParam);
     }
@@ -1219,7 +1478,7 @@ void BmpInputAction(int X, int Y, int type) //moveclickorboth
 }
 void Bmpfound(const char key[3], int X, int Y, int i, bool onlysearch, bool found, int store)
 {
-    int input;
+    int input = 0;
     if (strcmp(key, "\\A") == 0)
     {
         if (found)
@@ -1485,7 +1744,7 @@ bool ButtonScanAction(const char key[3], int mode, int serchnum, int startsearch
     {
         int numphoto = 0;
         //if (checkarray == 1)
-        //{ 
+		//{ //always check static first?
             noeder = CheckStatics(key, startsearch);
             if (noeder.x != 0)
             {
@@ -1837,11 +2096,14 @@ void pollbuttons(WORD buttons, RECT rect)
             //LeaveCriticalSection(&critical);
             if (Cpoint.x != 0 && Cpoint.y != 0)
             {   
-                if (startsearchA < numphotoA - 1)
-                    startsearchA++; //dont want it to update before input done
-                else startsearchA = 0;
-                PointA.x = 0;
-                PointA.y = 0;
+                if (ShoulderNextbmp == 0)
+                {
+                    if (startsearchA < numphotoA - 1)
+                        startsearchA++; //dont want it to update before input done
+                    else startsearchA = 0;
+                    PointA.x = 0;
+                    PointA.y = 0;
+                }
                 BmpInputAction(Cpoint.x, Cpoint.y, scanAtype);
                 foundit = true;
 
@@ -1891,20 +2153,19 @@ void pollbuttons(WORD buttons, RECT rect)
             Cpoint.x = PointB.x;
             Cpoint.y = PointB.y;
 
-            LeaveCriticalSection(&critical);
-
             if (Cpoint.x != 0 && Cpoint.y != 0)
             {
-                EnterCriticalSection(&critical);
-                if (startsearchB < numphotoB -1)
-                    startsearchB++; //dont want it to update before input done
-                else startsearchB = 0;
-                PointB.x = 0;
-                PointB.y = 0;
+                if (ShoulderNextbmp == 0)
+                {
+                    if (startsearchB < numphotoB - 1)
+                        startsearchB++; //dont want it to update before input done
+                    else startsearchB = 0;
+                    PointB.x = 0;
+                    PointB.y = 0;
+                }
                 BmpInputAction(Cpoint.x, Cpoint.y, scanBtype);
-                LeaveCriticalSection(&critical);
             }
-
+            LeaveCriticalSection(&critical);
         }
         EnterCriticalSection(&critical);
         if (foundit == false)
@@ -1950,20 +2211,21 @@ void pollbuttons(WORD buttons, RECT rect)
             Cpoint.x = PointX.x;
             Cpoint.y = PointX.y;
 
-            LeaveCriticalSection(&critical);
             movedmouse = true;
             if (Cpoint.x != 0 && Cpoint.y != 0)
             {
-                EnterCriticalSection(&critical);
-                if (startsearchX < numphotoX - 1)
-                    startsearchX++; //dont want it to update before input done
-                else startsearchX = 0;
-                PointX.x = 0;
-                PointX.y = 0;
+                if (ShoulderNextbmp == 0)
+                {
+                    if (startsearchX < numphotoX - 1)
+                        startsearchX++; //dont want it to update before input done
+                    else startsearchX = 0;
+                    PointX.x = 0;
+                    PointX.y = 0;
+                }
                 BmpInputAction(Cpoint.x, Cpoint.y, scanXtype);
-                LeaveCriticalSection(&critical);
+                
             }
-
+            LeaveCriticalSection(&critical);
         }
         EnterCriticalSection(&critical);
         if (foundit == false)
@@ -2007,18 +2269,20 @@ void pollbuttons(WORD buttons, RECT rect)
             Cpoint.x = PointY.x;
             Cpoint.y = PointY.y;
 
-            LeaveCriticalSection(&critical);
             if (Cpoint.x != 0 && Cpoint.y != 0)
             {
-                EnterCriticalSection(&critical);
-                if (startsearchY < numphotoY - 1)
-                    startsearchY++; //dont want it to update before input done
-                else startsearchY = 0;
-                PointY.x = 0;
-                PointY.y = 0;
+                if (ShoulderNextbmp == 0)
+                { 
+                    if (startsearchY < numphotoY - 1)
+                        startsearchY++; //dont want it to update before input done
+                    else startsearchY = 0;
+                    PointY.x = 0;
+                    PointY.y = 0;
+                }
                 BmpInputAction(Cpoint.x, Cpoint.y, scanYtype);
-                LeaveCriticalSection(&critical);
+                
             }
+            LeaveCriticalSection(&critical);
         }
         if (mode == 2 && showmessage != 11)
         { //mapping mode
@@ -2348,7 +2612,7 @@ void pollbuttons(WORD buttons, RECT rect)
 
 
 
-    if (buttons & XINPUT_GAMEPAD_START && showmessage == 0)
+    if (buttons & XINPUT_GAMEPAD_START && (showmessage == 0 || showmessage == 4))
     {
         Sleep(100);
         if (onoroff == true && buttons & XINPUT_GAMEPAD_LEFT_SHOULDER && buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER)
@@ -2377,6 +2641,13 @@ void pollbuttons(WORD buttons, RECT rect)
 
         }
         else if (mode == 2 && Modechange == 1 && onoroff == true)
+        {
+            mode = 3;
+            // MessageBox(NULL, "Bmp mode", "only send input on bmp match", MB_OK | MB_ICONINFORMATION);
+            showmessage = 4;
+            Sleep(1000);
+        }
+        else if (mode == 3 && Modechange == 1 && onoroff == true)
         {
             // mode = 0;
             // MessageBox(NULL, "Bmp mode", "only send input on bmp match", MB_OK | MB_ICONINFORMATION);
@@ -2435,37 +2706,7 @@ int HowManyBmps(std::wstring path, bool andstatics)
     else return start + inistart;
 }
 
-POINT GetStaticFactor(POINT pp, int doscale)
-{
-    FLOAT ny;
-    POINT currentres = windowres(hwnd);
-    FLOAT currentwidth = static_cast<float>(currentres.x);
-    FLOAT currentheight = static_cast<float>(currentres.y);
-    if (doscale == 1) 
-    {
-        float scalex = currentwidth / 1024.0f;
-        float scaley = currentheight / 768.0f;
 
-        pp.x = static_cast<int>(std::lround(pp.x * scalex));
-        pp.y = static_cast<int>(std::lround(pp.y * scaley));
-    }
-    if (doscale == 2) //4:3 blackbar only x
-    {
-        float difference = 0.0f;
-        float newwidth = currentwidth;
-        float curraspect = currentheight / currentwidth;
-        if (curraspect < 0.75f)
-        { 
-            newwidth = currentheight / 0.75f;
-            difference = (currentwidth - newwidth) / 2;
-        }
-        float scalex = newwidth / 1024.0f;
-        float scaley = currentheight / 768.0f;
-        pp.x = static_cast<int>(std::lround(pp.x * scalex) + difference);
-        pp.y = static_cast<int>(std::lround(pp.y * scaley));
-    }
-    return pp;
-}
 
 bool initovector()
 {
@@ -2494,7 +2735,7 @@ bool initovector()
             string = name + std::to_string(x) + "Z";
             scalemethod = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
             if (scalemethod != 0)
-                inipoint = GetStaticFactor(inipoint, scalemethod);
+                inipoint = GetStaticFactor(inipoint, scalemethod, true);
             staticPointA[x + numphotoYbmps].y = inipoint.y;
             staticPointA[x + numphotoYbmps].x = inipoint.x;
         }
@@ -2520,7 +2761,7 @@ bool initovector()
             string = name + std::to_string(x) + "Z";
             scalemethod = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
             if (scalemethod != 0)
-                inipoint = GetStaticFactor(inipoint, scalemethod);
+                inipoint = GetStaticFactor(inipoint, scalemethod, true);
             staticPointB[x + numphotoYbmps].y = inipoint.y;
             staticPointB[x + numphotoYbmps].x = inipoint.x;
         }
@@ -2548,7 +2789,7 @@ bool initovector()
             string = name + std::to_string(x) + "Z";
             scalemethod = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
             if (scalemethod != 0)
-                inipoint = GetStaticFactor(inipoint, scalemethod);
+                inipoint = GetStaticFactor(inipoint, scalemethod, true);
             staticPointX[x + numphotoYbmps].y = inipoint.y;
             staticPointX[x + numphotoYbmps].x = inipoint.x;
 
@@ -2576,7 +2817,7 @@ bool initovector()
             string = name + std::to_string(x) + "Z";
             scalemethod = GetPrivateProfileInt(iniSettings.c_str(), string.c_str(), 0, iniPath.c_str());
             if (scalemethod != 0)
-                inipoint = GetStaticFactor(inipoint, scalemethod);
+                inipoint = GetStaticFactor(inipoint, scalemethod, true);
             staticPointY[x + numphotoYbmps].y = inipoint.y;
             staticPointY[x + numphotoYbmps].x = inipoint.x;
         }
@@ -2871,17 +3112,16 @@ void ThreadFunction(HMODULE hModule)
                 if (!enumeratebmps()) //always this before initovector
                 {
                     if (scanoption)
-                        MessageBoxA(NULL, "Error. scanoption disabled", "No BMPS found", MB_OK);
+                        MessageBoxA(NULL, "Error. scanoption without bmps", "No BMPS found", MB_OK);
                     scanoption = 0;
                 }
-                else {
-
-                    staticPointA.assign(numphotoA + 1, POINT{ 0, 0 });
-                    staticPointB.assign(numphotoB + 1, POINT{ 0, 0 });
-                    staticPointX.assign(numphotoX + 1, POINT{ 0, 0 });
-                    staticPointY.assign(numphotoY + 1, POINT{ 0, 0 });
-                    initovector();
-                }
+                staticPointA.assign(numphotoA + 1, POINT{ 0, 0 });
+                staticPointB.assign(numphotoB + 1, POINT{ 0, 0 });
+                staticPointX.assign(numphotoX + 1, POINT{ 0, 0 });
+                staticPointY.assign(numphotoY + 1, POINT{ 0, 0 });
+                initovector();
+                if (rawinputhook == 1)
+                    RawInputInitialize();
                 inithere = true;
             }
 			//   
@@ -2901,7 +3141,7 @@ void ThreadFunction(HMODULE hModule)
 					Sleep(100); //give time to create window
                     EnterCriticalSection(&critical);
                     while (!pointerWindow) { 
-                        MessageBoxA(NULL, "No pointerwindow", "ohno,try old method?", MB_OK);
+                        MessageBoxA(NULL, "No pointerwindow", "ohno,try drawfakecursor 1 instead", MB_OK);
                         Sleep(1000); 
                     }
                     if (pointerWindow){}
@@ -2915,46 +3155,38 @@ void ThreadFunction(HMODULE hModule)
                 else if (oldrect.left != rect.left || oldrect.right != rect.right || oldrect.top != rect.top || oldrect.bottom != rect.bottom || oldposcheck.x != poscheck.x || oldposcheck.y != poscheck.y)
                 {
                     EnterCriticalSection(&critical);
-                    SendMessage(pointerWindow, WM_MOVE_pointerWindow, 0, 0); 
-                    Sleep(200);
+                    if (pointerWindow)
+                        SendMessage(pointerWindow, WM_MOVE_pointerWindow, 0, 0); 
                     staticPointA.clear();
                     staticPointB.clear();
                     staticPointX.clear();
                     staticPointY.clear();
                     initovector(); //this also call for scaling if needed
                     LeaveCriticalSection(&critical);
+                    Sleep(1000); //pause renderiing
                 }
-                
+                oldposcheck.x = poscheck.x;
+                oldposcheck.y = poscheck.y;
+                oldrect.left = rect.left;
+                oldrect.right = rect.right;
+                oldrect.top = rect.top;
+                oldrect.bottom = rect.bottom;
 			}
 			
-			oldposcheck.x = poscheck.x;
-            oldposcheck.y = poscheck.y;
-            oldrect.left = rect.left;
-			oldrect.right = rect.right;
-			oldrect.top = rect.top;
-			oldrect.bottom = rect.bottom;
-
-
             if (ignorerect == 1)
             {
-                RECT frameBounds;
-                HRESULT hr = DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &frameBounds, sizeof(frameBounds));
-                if (SUCCEEDED(hr)) {
                     // These are the actual visible edges of the window in client coordinates
-                    POINT upper;
-                    upper.x = frameBounds.left;
-                    upper.y = frameBounds.top;
+                    POINT upper = windowres(hwnd, ignorerect);
 
                     //used in getcursrorpos
                     rectignore.x = upper.x;
                     rectignore.y = upper.y;
 
-                    rect.right = frameBounds.right - frameBounds.left;
-                    rect.bottom = frameBounds.bottom - frameBounds.top;
+                    rect.right = upper.x;
+                    rect.bottom = upper.y;
                     rect.left = 0;
                     rect.top = 0;
 
-                }
             }
 
             XINPUT_STATE state;
@@ -3052,7 +3284,6 @@ void ThreadFunction(HMODULE hModule)
                             oldscrollleftaxis = true;
                             //keystatesend = VK_LEFT;
                         }
-
 
 
                         if (oldscrollrightaxis)
@@ -3267,6 +3498,7 @@ void ThreadFunction(HMODULE hModule)
                         if (userealmouse == 0)
                         {
                                 SendMouseClick(Xf, Yf, 8, 1);
+                                GenerateRawMouse(-9, false, delta.x, delta.y);
                         }
 
                     }
@@ -3280,6 +3512,7 @@ void ThreadFunction(HMODULE hModule)
                      startdrag.x = Xf;
                      startdrag.y = Yf;
                      leftPressedold = true;
+                     rawmouseL = true;
                      if (userealmouse == 0 && scrolloutsidewindow == 3)
                      {
                          SendMouseClick(Xf, Yf, 5, 2); //4 skal vere 3
@@ -3288,8 +3521,9 @@ void ThreadFunction(HMODULE hModule)
                      else if (userealmouse == 0)
                          SendMouseClick(Xf, Yf, 5, 2); //4 skal vere 3
                     }
+                    
                 }
-                if (leftPressedold)
+                else if (leftPressedold)
                 {
                     if (!leftPressed)
                     {
@@ -3315,6 +3549,7 @@ void ThreadFunction(HMODULE hModule)
                             }
                         }
                         leftPressedold = false;
+                        rawmouseL = false;
                     }   
                 }
                 if (rightPressed)
@@ -3328,6 +3563,7 @@ void ThreadFunction(HMODULE hModule)
                         startdrag.x = Xf;
                         startdrag.y = Yf;
                         rightPressedold = true;
+                        rawmouseR = true;
                         if (userealmouse == 0)
                         {
                             DWORD currentTime = GetTickCount64();
@@ -3346,7 +3582,7 @@ void ThreadFunction(HMODULE hModule)
 						}
                     }
                 }
-                if (rightPressedold)
+                else if (rightPressedold)
                 {
                     if (!rightPressed)
                     {
@@ -3371,6 +3607,7 @@ void ThreadFunction(HMODULE hModule)
                             }
                         }
                         rightPressedold = false;
+                        rawmouseR = false;
                     }
                 } //rightpress
 
@@ -3399,6 +3636,7 @@ void ThreadFunction(HMODULE hModule)
             {
                 if (showmessage == 1) {
                     mode = 0;
+                    showmessage = 0;
                 }
                 if (showmessage == 69) { //disabling dll
                     onoroff = false;
@@ -3408,7 +3646,8 @@ void ThreadFunction(HMODULE hModule)
                     onoroff = true;
                     MH_EnableHook(MH_ALL_HOOKS);
                 }
-                showmessage = 0;
+                if (mode != 3)
+                    showmessage = 0;
                 counter = 0;
             }
         }
@@ -3452,6 +3691,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             getcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorposHook", 0, iniPath.c_str());
             setcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorposHook", 0, iniPath.c_str());
             setcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorHook", 0, iniPath.c_str()); 
+            rawinputhook = GetPrivateProfileInt(iniSettings.c_str(), "RawInputHook", 0, iniPath.c_str());
 
             setrecthook = GetPrivateProfileInt(iniSettings.c_str(), "SetRectHook", 0, iniPath.c_str()); 
             leftrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectLeft", 0, iniPath.c_str());
