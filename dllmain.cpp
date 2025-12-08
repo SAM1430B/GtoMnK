@@ -282,6 +282,17 @@ BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
     }
     return false;
 }
+BOOL WINAPI HookedGetCursorInfo(PCURSORINFO pci) {
+    bool result = fpGetCursorInfo(pci);
+    if (result == true)
+    {
+        POINT nypt;
+        MyGetCursorPos(&nypt);
+        pci->ptScreenPos.x = nypt.x;
+        pci->ptScreenPos.y = nypt.y;
+    }
+    return true;
+}
 POINT mpos;
 BOOL WINAPI MySetCursorPos(int X, int Y) {
     if (hwnd)
@@ -457,6 +468,11 @@ void SetupHook() {
     {
         MH_CreateHook(&GetRawInputData, &HookedGetRawInputData,reinterpret_cast<LPVOID*>(&fpGetRawInputData));
         MH_EnableHook(&GetRawInputData);
+    }
+    if (GetCursorInfoHook == 1)
+    {
+        MH_CreateHook(&GetCursorInfo, &HookedGetCursorInfo, reinterpret_cast<LPVOID*>(&fpGetCursorInfo));
+        MH_EnableHook(&GetCursorInfo);
     }
     //MessageBox(NULL, "Bmp + last setcursor. done", "other search", MB_OK | MB_ICONINFORMATION);
     hooksinited = true;
@@ -925,7 +941,8 @@ void DrawToHDC(HDC hdcWindow, int X, int Y, int showmessage)
     }
 
     
-    if (scanoption == 1){
+    if (scanoption == 1)
+    {
         EnterCriticalSection(&critical);
         POINT pos = { fakecursorW.x, fakecursorW.y };
         POINT Apos = { PointA.x, PointA.y };
@@ -1019,28 +1036,31 @@ void DrawToHDC(HDC hdcWindow, int X, int Y, int showmessage)
     {
         TextOut(hdcWindow, X, Y, TEXT("STARTING!"), 10);
     }
-    else if (hCursor != 0 && onoroff == true)
-    {
-        gotcursoryet = true;
-        if (X - Xoffset < 0 || Y - Yoffset < 0)
-            DrawIconEx(hdcWindow, X, Y, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
-        else
-            DrawIconEx(hdcWindow, X - Xoffset, Y - Yoffset, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
-
-    }
-    else if (onoroff == true && (alwaysdrawcursor == 1 || gotcursoryet == false))
-    {
-        for (int y = 0; y < 20; y++)
+    if (nodrawcursor == false)
+    { 
+        if (hCursor != 0 && onoroff == true)
         {
-            for (int x = 0; x < 20; x++)
+            gotcursoryet = true;
+            if (X - Xoffset < 0 || Y - Yoffset < 0)
+                DrawIconEx(hdcWindow, X, Y, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
+            else
+                DrawIconEx(hdcWindow, X - Xoffset, Y - Yoffset, hCursor, 32, 32, 0, NULL, DI_NORMAL);//need bmp width height
+
+        }
+        else if (onoroff == true && (alwaysdrawcursor == 1 || gotcursoryet == false))
+        {
+            for (int y = 0; y < 20; y++)
             {
-                int val = colorfulSword[y][x];
-                if (val != 0)
+                for (int x = 0; x < 20; x++)
                 {
-                    HBRUSH hBrush = CreateSolidBrush(colors[val]);
-                    RECT rect = { X + x , Y + y , X + x + 1, Y + y + 1 };
-                    FillRect(hdcWindow, &rect, hBrush);
-                    DeleteObject(hBrush);
+                    int val = colorfulSword[y][x];
+                    if (val != 0)
+                    {
+                        HBRUSH hBrush = CreateSolidBrush(colors[val]);
+                        RECT rect = { X + x , Y + y , X + x + 1, Y + y + 1 };
+                        FillRect(hdcWindow, &rect, hBrush);
+                        DeleteObject(hBrush);
+                    }
                 }
             }
         }
@@ -1057,6 +1077,9 @@ void DblBufferAndCallDraw(HDC cursorhdc, int X, int Y, int showmessage) {
     HDC hdcMem = CreateCompatibleDC(cursorhdc);
     HBITMAP hbmMem = CreateCompatibleBitmap(cursorhdc, width, height);
     HGDIOBJ oldBmp = SelectObject(hdcMem, hbmMem);
+
+    //BitBlt(hdcMem, 0, 0, width, height, cursorhdc, 0, 0, SRCCOPY);
+   // SetBkMode(hdcMem, TRANSPARENT);
 
     DrawToHDC(hdcMem, X, Y, showmessage);
 
@@ -1903,11 +1926,16 @@ LRESULT CALLBACK FakeCursorWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lP
         GetWindowDimensions(hWnd);
         break;
     }
- //   case WM_PAINT:
- //   {
-   //     return 0;
-//
-   // }
+    case WM_PAINT:
+    {
+        return 1;
+        break;
+    }
+    case WM_ERASEBKGND:
+    {
+        return 1;
+        break;
+    }
     case WM_DESTROY:
     {
         PostQuitMessage(0);
@@ -3094,7 +3122,11 @@ void ThreadFunction(HMODULE hModule)
         std::thread tree(ScanThread, g_hModule, AuseStatic, BuseStatic, XuseStatic, YuseStatic);
         tree.detach();
     }
-
+    if (drawfakecursor == 0)
+    {
+		drawfakecursor = 3;
+        nodrawcursor = true;
+    }
 	bool window = false;
     while (loop == true)
     {
@@ -3144,12 +3176,12 @@ void ThreadFunction(HMODULE hModule)
                         MessageBoxA(NULL, "No pointerwindow", "ohno,try drawfakecursor 1 instead", MB_OK);
                         Sleep(1000); 
                     }
-                    if (pointerWindow){}
+                    if (pointerWindow){
                         //Sleep(500);
                         PointerWnd = GetDC(pointerWindow);
-					SendMessage(pointerWindow, WM_MOVE_pointerWindow, 0, 0); //focus to avoid alt tab issues
-                    LeaveCriticalSection(&critical);
-
+					    SendMessage(pointerWindow, WM_MOVE_pointerWindow, 0, 0); //focus to avoid alt tab issues
+                        LeaveCriticalSection(&critical);
+                    }
 				    window = true;
                 }
                 else if (oldrect.left != rect.left || oldrect.right != rect.right || oldrect.top != rect.top || oldrect.bottom != rect.bottom || oldposcheck.x != poscheck.x || oldposcheck.y != poscheck.y)
@@ -3618,15 +3650,15 @@ void ThreadFunction(HMODULE hModule)
 				//MessageBoxA(NULL, "Controller not connected", "Error", MB_OK | MB_ICONERROR);
             }
             //drawing
-            if (drawfakecursor == 1 || showmessage != 0)
+            if (drawfakecursor == 1)
                 GetGameHDCAndCallDraw(hwnd); //calls DrawToHdc in here
-            else if (drawfakecursor == 2 || showmessage != 0)
+            else if (drawfakecursor == 2)
                 {
                 if (scanoption)
                     DblBufferAndCallDraw(PointerWnd, Xf, Yf, showmessage); //full redraw
                 else if (movedmouse) DrawToHDC(PointerWnd, Xf, Yf, showmessage); //partial, faster
                 }
-            else if (drawfakecursor == 3 || showmessage != 0)
+            else if (drawfakecursor == 3)
                 DblBufferAndCallDraw(PointerWnd, Xf, Yf, showmessage); //full redraw
         } // no hwnd
         if (showmessage != 0 && showmessage != 12)
@@ -3651,6 +3683,9 @@ void ThreadFunction(HMODULE hModule)
                 counter = 0;
             }
         }
+      //  if (pointerWindow) {
+      //      ReleaseDC(pointerWindow, PointerWnd);
+      //  }
         //ticks for scroll end delay
         if (tick < scrollenddelay)
             tick++;
@@ -3671,8 +3706,6 @@ void RemoveHook() {
     MH_Uninitialize();
 }
 
-
-
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) 
 {
     switch (ul_reason_for_call) 
@@ -3685,14 +3718,14 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             std::string iniSettings = "Hooks";
 
              //hook settings
-            clipcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "ClipCursorHook", 0, iniPath.c_str());
-            getkeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetKeystateHook", 0, iniPath.c_str());
-            getasynckeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetAsynckeystateHook", 0, iniPath.c_str());
-            getcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorposHook", 0, iniPath.c_str());
-            setcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorposHook", 0, iniPath.c_str());
-            setcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorHook", 0, iniPath.c_str()); 
-            rawinputhook = GetPrivateProfileInt(iniSettings.c_str(), "RawInputHook", 0, iniPath.c_str());
-
+            clipcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "ClipCursorHook", 1, iniPath.c_str());
+            getkeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetKeystateHook", 1, iniPath.c_str());
+            getasynckeystatehook = GetPrivateProfileInt(iniSettings.c_str(), "GetAsynckeystateHook", 1, iniPath.c_str());
+            getcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorposHook", 1, iniPath.c_str());
+            setcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorposHook", 1, iniPath.c_str());
+            setcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorHook", 1, iniPath.c_str()); 
+            rawinputhook = GetPrivateProfileInt(iniSettings.c_str(), "RawInputHook", 1, iniPath.c_str());
+            GetCursorInfoHook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorInfoHook", 0, iniPath.c_str());
             setrecthook = GetPrivateProfileInt(iniSettings.c_str(), "SetRectHook", 0, iniPath.c_str()); 
             leftrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectLeft", 0, iniPath.c_str());
             toprect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectTop", 0, iniPath.c_str());

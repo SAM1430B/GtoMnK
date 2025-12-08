@@ -37,6 +37,7 @@ typedef HCURSOR(WINAPI* SetCursor_t)(HCURSOR hCursor);
 typedef BOOL(WINAPI* SetRect_t)(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom);
 typedef BOOL(WINAPI* AdjustWindowRect_t)(LPRECT lprc, DWORD  dwStyle, BOOL bMenu);
 typedef UINT(WINAPI* GetRawInputData_t)(HRAWINPUT hRawInput, UINT uiCommand, LPVOID pData, PUINT pcbSize, UINT cbSizeHeader);
+typedef UINT(WINAPI* GetCursorInfo_t)(PCURSORINFO pci);
    
     
     
@@ -60,6 +61,7 @@ SetCursor_t fpSetCursor = nullptr;
 SetRect_t fpSetRect = nullptr;
 AdjustWindowRect_t fpAdjustWindowRect = nullptr;
 GetRawInputData_t fpGetRawInputData = nullptr;
+GetCursorInfo_t fpGetCursorInfo = nullptr;
 
 
 
@@ -91,6 +93,8 @@ int getcursorposhook = 0;
 int setcursorposhook = 0;
 int setcursorhook = 0;
 int rawinputhook = 0;
+int GetCursorInfoHook = 0;
+bool nodrawcursor = false;
 
 int ignorerect = 0;
 POINT rectignore = { 0,0 }; //for getcursorposhook
