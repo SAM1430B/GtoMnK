@@ -90,139 +90,75 @@ SHORT WINAPI HookedGetAsyncKeyState(int vKey)
     }
 }
 HWND g_rawInputHwnd = nullptr;
-LRESULT WINAPI RawInputWindowWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    switch (msg) {
-    case WM_INPUT: {
-      //  ProcessRealRawInput((HRAWINPUT)lParam);
-        break;
-    }
-    case WM_DESTROY: {
-        PostQuitMessage(0);
-        return 0;
-    }
-    }
-    return DefWindowProc(hWnd, msg, wParam, lParam);
-}
-DWORD WINAPI RawInputWindowThread(LPVOID lpParameter) {
-    HANDLE hWindowReadyEvent = (HANDLE)lpParameter;
-
-    WNDCLASSW wc = { 0 };
-    wc.lpfnWndProc = RawInputWindowWndProc;
-    wc.hInstance = GetModuleHandle(NULL);
-    wc.lpszClassName = L"GtoMnK_RawInput_Window";
-
-    if (RegisterClassW(&wc)) {
-        g_rawInputHwnd = CreateWindowW(wc.lpszClassName, L"GtoMnK RI Sink", 0, 0, 0, 0, 0, NULL, NULL, wc.hInstance, NULL);
-    }
-
-    if (!g_rawInputHwnd) {
-        SetEvent(hWindowReadyEvent);
-        return 1;
-    }
-
-    SetEvent(hWindowReadyEvent);
-
-    MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0) > 0) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-
-    return 0;
-}
 
 const int RAWINPUT_BUFFER_SIZE = 20;
 RAWINPUT g_inputBuffer[RAWINPUT_BUFFER_SIZE]{};
-std::vector<HWND> g_forwardingWindows{};
+//std::vector<HWND> g_forwardingWindows{};
+// Global/static counter
+struct FakeKey {
+    USHORT vkey;
+    bool press;
+};
 
+static std::vector<FakeKey> g_fakeKeys;
 
-//LRESULT WINAPI RawInputWindowWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-//DWORD WINAPI RawInputWindowThread(LPVOID lpParameter);
+// Add a fake key event to the array
+void GenerateRawKey(USHORT vk, bool press) {
+    g_fakeKeys.push_back({ vk, press });
+}
 
-UINT WINAPI HookedGetRawInputData(HRAWINPUT hRawInput, UINT uiCommand, LPVOID pData, PUINT pcbSize, UINT cbSizeHeader) {
-    UINT handleValue = (UINT)(UINT_PTR)hRawInput;
-    if ((handleValue & 0xFF000000) == 0xAB000000) {
-        UINT bufferIndex = handleValue & 0x00FFFFFF;
+UINT WINAPI HookedGetRawInputData(
+    HRAWINPUT hRawInput,
+    UINT uiCommand,
+    LPVOID pData,
+    PUINT pcbSize,
+    UINT cbSizeHeader
+) {
+    // Call the original function
+    UINT result = fpGetRawInputData(hRawInput, uiCommand, pData, pcbSize, cbSizeHeader);
 
-        if (bufferIndex >= RAWINPUT_BUFFER_SIZE) {
-            return fpGetRawInputData(hRawInput, uiCommand, pData, pcbSize, cbSizeHeader);
+    if (uiCommand == RID_INPUT && pData != nullptr) {
+        RAWINPUT* raw = (RAWINPUT*)pData;
+
+        if (raw->header.dwType == RIM_TYPEMOUSE) {
+
+            raw->data.mouse.lLastX = delta.x;
+            raw->data.mouse.lLastY = delta.y;
+
+            if (rawmouseR == true)
+                raw->data.mouse.usButtonFlags = RI_MOUSE_RIGHT_BUTTON_DOWN;
+            else raw->data.mouse.usButtonFlags = RI_MOUSE_RIGHT_BUTTON_UP;
+
+            if (rawmouseR == true)
+                raw->data.mouse.usButtonFlags = RI_MOUSE_LEFT_BUTTON_DOWN;
+            else raw->data.mouse.usButtonFlags = RI_MOUSE_LEFT_BUTTON_UP;
+
+            if (rawmouseWd == true)
+            {
+                raw->data.mouse.usButtonFlags = RI_MOUSE_WHEEL;
+                raw->data.mouse.usButtonData = -120;
+            }
+			else if (rawmouseWu == true)
+            {
+                raw->data.mouse.usButtonFlags = RI_MOUSE_WHEEL;
+                raw->data.mouse.usButtonData = 120;
+            }
+
+        }
+        if (raw->header.dwType == RIM_TYPEKEYBOARD && !g_fakeKeys.empty()) {
+            // Take the first fake key from the array
+            FakeKey fk = g_fakeKeys.front();
+            g_fakeKeys.erase(g_fakeKeys.begin());
+
+            raw->data.keyboard.VKey = fk.vkey;
+            raw->data.keyboard.MakeCode = MapVirtualKey(fk.vkey, MAPVK_VK_TO_VSC);
+            raw->data.keyboard.Flags = fk.press ? RI_KEY_MAKE : RI_KEY_BREAK;
+            raw->data.keyboard.Message = fk.press ? WM_KEYDOWN : WM_KEYUP;
         }
 
-        if (pData == NULL) {
-            *pcbSize = sizeof(RAWINPUT);
-            return 0;
-        }
-
-        RAWINPUT* storedData = &g_inputBuffer[bufferIndex];
-        memcpy(pData, storedData, sizeof(RAWINPUT));
-        return sizeof(RAWINPUT);
-
-    }
-    else {
-        return fpGetRawInputData(hRawInput, uiCommand, pData, pcbSize, cbSizeHeader);
-    }
-}
-
-void InjectFakeRawInput(const RAWINPUT& fakeInput) {
-    static size_t bufferCounter = 0;
-    bufferCounter = (bufferCounter + 1) % RAWINPUT_BUFFER_SIZE;
-    g_inputBuffer[bufferCounter] = fakeInput;
-
-    const LPARAM magicLParam = (bufferCounter) | 0xAB000000;
-
-    PostMessageW(hwnd, WM_INPUT, 0, magicLParam);
-}
-void GenerateRawMouse(int actionCode, bool press, int X, int Y) {
-    RAWINPUT ri = {};
-    ri.header.dwType = RIM_TYPEMOUSE;
-    ri.header.hDevice = NULL;
-    if (actionCode == -8) {
-        GenerateRawMouse(-1, true, 0, 0); GenerateRawMouse(-1, false, 0, 0);
-        GenerateRawMouse(-1, press, 0, 0); return;
-    }
-    switch (actionCode) {
-    case -1: ri.data.mouse.usButtonFlags = press ? RI_MOUSE_LEFT_BUTTON_DOWN : RI_MOUSE_LEFT_BUTTON_UP; break;
-    case -2: ri.data.mouse.usButtonFlags = press ? RI_MOUSE_RIGHT_BUTTON_DOWN : RI_MOUSE_RIGHT_BUTTON_UP; break;
-    case -3: ri.data.mouse.usButtonFlags = press ? RI_MOUSE_MIDDLE_BUTTON_DOWN : RI_MOUSE_MIDDLE_BUTTON_UP; break;
-    case -4: ri.data.mouse.usButtonFlags = press ? RI_MOUSE_BUTTON_4_DOWN : RI_MOUSE_BUTTON_4_UP; break;
-    case -5: ri.data.mouse.usButtonFlags = press ? RI_MOUSE_BUTTON_5_DOWN : RI_MOUSE_BUTTON_5_UP; break;
-    case -6: if (press) ri.data.mouse.usButtonFlags = RI_MOUSE_WHEEL; ri.data.mouse.usButtonData = WHEEL_DELTA; break;
-    case -7: if (press) ri.data.mouse.usButtonFlags = RI_MOUSE_WHEEL; ri.data.mouse.usButtonData = -WHEEL_DELTA; break;
-    case -9: ri.data.mouse.usFlags = MOUSE_MOVE_RELATIVE; ri.data.mouse.lLastX = X; ri.data.mouse.lLastY = Y; break; //move
-    }
-    InjectFakeRawInput(ri);
-}
-void GenerateRawKey(int vkCode, bool press, bool isExtended) {
-    if (vkCode == 0) return;
-
-    RAWINPUT ri = {};
-    ri.header.dwType = RIM_TYPEKEYBOARD;
-    ri.header.hDevice = NULL;
-
-    UINT scanCode = MapVirtualKey(vkCode, MAPVK_VK_TO_VSC);
-    ri.data.keyboard.MakeCode = scanCode;
-    ri.data.keyboard.Message = press ? WM_KEYDOWN : WM_KEYUP;
-    ri.data.keyboard.VKey = vkCode;
-    ri.data.keyboard.Flags = press ? RI_KEY_MAKE : RI_KEY_BREAK;
-
-    if (isExtended) {
-        ri.data.keyboard.Flags |= RI_KEY_E0;
     }
 
-    InjectFakeRawInput(ri);
-}
-void RawInputInitialize() {
-
-    HANDLE hWindowReadyEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (hWindowReadyEvent == NULL) {
-        return;
-    }
-    std::thread fore(RawInputWindowThread, hWindowReadyEvent);
-    fore.detach();
-
-    WaitForSingleObject(hWindowReadyEvent, 2000);
-    
-    CloseHandle(hWindowReadyEvent);
+    return result;
 }
 
 // Hooked GetKeyState
@@ -464,7 +400,7 @@ void SetupHook() {
         MH_CreateHook(&SetCursor, &HookedSetCursor, reinterpret_cast<LPVOID*>(&fpSetCursor));
         MH_EnableHook(&SetCursor);
     }
-    if (rawinputhook == 1)
+    if (rawinputhook == 1 || rawinputhook == 2)
     {
         MH_CreateHook(&GetRawInputData, &HookedGetRawInputData,reinterpret_cast<LPVOID*>(&fpGetRawInputData));
         MH_EnableHook(&GetRawInputData);
@@ -513,7 +449,7 @@ bool SendMouseClick(int x, int y, int z, int many) {
             PostMessage(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, clickPos);
             PostMessage(hwnd, WM_LBUTTONUP, 0, clickPos);
 
-			//rawmouse[0] = true;
+           // musLB = true;
 			//Sleep(5);
            // rawmouse[0] = false;
 
@@ -527,27 +463,23 @@ bool SendMouseClick(int x, int y, int z, int many) {
         if (z == 3) {
             PostMessage(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, clickPos);
             keystatesend = VK_LEFT;
-            if (rawinputhook == 1)
-                GenerateRawMouse(-1, true, 0, 0);
+            musLB = true;
         }
         if (z == 4)
         {
             PostMessage(hwnd, WM_LBUTTONUP, 0, clickPos);
-            if (rawinputhook == 1)
-                GenerateRawMouse(-1, false, 0, 0);
+            musLB = false;
 
         }
         if (z == 5) {
             PostMessage(hwnd, WM_RBUTTONDOWN, MK_RBUTTON, clickPos);
             keystatesend = VK_RIGHT;
-			if (rawinputhook == 1)
-                GenerateRawMouse(-2, true, 0, 0);
+            musRB = true;
         }
         if (z == 6)
         {
             PostMessage(hwnd, WM_RBUTTONUP, 0, clickPos);
-			if (rawinputhook == 1)
-                GenerateRawMouse(-2, false, 0, 0);
+            musRB = false;
 
         }
         if (z == 20 || z == 21) //WM_mousewheel need desktop coordinates
@@ -556,10 +488,14 @@ bool SendMouseClick(int x, int y, int z, int many) {
             ClientToScreen(hwnd, &heer);
             LPARAM clickPos = MAKELPARAM(heer.x, heer.y);
             WPARAM wParam = 0;
-            if (z == 20)
+            if (z == 20) {
                 wParam = MAKEWPARAM(0, -120); 
-            if (z == 21)
+                rawmouseWd = true;
+            }
+            if (z == 21) {
                 wParam = MAKEWPARAM(0, 120);
+                rawmouseWu = true;
+            }
             PostMessage(hwnd, WM_MOUSEWHEEL, wParam, clickPos);
         }
         if (z == 30) //WM_LBUTTONDBLCLK
@@ -1457,8 +1393,8 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
     keystatesend = mykey;
     PostMessage(hwnd, presskey, mykey, lParam);
    // PostMessage(hwnd, WM_INPUT, VK_RIGHT, lParam);
-    if (rawinputhook == 1)
-        GenerateRawKey(mykey, press, false);
+    if (rawinputhook == 1 || rawinputhook == 2)
+        GenerateRawKey(mykey, press);
     if (keytype == 63) {
         PostMessage(hwnd, presskey, 0x43, lParam);
     }
@@ -2904,7 +2840,7 @@ bool readsettings(){
     AxisUpsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisUpsens", 0, iniPath.c_str());
     AxisDownsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisDownsens", -16049, iniPath.c_str());
     scrollspeed3 = GetPrivateProfileInt(iniSettings.c_str(), "Scrollspeed", 150, iniPath.c_str());
-    righthanded = GetPrivateProfileInt(iniSettings.c_str(), "Righthanded", 0, iniPath.c_str());
+    righthanded = GetPrivateProfileInt(iniSettings.c_str(), "Righthanded", 1, iniPath.c_str());
     scanoption = GetPrivateProfileInt(iniSettings.c_str(), "Scan", 0, iniPath.c_str());
     GetPrivateProfileString(iniSettings.c_str(), "Radial_Deadzone", "0.2", buffer, sizeof(buffer), iniPath.c_str());
     radial_deadzone = std::stof(buffer); //sensitivity
@@ -3130,6 +3066,8 @@ void ThreadFunction(HMODULE hModule)
 	bool window = false;
     while (loop == true)
     {
+        rawmouseWu = false; //reset
+		rawmouseWd = false; //reset
         movedmouse = false; //reset
         keystatesend = 0; //reset keystate
 		foundit = false; //reset foundit the bmp search found or not
@@ -3152,8 +3090,6 @@ void ThreadFunction(HMODULE hModule)
                 staticPointX.assign(numphotoX + 1, POINT{ 0, 0 });
                 staticPointY.assign(numphotoY + 1, POINT{ 0, 0 });
                 initovector();
-                if (rawinputhook == 1)
-                    RawInputInitialize();
                 inithere = true;
             }
 			//   
@@ -3509,7 +3445,7 @@ void ThreadFunction(HMODULE hModule)
                         }
                     }
 
-                    POINT delta = CalculateUltimateCursorMove(
+                    delta = CalculateUltimateCursorMove(
                         Xaxis, Yaxis,
                         radial_deadzone, axial_deadzone, max_threshold,
                         curve_slope, curve_exponent,
@@ -3519,6 +3455,9 @@ void ThreadFunction(HMODULE hModule)
                         Xf += delta.x;
                         Yf += delta.y;
                         movedmouse = true;
+
+
+
                     }
                     if (Xf < rect.left) Xf = rect.left;
                     if (Xf > rect.right) Xf = rect.right;
@@ -3530,7 +3469,6 @@ void ThreadFunction(HMODULE hModule)
                         if (userealmouse == 0)
                         {
                                 SendMouseClick(Xf, Yf, 8, 1);
-                                GenerateRawMouse(-9, false, delta.x, delta.y);
                         }
 
                     }
@@ -3687,16 +3625,26 @@ void ThreadFunction(HMODULE hModule)
       //      ReleaseDC(pointerWindow, PointerWnd);
       //  }
         //ticks for scroll end delay
+		if (rawinputhook == 1) //to make game poll rawinput
+        { 
+            INPUT input = { 0 }; 
+            input.type = INPUT_MOUSE;
+            input.mi.dx = 0;
+            input.mi.dy = 0;
+            input.mi.dwFlags = MOUSEEVENTF_MOVE; // relative move
+            SendInput(1, &input, sizeof(INPUT));
+            input.type = INPUT_KEYBOARD;
+            input.ki.wVk = VK_OEM_PERIOD;
+            input.ki.dwFlags = KEYEVENTF_KEYUP;
+            SendInput(1, &input, sizeof(INPUT));
+        }
         if (tick < scrollenddelay)
             tick++;
         
         if (mode == 0)
             Sleep(10);
         if (mode > 0) {
-           // Sleep(sovetid); //15-80 //ini value
-            if (movedmouse == true)
-                Sleep(1 + responsetime ); //max 3. 0-2 on slow movement - calcsleep
-            else Sleep(2); //max 3. 0-2 on slow movement
+            Sleep(1 + responsetime);
         }
     } //loop end but endless
     return;

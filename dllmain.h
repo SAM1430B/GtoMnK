@@ -83,6 +83,8 @@ int getmouseonkey = 0;
 int message = 0;
 auto hInstance = nullptr;
 
+POINT delta;
+
 //hooks
 bool hooksinited = false;
 int keystatesend = 0; //key to send
@@ -209,7 +211,6 @@ COLORREF colors[5] = {
 
 };
 
-
 bool onoroff = true;
 
 //remember old keystates
@@ -235,6 +236,11 @@ bool oldup = false;
 bool olddown = false;
 bool oldleft = false;
 bool oldright = false;
+
+bool musLB = false;
+bool musRB = false;
+bool rawmouseWu = false;
+bool rawmouseWd = false;
 
 int startsearch = 0;
 int startsearchA = 0;
