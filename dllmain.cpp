@@ -129,9 +129,11 @@ UINT WINAPI HookedGetRawInputData(
                 raw->data.mouse.usButtonFlags = RI_MOUSE_RIGHT_BUTTON_DOWN;
             else raw->data.mouse.usButtonFlags = RI_MOUSE_RIGHT_BUTTON_UP;
 
-            if (rawmouseR == true)
+            if (rawmouseL == true)
                 raw->data.mouse.usButtonFlags = RI_MOUSE_LEFT_BUTTON_DOWN;
             else raw->data.mouse.usButtonFlags = RI_MOUSE_LEFT_BUTTON_UP;
+
+
 
             if (rawmouseWd == true)
             {
@@ -143,6 +145,7 @@ UINT WINAPI HookedGetRawInputData(
                 raw->data.mouse.usButtonFlags = RI_MOUSE_WHEEL;
                 raw->data.mouse.usButtonData = 120;
             }
+            else raw->data.mouse.usButtonData = 0;
 
         }
         if (raw->header.dwType == RIM_TYPEKEYBOARD && !g_fakeKeys.empty()) {
