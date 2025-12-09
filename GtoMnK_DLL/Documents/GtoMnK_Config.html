@@ -322,16 +322,17 @@
                 <label>Sensitivity</label>
                 <div class="input-group">
                     <div class="arrow-btn" onclick="toggleSection(this, 'sens-options')" title="Advanced Mouse Options">▼</div>
-                    <input type="text" id="Sensitivity" title="The base speed of the mouse move.&#10;Higher values make the cursor move faster." value="1.45">
+                    <input type="text" id="Sensitivity" title="The base speed of the mouse move.&#10;Higher values make the cursor move faster." value="5.00">
                 </div>
             </div>
             <div id="sens-options" class="hidden-content">
+                <div class="setting-row"><label title="Sensitivity Multiplier. 1.0 uses global Sensitivity.">Sensitivity Multiplier</label><input type="text" id="Sensitivity_Multiplier" title="Further scales the base sensitivity.&#10;Higher values make the cursor move faster." value="2.40"></div>
                 <div class="setting-row"><label title="Horizontal Sensitivity. 0.0 uses global Sensitivity.">Horiz. Sens.</label><input type="text" id="Horizontal_Sensitivity" title="Horizontal Sensitivity.&#10;Range: -1.0 (-100%) to 1.0 (100%)." value="0.0"></div>
-                <div class="setting-row"><label title="Vertical Sensitivity. 0.0 uses global Sensitivity.">Vert. Sens.</label><input type="text" id="Vertical_Sensitivity" title="Vertical Sensitivity.&#10;Range: -1.0 (-100%) to 1.0 (100%)." value="0.0"></div>
-                <div class="setting-row"><label>Accel Multiplier</label><input type="text" id="Accel_Multiplier" title="A multiplier that affects the final speed after the acceleration curve (Curve Slope and Curve Exponent) is applied." value="3.0"></div>
-                <div class="setting-row"><label>Max Threshold</label><input type="text" id="Max_Threshold" title="An outer deadzone. Allows the mouse to reach max speed before the stick is fully pushed.&#10;Range: 0.0 to 0.15 (15%)." value="0.01"></div>
-                <div class="setting-row"><label>Curve Slope</label><input type="text" id="Curve_Slope" title="The initial, linear part of the movement..&#10;Higher value = more linear." value="0.30"></div>
-                <div class="setting-row"><label>Curve Exponent</label><input type="text" id="Curve_Exponent" title="How sharply the speed ramps up.&#10;Higher value = more acceleration." value="6.50"></div>
+                <div class="setting-row"><label title="Vertical Sensitivity. 0.0 uses global Sensitivity.">Vert. Sens.</label><input type="text" id="Vertical_Sensitivity" title="Vertical Sensitivity.&#10;Range: -1.0 (-100%) to 1.0 (100%)." value="0.58"></div>
+                <div class="setting-row"><label>Max Threshold</label><input type="text" id="Max_Threshold" title="An outer deadzone. Allows the mouse to reach max speed before the stick is fully pushed.&#10;Range: 0.0 to 0.15 (15%)." value="0.045"></div>
+                <div class="setting-row"><label title="Look Accel Multiplier. 1.0 uses global Sensitivity.">Look_Accel_Multiplier.</label><input type="text" id="Look_Accel_Multiplier" title="Boosts speed when stick is near the edge.&#10;Value = 1.0: No boost. Value > 1.0: Boosts speed." value="1.40"></div>
+                <div class="setting-row"><label>Curve Slope</label><input type="text" id="Curve_Slope" title="The initial, linear part of the movement..&#10;Higher value = more linear." value="0.16"></div>
+                <div class="setting-row"><label>Curve Exponent</label><input type="text" id="Curve_Exponent" title="How sharply the speed ramps up.&#10;Higher value = more acceleration." value="1.85"></div>
 
                 <div style="margin-top: 15px; font-size: 0.9em; text-align: center;">
                     <a href="https://www.desmos.com/calculator/zqyusvabap" target="_blank" style="color: var(--accent); text-decoration: none; font-weight: bold;">
@@ -350,7 +351,7 @@
             <div id="deadzone-options" class="hidden-content">
                 <div class="setting-row"><label>Axial Deadzone</label><input type="text" id="Axial_Deadzone" title="The Square-shaped deadzone with cardinal guiding.&#10;Range: 0.0 to 1.0 (100%)." value="0.0"></div>
                 <div class="setting-row"><label title="Deadzone for using sticks as digital buttons">StickAsBtn Deadzone</label><input type="text" id="StickAsButtonDeadzone" title="Thumbstick As Button Deadzone.&#10;Range: 0.0 to 1.0 (100%)." value="0.25"></div>
-                <div class="setting-row"><label title="0-255 Threshold for triggers">Trigger Threshold</label><input type="text" id="TriggerThreshold" title="Range: 0 (hair trigger) to 255 (must be pulled all the way)." value="175"></div>
+                <div class="setting-row"><label title="0-255 Threshold for triggers">Trigger Threshold</label><input type="text" id="TriggerThreshold" title="Range: 0 (hair trigger) to 255 (must be pulled all the way)." value="40"></div>
 
                 <div style="margin-top: 15px; font-size: 0.9em; text-align: center;">
                     <a href="https://www.desmos.com/calculator/zqyusvabap" target="_blank" style="color: var(--accent); text-decoration: none; font-weight: bold;">
@@ -744,18 +745,19 @@
             document.getElementById('Righthanded').value = "1";
             document.getElementById('DrawProtoFakeCursor').checked = false;
 
-            document.getElementById('Sensitivity').value = "1.45";
+            document.getElementById('Sensitivity').value = "5.00";
+            document.getElementById('Sensitivity_Multiplier').value = "2.40";
             document.getElementById('Horizontal_Sensitivity').value = "0.0";
-            document.getElementById('Vertical_Sensitivity').value = "0.0";
-            document.getElementById('Accel_Multiplier').value = "3.0";
-            document.getElementById('Max_Threshold').value = "0.01";
-            document.getElementById('Curve_Slope').value = "0.30";
-            document.getElementById('Curve_Exponent').value = "6.50";
+            document.getElementById('Vertical_Sensitivity').value = "0.58";
+            document.getElementById('Max_Threshold').value = "0.045";
+            document.getElementById('Look_Accel_Multiplier').value = "1.40";
+            document.getElementById('Curve_Slope').value = "0.16";
+            document.getElementById('Curve_Exponent').value = "1.85";
 
             document.getElementById('Radial_Deadzone').value = "0.1";
             document.getElementById('Axial_Deadzone').value = "0.0";
             document.getElementById('StickAsButtonDeadzone').value = "0.25";
-            document.getElementById('TriggerThreshold').value = "175";
+            document.getElementById('TriggerThreshold').value = "40";
 
             document.getElementById('GetCursorposHook').checked = true;
             document.getElementById('SetCursorposHook').checked = true;
@@ -793,19 +795,13 @@ InputMethod=${getSet('InputMethod')}
 GetCursorposHook=${getSet('GetCursorposHook')}
 SetCursorposHook=${getSet('SetCursorposHook')}
 ClipCursorHook=${getSet('ClipCursorHook')}
+SetCursorHook=0
 
 GetKeystateHook=${getSet('GetKeystateHook')}
 GetAsynckeystateHook=${getSet('GetAsynckeystateHook')}
 GetKeyboardstateHook=${getSet('GetKeyboardstateHook')}
-SetCursorHook=0
 
 [MessageFilter]
-RawInputFilter=0
-MouseMoveFilter=0
-MouseActivateFilter=0
-WindowActivateFilter=0
-WindowActivateAppFilter=0
-MouseWheelFilter=0
 MouseButtonFilter=${getSet('MouseButtonFilter')}
 KeyboardButtonFilter=${getSet('KeyboardButtonFilter')}
 
@@ -813,26 +809,28 @@ KeyboardButtonFilter=${getSet('KeyboardButtonFilter')}
 Controllerid=0
 Mode=${getSet('Mode')}
 DrawProtoFakeCursor=${getSet('DrawProtoFakeCursor')}
-Responsetime=0
+Responsetime=4
 
 [StickToMouse]
 Righthanded=${getSet('Righthanded')}
+
 Sensitivity=${getSet('Sensitivity')}
+Sensitivity_Multiplier=${getSet('Sensitivity_Multiplier')}
 Horizontal_Sensitivity=${getSet('Horizontal_Sensitivity')}
 Vertical_Sensitivity=${getSet('Vertical_Sensitivity')}
+Max_Threshold=${getSet('Max_Threshold')}
 
 Radial_Deadzone=${getSet('Radial_Deadzone')}
 Axial_Deadzone=${getSet('Axial_Deadzone')}
-Max_Threshold=${getSet('Max_Threshold')}
-Accel_Multiplier=${getSet('Accel_Multiplier')}
 
+Look_Accel_Multiplier=${getSet('Look_Accel_Multiplier')}
 Curve_Slope=${getSet('Curve_Slope')}
 Curve_Exponent=${getSet('Curve_Exponent')}
 
 [KeyMapping]
 EnableMouseDoubleClick=0
-TriggerThreshold=${getSet('TriggerThreshold')}
 StickAsButtonDeadzone=${getSet('StickAsButtonDeadzone')}
+TriggerThreshold=${getSet('TriggerThreshold')}
 
 A=${getVal('A')}
 B=${getVal('B')}

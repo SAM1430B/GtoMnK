@@ -13,6 +13,7 @@ extern HWND hwnd;
 extern int controllerID;
 
 extern float sensitivity;
+extern float sensitivity_multiplier;
 extern float horizontal_sensitivity;
 extern float vertical_sensitivity;
 extern float max_threshold;
@@ -22,9 +23,9 @@ extern float axial_deadzone;
 extern float stick_as_button_deadzone;
 extern float g_TriggerThreshold;
 
+extern float look_accel_multiplier;
 extern float curve_slope;
 extern float curve_exponent;
-extern float accel_multiplier;
 
 namespace GtoMnK {
 
@@ -56,20 +57,23 @@ namespace GtoMnK {
             // It has a value, but also holds children. Starts Collapsed (false).
 
             { "Sensitivity", &sensitivity,                              0.05f,   0.1f,  30.0f,  1,  0, false },
-            { "Horiz Sens", &horizontal_sensitivity,                    0.05f,  -1.0f,   1.0f,  2,  1, false },
-            { "Vert Sens", &vertical_sensitivity,                       0.05f,  -1.0f,   1.0f,  3,  1, false },
 #if defined(_DEBUG) || defined(ENABLE_LOGGING)
-            { "Max Threshold", &max_threshold,                         0.005f,   0.0f,  0.15f,  4,  1, false },
+            { "Sensitivity Multiplier", &sensitivity_multiplier,        0.05f,   0.1f,  30.0f,  2,  1, false },
 #endif
-            { "Radial Deadzone", &radial_deadzone,                      0.01f,   0.0f,   1.0f,  5,  0, false },
-            { "Axial Deadzone", &axial_deadzone,                        0.01f,   0.0f,   1.0f,  6,  5, false },
-            { "Stick As Btn Deadzone", &stick_as_button_deadzone,       0.01f,   0.0f,   1.0f,  7,  5, false },
-            { "Trigger Threshold", &g_TriggerThreshold,                 5.00f,   0.0f, 255.0f,  8,  5, false },
+            { "Horiz Sens", &horizontal_sensitivity,                   0.005f,  -1.0f,   1.0f,  3,  1, false },
+            { "Vert Sens", &vertical_sensitivity,                      0.005f,  -1.0f,   1.0f,  4,  1, false },
+#if defined(_DEBUG) || defined(ENABLE_LOGGING)
+            { "Max Threshold", &max_threshold,                         0.005f,   0.0f,  0.15f,  5,  1, false },
+#endif
+            { "Radial Deadzone", &radial_deadzone,                      0.01f,   0.0f,   1.0f,  6,  0, false },
+            { "Axial Deadzone", &axial_deadzone,                        0.01f,   0.0f,   1.0f,  7,  6, false },
+            { "Stick As Btn Deadzone", &stick_as_button_deadzone,       0.01f,   0.0f,   1.0f,  8,  6, false },
+            { "Trigger Threshold", &g_TriggerThreshold,                 1.00f,   0.0f, 255.0f,  9,  6, false },
 
 #if defined(_DEBUG) || defined(ENABLE_LOGGING)
-            { "Curve Slope", &curve_slope,                             0.005f,   0.0f,   5.0f,  9,  0, false },
-            { "Curve Exponent", &curve_exponent,                        0.05f,   0.0f,  15.0f, 10,  9, false },
-            { "Accel Multiplier", &accel_multiplier,                     0.1f,   1.0f,  10.0f, 11,  9, false }
+            { "LookAccel Multiplier", &look_accel_multiplier,           0.005f,   0.1f,  10.0f, 10,   0, false },
+            { "Curve Slope", &curve_slope,                              0.005f,   0.0f,   5.0f, 11,  10, false },
+            { "Curve Exponent", &curve_exponent,                        0.005f,   0.0f,  15.0f, 12,  10, false }
 #endif
         };
     }
@@ -449,9 +453,6 @@ namespace GtoMnK {
     }
 
     void OverlayMenu::UpdatePositionLoopInternal() {
-        bool wasGameActive = false;
-        bool firstRun = true;
-
         while (true) {
             if (isMenuOpen && IsWindow(hwnd)) {
                 
