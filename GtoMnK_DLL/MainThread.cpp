@@ -5,7 +5,6 @@
 #include "Keyboard.h"
 #include "InputState.h"
 #include "RawInput.h"
-#include <easyhook.h>
 #include "MainThread.h"
 #include "FakeCursor.h"
 #include "OverlayMenu.h"
@@ -51,7 +50,7 @@ int keystatesend = 0;
 
 // For Controller Setting
 int controllerID = 0;
-float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, accel_multiplier, horizontal_sensitivity, vertical_sensitivity;
+float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, sensitivity_multiplier, horizontal_sensitivity, vertical_sensitivity, look_accel_multiplier;
 float stick_as_button_deadzone;
 float g_TriggerThreshold = 175;
 
@@ -243,19 +242,20 @@ void LoadIniSettings() {
 
     // [StickToMouse]
     righthanded = GetPrivateProfileIntA("StickToMouse", "Righthanded", 2, iniPath.c_str());
-    GetPrivateProfileStringA("StickToMouse", "Sensitivity", "1.45", buffer, sizeof(buffer), iniPath.c_str()); sensitivity = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Sensitivity", "5.00", buffer, sizeof(buffer), iniPath.c_str()); sensitivity = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Sensitivity_Multiplier", "2.40", buffer, sizeof(buffer), iniPath.c_str()); sensitivity_multiplier = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Horizontal_Sensitivity", "0.0", buffer, sizeof(buffer), iniPath.c_str()); horizontal_sensitivity = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Vertical_Sensitivity", "0.0", buffer, sizeof(buffer), iniPath.c_str()); vertical_sensitivity = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Accel_Multiplier", "3.0", buffer, sizeof(buffer), iniPath.c_str()); accel_multiplier = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Vertical_Sensitivity", "0.58", buffer, sizeof(buffer), iniPath.c_str()); vertical_sensitivity = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Max_Threshold", "0.045", buffer, sizeof(buffer), iniPath.c_str()); max_threshold = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Radial_Deadzone", "0.1", buffer, sizeof(buffer), iniPath.c_str()); radial_deadzone = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Axial_Deadzone", "0.0", buffer, sizeof(buffer), iniPath.c_str()); axial_deadzone = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Max_Threshold", "0.01", buffer, sizeof(buffer), iniPath.c_str()); max_threshold = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Curve_Slope", "0.30", buffer, sizeof(buffer), iniPath.c_str()); curve_slope = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Curve_Exponent", "6.50", buffer, sizeof(buffer), iniPath.c_str()); curve_exponent = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Look_Accel_Multiplier", "1.40", buffer, sizeof(buffer), iniPath.c_str()); look_accel_multiplier = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Curve_Slope", "0.16", buffer, sizeof(buffer), iniPath.c_str()); curve_slope = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Curve_Exponent", "1.85", buffer, sizeof(buffer), iniPath.c_str()); curve_exponent = std::stof(buffer);
 
     // [KeyMapping] Section
     g_EnableMouseDoubleClick = GetPrivateProfileIntA("KeyMapping", "EnableMouseDoubleClick", 0, iniPath.c_str()) == 1;
-    GetPrivateProfileStringA("KeyMapping", "TriggerThreshold", "175", buffer, sizeof(buffer), iniPath.c_str()); g_TriggerThreshold = std::stof(buffer);
+    GetPrivateProfileStringA("KeyMapping", "TriggerThreshold", "40", buffer, sizeof(buffer), iniPath.c_str()); g_TriggerThreshold = std::stof(buffer);
     GetPrivateProfileStringA("KeyMapping", "StickAsButtonDeadzone", "0.25", buffer, sizeof(buffer), iniPath.c_str()); stick_as_button_deadzone = std::stof(buffer);
 
     GetPrivateProfileStringA("KeyMapping", "A", "13", buffer, sizeof(buffer), iniPath.c_str());
@@ -321,38 +321,72 @@ void LoadIniSettings() {
 }
 
 POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
+
+    const double c = radial_deadzone;
+    const double s = axial_deadzone;
+    const double m = max_threshold;
+    const double b = curve_slope;
+    const double a = curve_exponent;
+    const double t = look_accel_multiplier;
+
+    double base_sensitivity = sensitivity;
+
+    double safe_multiplier = (sensitivity_multiplier <= 0.001) ? 1.0 : sensitivity_multiplier;
+
     static double mouseDeltaAccumulatorX = 0.0;
     static double mouseDeltaAccumulatorY = 0.0;
 
     double normX = static_cast<double>(stickX) / 32767.0;
     double normY = static_cast<double>(stickY) / 32767.0;
+
+    if (std::abs(normX) < s) normX = 0.0;
+    if (std::abs(normY) < s) normY = 0.0;
+
     double magnitude = std::sqrt(normX * normX + normY * normY);
+    if (magnitude < c) return { 0, 0 };
+    if (magnitude > 1.0) magnitude = 1.0;
 
-    if (magnitude < radial_deadzone) return { 0, 0 };
-    if (std::abs(normX) < axial_deadzone) normX = 0.0;
-    if (std::abs(normY) < axial_deadzone) normY = 0.0;
-
-    magnitude = std::sqrt(normX * normX + normY * normY);
-    if (magnitude < 1e-6) return { 0, 0 };
-
-    double effectiveRange = 1.0 - max_threshold - radial_deadzone;
+    double effectiveRange = 1.0 - c;
     if (effectiveRange < 1e-6) effectiveRange = 1.0;
 
-    double remappedMagnitude = (magnitude - radial_deadzone) / effectiveRange;
-    remappedMagnitude = (std::max)(0.0, (std::min)(1.0, remappedMagnitude));
+    double x = (magnitude - c) / effectiveRange;
 
-    double curvedMagnitude = curve_slope * remappedMagnitude + (1.0 - curve_slope) * std::pow(remappedMagnitude, curve_exponent);
-    double finalSpeedX = sensitivity * (1.0f + horizontal_sensitivity) * accel_multiplier;
-    double finalSpeedY = sensitivity * (1.0f + vertical_sensitivity) * accel_multiplier;
+    double finalCurveValue = 0.0;
+    double accelBoundary = 1.0 - m;
+    accelBoundary = (std::max)(0.0, (std::min)(1.0, accelBoundary));
+
+    if (x <= accelBoundary) {
+        finalCurveValue = b * x + (1.0 - b) * std::pow(x, a);
+    }
+    else {
+        double kneeValue = b * accelBoundary + (1.0 - b) * std::pow(accelBoundary, a);
+
+        double rampWidth = 1.0 - accelBoundary;
+
+        if (rampWidth <= 1e-6) {
+            finalCurveValue = t;
+        }
+        else {
+            double rampProgress = (x - accelBoundary) / rampWidth;
+            finalCurveValue = kneeValue + (t - kneeValue) * rampProgress;
+        }
+    }
+
+    double finalSpeedX = base_sensitivity * safe_multiplier * (1.0f + horizontal_sensitivity);
+    double finalSpeedY = base_sensitivity * safe_multiplier * (1.0f + vertical_sensitivity);
+
     double dirX = normX / magnitude;
     double dirY = normY / magnitude;
-    double finalMouseDeltaX = dirX * curvedMagnitude * finalSpeedX;
-    double finalMouseDeltaY = dirY * curvedMagnitude * finalSpeedY;
+
+    double finalMouseDeltaX = dirX * finalCurveValue * finalSpeedX;
+    double finalMouseDeltaY = dirY * finalCurveValue * finalSpeedY;
 
     mouseDeltaAccumulatorX += finalMouseDeltaX;
     mouseDeltaAccumulatorY += finalMouseDeltaY;
+
     LONG integerDeltaX = static_cast<LONG>(mouseDeltaAccumulatorX);
     LONG integerDeltaY = static_cast<LONG>(mouseDeltaAccumulatorY);
+
     mouseDeltaAccumulatorX -= integerDeltaX;
     mouseDeltaAccumulatorY -= integerDeltaY;
 
