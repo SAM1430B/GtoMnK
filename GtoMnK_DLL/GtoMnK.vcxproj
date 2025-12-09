@@ -145,7 +145,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>echo Copying MinHook DLLs...
+      <Command>echo Copying...
 copy "$(SolutionDir)include\EasyHook\EasyHook32.dll" "$(TargetDir)"
 copy "$(ProjectDir)Documents\GtoMnK_Keys.txt" "$(TargetDir)"
 copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
@@ -174,10 +174,10 @@ copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
       <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>echo Copying MinHook DLLs...
+      <Command>echo Copying...
 copy "$(SolutionDir)include\EasyHook\EasyHook32.dll" "$(TargetDir)"
-copy "$(ProjectDir)Documents\GtoMnK_Keys.txt" "$(TargetDir)"
-copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
+robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x32" "$(TargetDir)Loader.x32" /E /MIR
+exit /b 0</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">
@@ -203,10 +203,11 @@ copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
       <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>echo Copying MinHook DLLs...
+      <Command>echo Copying...
 copy "$(SolutionDir)include\EasyHook\EasyHook32.dll" "$(TargetDir)"
-copy "$(ProjectDir)Documents\GtoMnK_Keys.txt" "$(TargetDir)"
-copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
+robocopy "$(ProjectDir)Documents" "$(TargetDir)Config" /E /MIR
+robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x32" "$(TargetDir)Loader.x32" /E /MIR
+exit /b 0</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -228,7 +229,7 @@ copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
       <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>echo Copying MinHook DLLs...
+      <Command>echo Copying...
 copy "$(SolutionDir)include\EasyHook\EasyHook64.dll" "$(TargetDir)"
 copy "$(ProjectDir)Documents\GtoMnK_Keys.txt" "$(TargetDir)"
 copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
@@ -257,10 +258,8 @@ copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
       <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>echo Copying MinHook DLLs...
-copy "$(SolutionDir)include\EasyHook\EasyHook64.dll" "$(TargetDir)"
-copy "$(ProjectDir)Documents\GtoMnK_Keys.txt" "$(TargetDir)"
-copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
+      <Command>echo Copying...
+copy "$(SolutionDir)include\EasyHook\EasyHook64.dll" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
@@ -286,10 +285,9 @@ copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
       <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>echo Copying MinHook DLLs...
+      <Command>echo Copying...
 copy "$(SolutionDir)include\EasyHook\EasyHook64.dll" "$(TargetDir)"
-copy "$(ProjectDir)Documents\GtoMnK_Keys.txt" "$(TargetDir)"
-copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
+robocopy "$(ProjectDir)Documents" "$(TargetDir)Config" /E /MIR</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -346,6 +344,9 @@ copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Documents\GtoMnK_Config.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Version.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
