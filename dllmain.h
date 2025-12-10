@@ -27,8 +27,9 @@ bool movedmouse;
 HMODULE g_hModule = nullptr;
 
 typedef BOOL(WINAPI* GetCursorPos_t)(LPPOINT lpPoint);
-typedef BOOL(WINAPI* SetCursorPos_t)(int X, int Y);
+typedef BOOL(WINAPI* SetCursorPos_t)(int X, int Y); //GetKeyboardState
 
+typedef SHORT(WINAPI* GetKeyboardState_t)(PBYTE lpKeyState);
 typedef SHORT(WINAPI* GetAsyncKeyState_t)(int vKey);
 typedef SHORT(WINAPI* GetKeyState_t)(int nVirtKey);
 typedef BOOL(WINAPI* ClipCursor_t)(const RECT*);
@@ -51,7 +52,7 @@ bool rawmouseR = false;//0:scroll 1:left 2:right 3:up 4:down
 
 CRITICAL_SECTION critical; //window thread
 //CRITICAL_SECTION criticalA; //Scannning thread
-
+GetKeyboardState_t fpGetKeyboardState = nullptr;
 GetCursorPos_t fpGetCursorPos = nullptr;
 GetCursorPos_t fpSetCursorPos = nullptr;
 GetAsyncKeyState_t fpGetAsyncKeyState = nullptr;
@@ -96,6 +97,7 @@ int setcursorposhook = 0;
 int setcursorhook = 0;
 int rawinputhook = 0;
 int GetCursorInfoHook = 0;
+int GetKeyboardStateHook = 0;
 bool nodrawcursor = false;
 
 int ignorerect = 0;

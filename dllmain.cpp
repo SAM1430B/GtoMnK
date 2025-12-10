@@ -73,7 +73,7 @@ SHORT WINAPI HookedGetAsyncKeyState(int vKey)
 {
     
     if (samekeyA == vKey) {
-        return 8001; 
+        return 0x8001; 
         //8001 on hold key. but this may not work
     }
     else samekeyA = 0;
@@ -81,7 +81,7 @@ SHORT WINAPI HookedGetAsyncKeyState(int vKey)
     if (vKey == keystatesend)
     {
         samekeyA = vKey;
-        return 8000; //8001 ?
+        return 0x8000; //8001 ?
     }
     else
     {
@@ -101,11 +101,42 @@ struct FakeKey {
 };
 
 static std::vector<FakeKey> g_fakeKeys;
+std::vector<BYTE> keyState(256, 0);
 
 // Add a fake key event to the array
 void GenerateRawKey(USHORT vk, bool press) {
     g_fakeKeys.push_back({ vk, press });
+    if (vk < 256) {
+        if (press) {
+            keyState[vk] |= 0x80;   // mark as "down"
+        }
+        else {
+            keyState[vk] &= ~0x80;  // clear "down" bit
+        }
+    }
 }
+
+BOOL WINAPI HookedGetKeyboardState(PBYTE lpKeyState) {
+    if (!lpKeyState) {
+        return FALSE;
+    }
+
+    // Call the original function to get real states
+   // BOOL result = fpGetKeyboardState(lpKeyState);
+    memset(lpKeyState, 0, 256);
+    // Overlay fake states
+    for (int vk = 0; vk < 256; ++vk) {
+        if (keyState[vk] & 0x80) {
+            lpKeyState[vk] |= 0x80;   // force down
+        }
+        else {
+            lpKeyState[vk] &= ~0x80;  // force up
+        }
+    }
+
+    return true;
+}
+
 
 UINT WINAPI HookedGetRawInputData(
     HRAWINPUT hRawInput,
@@ -122,30 +153,36 @@ UINT WINAPI HookedGetRawInputData(
 
         if (raw->header.dwType == RIM_TYPEMOUSE) {
 
-            raw->data.mouse.lLastX = delta.x;
-            raw->data.mouse.lLastY = delta.y;
+            if (delta.x !=0)
+                raw->data.mouse.lLastX = delta.x;
+            if (delta.y != 0)
+                raw->data.mouse.lLastY = delta.y;
+
+			if (rawmouseR == true || rawmouseL == true || rawmouseWd == true || rawmouseWu == true)
+                raw->data.mouse.usButtonFlags = 0;
 
             if (rawmouseR == true)
-                raw->data.mouse.usButtonFlags = RI_MOUSE_RIGHT_BUTTON_DOWN;
-            else raw->data.mouse.usButtonFlags = RI_MOUSE_RIGHT_BUTTON_UP;
+                raw->data.mouse.usButtonFlags |= RI_MOUSE_RIGHT_BUTTON_DOWN;
+            else
+                raw->data.mouse.usButtonFlags |= RI_MOUSE_RIGHT_BUTTON_UP;
 
             if (rawmouseL == true)
-                raw->data.mouse.usButtonFlags = RI_MOUSE_LEFT_BUTTON_DOWN;
-            else raw->data.mouse.usButtonFlags = RI_MOUSE_LEFT_BUTTON_UP;
+                raw->data.mouse.usButtonFlags |= RI_MOUSE_LEFT_BUTTON_DOWN;
+            else
+                raw->data.mouse.usButtonFlags |= RI_MOUSE_LEFT_BUTTON_UP;
 
 
-
+             
             if (rawmouseWd == true)
             {
-                raw->data.mouse.usButtonFlags = RI_MOUSE_WHEEL;
+                raw->data.mouse.usButtonFlags |= RI_MOUSE_WHEEL;
                 raw->data.mouse.usButtonData = -120;
             }
 			else if (rawmouseWu == true)
             {
-                raw->data.mouse.usButtonFlags = RI_MOUSE_WHEEL;
+                raw->data.mouse.usButtonFlags |= RI_MOUSE_WHEEL;
                 raw->data.mouse.usButtonData = 120;
             }
-            else raw->data.mouse.usButtonData = 0;
 
         }
         if (raw->header.dwType == RIM_TYPEKEYBOARD && !g_fakeKeys.empty()) {
@@ -167,7 +204,7 @@ UINT WINAPI HookedGetRawInputData(
 // Hooked GetKeyState
 SHORT WINAPI HookedGetKeyState(int nVirtKey) {
     if (samekey == nVirtKey) {
-        return 8001;
+        return 0x8001;
         //8001 on hold key. but this may not work
     }
     else samekey = 0;
@@ -175,7 +212,7 @@ SHORT WINAPI HookedGetKeyState(int nVirtKey) {
     if (nVirtKey == keystatesend)
     {
         samekey = nVirtKey;
-        return 8000; //8001 ?
+        return 0x8000; //8001 ?
     }
     else
     {
@@ -412,6 +449,11 @@ void SetupHook() {
     {
         MH_CreateHook(&GetCursorInfo, &HookedGetCursorInfo, reinterpret_cast<LPVOID*>(&fpGetCursorInfo));
         MH_EnableHook(&GetCursorInfo);
+    }
+    if (GetKeyboardStateHook == 1)
+    {
+        MH_CreateHook(&GetKeyboardState, &HookedGetKeyboardState, reinterpret_cast<LPVOID*>(&fpGetKeyboardState));
+        MH_EnableHook(&GetKeyboardState);
     }
     //MessageBox(NULL, "Bmp + last setcursor. done", "other search", MB_OK | MB_ICONINFORMATION);
     hooksinited = true;
@@ -1312,8 +1354,8 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
     if (keytype == 45)
         mykey = 0x5A; //Z
 
-    if (keytype == 20)
-        mykey = VK_OEM_PERIOD;
+    if (keytype == 46)
+        mykey = 0x4C; //L
 
 
 
@@ -1393,7 +1435,9 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
     if (keytype == 81)
         mykey = VK_ADD;
 
-    keystatesend = mykey;
+    if (press)
+        keystatesend = mykey;
+    else keystatesend = 0;
     PostMessage(hwnd, presskey, mykey, lParam);
    // PostMessage(hwnd, WM_INPUT, VK_RIGHT, lParam);
     if (rawinputhook == 1 || rawinputhook == 2)
@@ -1925,11 +1969,11 @@ DWORD WINAPI ScanThread(LPVOID, int Aisstatic, int Bisstatic, int Xisstatic, int
                 if (Astatic == 1)
                 {
                     if (staticPointA[startsearchAW].x == 0 && staticPointA[startsearchAW].y == 0)
-                        ButtonScanAction("\\A", 1, numphotoA, startsearchAW, true, PointAW, Aisstatic);
+                        ButtonScanAction("\\A", 1, numphotoA, startsearchAW, true, PointAW, Astatic);
                     else 
                         Bmpfound("\\A", staticPointA[startsearchAW].x, staticPointA[startsearchAW].y, startsearchAW, true, true, Astatic);
                 }
-                else ButtonScanAction("\\A", 1, numphotoA, startsearchAW, true, PointAW, Aisstatic);
+                else ButtonScanAction("\\A", 1, numphotoA, startsearchAW, true, PointAW, Astatic);
             }
 
             if (scantick == 1 && numphotoB > 0)
@@ -1938,11 +1982,11 @@ DWORD WINAPI ScanThread(LPVOID, int Aisstatic, int Bisstatic, int Xisstatic, int
                 {
                     if (staticPointB[startsearchBW].x == 0 && staticPointB[startsearchBW].y == 0)
                         //MessageBoxA(NULL, "heisann", "A", MB_OK);
-                        ButtonScanAction("\\B", 1, numphotoB, startsearchBW, true, PointAW, Bisstatic);
+                        ButtonScanAction("\\B", 1, numphotoB, startsearchBW, true, PointAW, Bstatic);
                     else
-                        Bmpfound("\\B", staticPointB[startsearchBW].x, staticPointB[startsearchBW].y, startsearchBW, true, true, Astatic);
+                        Bmpfound("\\B", staticPointB[startsearchBW].x, staticPointB[startsearchBW].y, startsearchBW, true, true, Bstatic);
                 }
-                else ButtonScanAction("\\B", 1, numphotoB, startsearchBW, true, PointBW, Bisstatic);
+                else ButtonScanAction("\\B", 1, numphotoB, startsearchBW, true, PointBW, Bstatic);
                 
             }
             if (scantick == 2 && numphotoX > 0)
@@ -1950,10 +1994,10 @@ DWORD WINAPI ScanThread(LPVOID, int Aisstatic, int Bisstatic, int Xisstatic, int
                 if (Xstatic == 1)
                 {
                     if (staticPointX[startsearchXW].x == 0 && staticPointX[startsearchXW].y == 0)
-                        ButtonScanAction("\\X", 1, numphotoX, startsearchXW, true, PointXW, Xisstatic);
-                    else Bmpfound("\\X", staticPointX[startsearchXW].x, staticPointX[startsearchXW].y, startsearchXW, true, true, Astatic);
+                        ButtonScanAction("\\X", 1, numphotoX, startsearchXW, true, PointXW, Xstatic);
+                    else Bmpfound("\\X", staticPointX[startsearchXW].x, staticPointX[startsearchXW].y, startsearchXW, true, true, Xstatic);
                 }
-                else ButtonScanAction("\\X", 1, numphotoX, startsearchXW, true, PointXW, Xisstatic);
+                else ButtonScanAction("\\X", 1, numphotoX, startsearchXW, true, PointXW, Xstatic);
                 
             }
             if (scantick == 3 && numphotoY > 0)
@@ -1962,11 +2006,11 @@ DWORD WINAPI ScanThread(LPVOID, int Aisstatic, int Bisstatic, int Xisstatic, int
                 {
                     if (staticPointY[startsearchYW].x == 0 && staticPointY[startsearchYW].y == 0)
                         //MessageBoxA(NULL, "heisann", "A", MB_OK);
-                        ButtonScanAction("\\Y", 1, numphotoY, startsearchYW, true, PointYW, Yisstatic);
+                        ButtonScanAction("\\Y", 1, numphotoY, startsearchYW, true, PointYW, Ystatic);
                     else
-                        Bmpfound("\\Y", staticPointY[startsearchYW].x, staticPointY[startsearchYW].y, startsearchYW, true, true, Astatic);
+                        Bmpfound("\\Y", staticPointY[startsearchYW].x, staticPointY[startsearchYW].y, startsearchYW, true, true, Ystatic);
                 }
-                ButtonScanAction("\\Y", 1, numphotoY, startsearchYW, true, PointYW, Yisstatic);
+                ButtonScanAction("\\Y", 1, numphotoY, startsearchYW, true, PointYW, Ystatic);
             }
             Sleep(10);
         }
@@ -3485,7 +3529,7 @@ void ThreadFunction(HMODULE hModule)
                      startdrag.x = Xf;
                      startdrag.y = Yf;
                      leftPressedold = true;
-                     rawmouseL = true;
+                     rawmouseR = true;
                      if (userealmouse == 0 && scrolloutsidewindow == 3)
                      {
                          SendMouseClick(Xf, Yf, 5, 2); //4 skal vere 3
@@ -3522,7 +3566,7 @@ void ThreadFunction(HMODULE hModule)
                             }
                         }
                         leftPressedold = false;
-                        rawmouseL = false;
+                        rawmouseR = false;
                     }   
                 }
                 if (rightPressed)
@@ -3536,7 +3580,7 @@ void ThreadFunction(HMODULE hModule)
                         startdrag.x = Xf;
                         startdrag.y = Yf;
                         rightPressedold = true;
-                        rawmouseR = true;
+                        rawmouseL = true;
                         if (userealmouse == 0)
                         {
                             DWORD currentTime = GetTickCount64();
@@ -3580,7 +3624,7 @@ void ThreadFunction(HMODULE hModule)
                             }
                         }
                         rightPressedold = false;
-                        rawmouseR = false;
+                        rawmouseL = false;
                     }
                 } //rightpress
 
@@ -3676,7 +3720,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             setcursorposhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorposHook", 1, iniPath.c_str());
             setcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorHook", 1, iniPath.c_str()); 
             rawinputhook = GetPrivateProfileInt(iniSettings.c_str(), "RawInputHook", 1, iniPath.c_str());
-            GetCursorInfoHook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorInfoHook", 0, iniPath.c_str());
+            GetCursorInfoHook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorInfoHook", 0, iniPath.c_str()); 
+            GetKeyboardStateHook = GetPrivateProfileInt(iniSettings.c_str(), "GetKeyboardStateHook", 0, iniPath.c_str()); 
             setrecthook = GetPrivateProfileInt(iniSettings.c_str(), "SetRectHook", 0, iniPath.c_str()); 
             leftrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectLeft", 0, iniPath.c_str());
             toprect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectTop", 0, iniPath.c_str());
