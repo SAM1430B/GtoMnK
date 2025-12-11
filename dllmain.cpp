@@ -71,24 +71,14 @@ BOOL WINAPI HookedAdjustWindowRect(LPRECT lprc, DWORD  dwStyle, BOOL bMenu) {
 
 SHORT WINAPI HookedGetAsyncKeyState(int vKey)
 {
-    
-    if (samekeyA == vKey) {
-        return 0x8001; 
-        //8001 on hold key. but this may not work
+    if (keyState[vKey] & 0x80) {
+        return 0x8000;   // key is down
     }
-    else samekeyA = 0;
-
-    if (vKey == keystatesend)
-    {
-        samekeyA = vKey;
-        return 0x8000; //8001 ?
-    }
-    else
-    {
-        SHORT result = fpGetAsyncKeyState(vKey);
-        return result;
+    else {
+        return 0x0000;   // key is up
     }
 }
+
 HWND g_rawInputHwnd = nullptr;
 
 const int RAWINPUT_BUFFER_SIZE = 20;
@@ -101,7 +91,6 @@ struct FakeKey {
 };
 
 static std::vector<FakeKey> g_fakeKeys;
-std::vector<BYTE> keyState(256, 0);
 
 // Add a fake key event to the array
 void GenerateRawKey(USHORT vk, bool press) {
@@ -203,23 +192,46 @@ UINT WINAPI HookedGetRawInputData(
 
 // Hooked GetKeyState
 SHORT WINAPI HookedGetKeyState(int nVirtKey) {
-    if (samekey == nVirtKey) {
-        return 0x8001;
-        //8001 on hold key. but this may not work
+    if (keyState[nVirtKey] & 0x80) {
+        return 0x8000;   // key is down
     }
-    else samekey = 0;
-
-    if (nVirtKey == keystatesend)
-    {
-        samekey = nVirtKey;
-        return 0x8000; //8001 ?
-    }
-    else
-    {
-        SHORT result = fpGetKeyState(nVirtKey);
-        return result;
+    else {
+        return 0x0000;   // key is up
     }
 }
+
+//HWND WINAPI HookedCreateWindowExA( DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle, int X, int Y, int nWidth,  int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
+//{
+    // Call the original function
+ //   HWND hWnd = fpCreateWindowExA(
+ //       dwExStyle, lpClassName, lpWindowName, dwStyle,
+ //       X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
+//
+ //   if (hWnd) {
+ //       g_windows.push_back(hWnd);
+ //       // Optional: debug output
+ //       // printf("Created window: %s, handle=%p\n", lpWindowName, hWnd);
+ //   }
+//
+ //   return hWnd;
+//}
+
+//HWND WINAPI HookedCreateWindowExW(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle, int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
+//{
+//    // Call the original function
+//    HWND hWnd = fpCreateWindowExW(
+//        dwExStyle, lpClassName, lpWindowName, dwStyle,
+//        X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
+//
+ //   if (hWnd) {
+//        g_windows.push_back(hWnd);
+//
+        // Optional: debug output
+        // wprintf(L"Created window: %s, handle=%p\n", lpWindowName, hWnd);
+//    }
+
+//    return hWnd;
+//}
 
 BOOL WINAPI MyGetCursorPos(PPOINT lpPoint) {
     if (lpPoint) 
@@ -455,6 +467,12 @@ void SetupHook() {
         MH_CreateHook(&GetKeyboardState, &HookedGetKeyboardState, reinterpret_cast<LPVOID*>(&fpGetKeyboardState));
         MH_EnableHook(&GetKeyboardState);
     }
+   // MH_CreateHook(&CreateWindowExA, &HookedCreateWindowExA, reinterpret_cast<LPVOID*>(&fpCreateWindowExA));
+  //  MH_EnableHook(&CreateWindowExA);
+  //  MH_CreateHook(&CreateWindowExW, &HookedCreateWindowExW, reinterpret_cast<LPVOID*>(&fpCreateWindowExW));
+  //  MH_EnableHook(&CreateWindowExW); 
+
+
     //MessageBox(NULL, "Bmp + last setcursor. done", "other search", MB_OK | MB_ICONINFORMATION);
     hooksinited = true;
     //MH_EnableHook(MH_ALL_HOOKS);
@@ -1216,8 +1234,7 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
     DWORD mykey = 0;
 	DWORD presskey = WM_KEYDOWN;
 
-    UINT scanCode = MapVirtualKey(VK_LEFT, MAPVK_VK_TO_VSC);
-    LPARAM lParam = (0x00000001 | (scanCode << 16));
+
     
     if (!press){
 		presskey = WM_KEYUP; // Key up event 
@@ -1435,15 +1452,33 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
     if (keytype == 81)
         mykey = VK_ADD;
 
+    UINT scanCode = MapVirtualKey(mykey, MAPVK_VK_TO_VSC);
+    LPARAM lParam;
     if (press)
-        keystatesend = mykey;
-    else keystatesend = 0;
+    { 
+        keystatesend = mykey; //not used now
+        lParam = (0x00000001 | (scanCode << 16));
+    }
+    else
+    {
+        lParam = (1 | (scanCode << 16) | (1 << 30) | (1 << 31));
+        keystatesend = 0;
+    }
+    
+
     PostMessage(hwnd, presskey, mykey, lParam);
+  //  for (HWND ahwnd : g_windows)
+		//  { //multiwindow support
+  //      if (IsWindow(ahwnd) && hwnd != hwnd)
+ //       {
+  //          PostMessage(ahwnd, presskey, mykey, lParam);
+  //      }
+  //  }
    // PostMessage(hwnd, WM_INPUT, VK_RIGHT, lParam);
     if (rawinputhook == 1 || rawinputhook == 2)
         GenerateRawKey(mykey, press);
     if (keytype == 63) {
-        PostMessage(hwnd, presskey, 0x43, lParam);
+        PostMessage(hwnd, presskey, 0x43, lParam); //just a key combo
     }
     return;
 
@@ -3721,7 +3756,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             setcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "SetCursorHook", 1, iniPath.c_str()); 
             rawinputhook = GetPrivateProfileInt(iniSettings.c_str(), "RawInputHook", 1, iniPath.c_str());
             GetCursorInfoHook = GetPrivateProfileInt(iniSettings.c_str(), "GetCursorInfoHook", 0, iniPath.c_str()); 
-            GetKeyboardStateHook = GetPrivateProfileInt(iniSettings.c_str(), "GetKeyboardStateHook", 0, iniPath.c_str()); 
+            GetKeyboardStateHook = GetPrivateProfileInt(iniSettings.c_str(), "GetKeyboardStateHook", 1, iniPath.c_str()); 
             setrecthook = GetPrivateProfileInt(iniSettings.c_str(), "SetRectHook", 0, iniPath.c_str()); 
             leftrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectLeft", 0, iniPath.c_str());
             toprect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectTop", 0, iniPath.c_str());

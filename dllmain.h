@@ -39,7 +39,11 @@ typedef BOOL(WINAPI* SetRect_t)(LPRECT lprc, int xLeft, int yTop, int xRight, in
 typedef BOOL(WINAPI* AdjustWindowRect_t)(LPRECT lprc, DWORD  dwStyle, BOOL bMenu);
 typedef UINT(WINAPI* GetRawInputData_t)(HRAWINPUT hRawInput, UINT uiCommand, LPVOID pData, PUINT pcbSize, UINT cbSizeHeader);
 typedef UINT(WINAPI* GetCursorInfo_t)(PCURSORINFO pci);
-   
+typedef HWND(WINAPI* CreateWindowExA_t)( DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle, int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam);
+typedef HWND(WINAPI* CreateWindowExW_t)( DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle, int X, int Y, int nWidth, int  nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam );
+
+//std::vector<HWND> g_windows;
+
     
     
     
@@ -47,6 +51,7 @@ typedef UINT(WINAPI* GetCursorInfo_t)(PCURSORINFO pci);
 bool rawmouseL = false;
 bool rawmouseR = false;//0:scroll 1:left 2:right 3:up 4:down
 
+std::vector<BYTE> keyState(256, 0);
 
 
 
@@ -63,6 +68,9 @@ SetRect_t fpSetRect = nullptr;
 AdjustWindowRect_t fpAdjustWindowRect = nullptr;
 GetRawInputData_t fpGetRawInputData = nullptr;
 GetCursorInfo_t fpGetCursorInfo = nullptr;
+CreateWindowExA_t fpCreateWindowExA = nullptr;
+CreateWindowExW_t fpCreateWindowExW = nullptr;
+
 
 
 
