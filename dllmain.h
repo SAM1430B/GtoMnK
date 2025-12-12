@@ -42,6 +42,8 @@ typedef UINT(WINAPI* GetCursorInfo_t)(PCURSORINFO pci);
 typedef HWND(WINAPI* CreateWindowExA_t)( DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle, int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam);
 typedef HWND(WINAPI* CreateWindowExW_t)( DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle, int X, int Y, int nWidth, int  nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam );
 
+
+typedef BOOL(WINAPI* RegisterRawInputDevices_t)( PRAWINPUTDEVICE pRawInputDevices, UINT uiNumDevices, UINT cbSize);
 //std::vector<HWND> g_windows;
 
     
@@ -70,6 +72,7 @@ GetRawInputData_t fpGetRawInputData = nullptr;
 GetCursorInfo_t fpGetCursorInfo = nullptr;
 CreateWindowExA_t fpCreateWindowExA = nullptr;
 CreateWindowExW_t fpCreateWindowExW = nullptr;
+RegisterRawInputDevices_t fpRegisterRawInputDevices = nullptr;
 
 
 
@@ -106,6 +109,7 @@ int setcursorhook = 0;
 int rawinputhook = 0;
 int GetCursorInfoHook = 0;
 int GetKeyboardStateHook = 0;
+bool registerrawinputhook = 0;
 bool nodrawcursor = false;
 
 int ignorerect = 0;

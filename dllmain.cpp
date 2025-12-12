@@ -139,7 +139,7 @@ UINT WINAPI HookedGetRawInputData(
 
     if (uiCommand == RID_INPUT && pData != nullptr) {
         RAWINPUT* raw = (RAWINPUT*)pData;
-
+		raw->header.wParam = RIM_INPUT; // Ensure wParam indicates input
         if (raw->header.dwType == RIM_TYPEMOUSE) {
 
             if (delta.x !=0)
@@ -411,7 +411,16 @@ bool Mutexlock(bool lock) {
     }
     return true;
 }
-
+BOOL WINAPI HookedRegisterRawInputDevices(PRAWINPUTDEVICE pRawInputDevices, UINT uiNumDevices, UINT cbSize)
+{
+    // Modify all devices in the array
+  //  MessageBoxA(NULL, "RegisterRawInputDevices Hooked!", "Info", MB_OK | MB_ICONINFORMATION);
+    for (UINT i = 0; i < uiNumDevices; ++i) {
+        pRawInputDevices[i].dwFlags |= RIDEV_INPUTSINK;
+    }
+    BOOL result = fpRegisterRawInputDevices(pRawInputDevices, uiNumDevices, cbSize);
+    return result;
+}
 void SetupHook() {
     if (MH_Initialize() != MH_OK) {
         MessageBox(NULL, "Failed to initialize MinHook", "Error", MB_OK | MB_ICONERROR);
@@ -470,8 +479,12 @@ void SetupHook() {
    // MH_CreateHook(&CreateWindowExA, &HookedCreateWindowExA, reinterpret_cast<LPVOID*>(&fpCreateWindowExA));
   //  MH_EnableHook(&CreateWindowExA);
   //  MH_CreateHook(&CreateWindowExW, &HookedCreateWindowExW, reinterpret_cast<LPVOID*>(&fpCreateWindowExW));
-  //  MH_EnableHook(&CreateWindowExW); 
-
+  //  MH_EnableHook(&CreateWindowExW); //RegisterRawInputDevices //
+    if (registerrawinputhook)
+    { 
+        MH_CreateHook(&RegisterRawInputDevices, &HookedRegisterRawInputDevices, reinterpret_cast<LPVOID*>(&fpRegisterRawInputDevices));
+        MH_EnableHook(&RegisterRawInputDevices);
+    }
 
     //MessageBox(NULL, "Bmp + last setcursor. done", "other search", MB_OK | MB_ICONINFORMATION);
     hooksinited = true;
@@ -496,9 +509,21 @@ void vibrateController(int controllerId, WORD strength)
     vibration.wRightMotorSpeed = 0;
     XInputSetState(controllerId, &vibration);
 }
-
+void Focuser()
+{
+    if (hwnd != GetFocus())
+    { 
+		SetFocus(hwnd);
+        PostMessage(hwnd,WM_MOUSEACTIVATE, (WPARAM)hwnd, MAKELPARAM(HTCLIENT, WM_LBUTTONDOWN));
+    }
+  //  if (hwnd != GetFocus())
+  //      SetForegroundWindow(hwnd);
+     return;
+}
 bool SendMouseClick(int x, int y, int z, int many) {
     // Create a named mutex
+    if (sendfocus == 1)
+        Focuser();
     POINT heer;
     heer.x = x;
     heer.y = y;
@@ -1066,6 +1091,9 @@ void DrawToHDC(HDC hdcWindow, int X, int Y, int showmessage)
     }
     return;
 }
+
+
+
 
 void DblBufferAndCallDraw(HDC cursorhdc, int X, int Y, int showmessage) {
 
@@ -2916,11 +2944,11 @@ bool readsettings(){
     std::string iniSettings = "Settings";
 
     //controller settings
-    controllerID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", -9999, iniPath.c_str()); //simple test if settings read but write it wont work.
-    AxisLeftsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisLeftsens", -7849, iniPath.c_str());
-    AxisRightsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisRightsens", 12000, iniPath.c_str());
-    AxisUpsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisUpsens", 0, iniPath.c_str());
-    AxisDownsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisDownsens", -16049, iniPath.c_str());
+    controllerID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", -9000, iniPath.c_str()); //simple test if settings read
+    AxisLeftsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisLeftsens", -9000, iniPath.c_str());
+    AxisRightsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisRightsens", 9000, iniPath.c_str());
+    AxisUpsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisUpsens", 9000, iniPath.c_str());
+    AxisDownsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisDownsens", -9000, iniPath.c_str());
     scrollspeed3 = GetPrivateProfileInt(iniSettings.c_str(), "Scrollspeed", 150, iniPath.c_str());
     righthanded = GetPrivateProfileInt(iniSettings.c_str(), "Righthanded", 1, iniPath.c_str());
     scanoption = GetPrivateProfileInt(iniSettings.c_str(), "Scan", 0, iniPath.c_str());
@@ -3142,7 +3170,7 @@ void ThreadFunction(HMODULE hModule)
     }
     if (drawfakecursor == 0)
     {
-		drawfakecursor = 3;
+		drawfakecursor = 1;
         nodrawcursor = true;
     }
 	bool window = false;
@@ -3762,7 +3790,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             toprect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectTop", 0, iniPath.c_str());
             rightrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectRight", 800, iniPath.c_str());
             bottomrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectBottom", 600, iniPath.c_str());
-
+            registerrawinputhook = GetPrivateProfileInt(iniSettings.c_str(), "RegisterRawInputHook", 1, iniPath.c_str());
             int hooksoninit = GetPrivateProfileInt(iniSettings.c_str(), "hooksoninit", 1, iniPath.c_str());
             if (hooksoninit)
                 {
