@@ -26,7 +26,7 @@
 #include <cstdlib>
 
 // Other Libraries
-#include <Xinput.h>
+//#include <Xinput.h>
 #include <dwmapi.h>
 #include <psapi.h>
 #include <tchar.h>
@@ -35,5 +35,9 @@
 // Project-specific
 //#include "MinHook.h"
 #include <easyhook.h>
+
+// OpenXinput
+#define OPENXINPUT_XUSER_MAX_COUNT 64
+#include "OpenXinput.h"
 
 #endif

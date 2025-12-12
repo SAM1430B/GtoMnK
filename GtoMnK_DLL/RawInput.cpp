@@ -3,6 +3,10 @@
 #include "RawInputHooks.h"
 #include "Logging.h"
 
+extern HWND GetMainWindowHandle(DWORD targetPID);
+extern HWND hwnd;
+extern int createdWindowIsOwned;
+
 namespace GtoMnK {
     namespace RawInput {
 
@@ -72,14 +76,35 @@ namespace GtoMnK {
         DWORD WINAPI RawInputWindowThread(LPVOID lpParameter) {
             HANDLE hWindowReadyEvent = (HANDLE)lpParameter;
 
+            if (createdWindowIsOwned) {
+                // Wait for window game before creating the Overlay window to make window game as the owner.
+                const ULONGLONG TIMEOUT_MS = 60000; // = 1 Minute timeout
+                ULONGLONG startTime = GetTickCount64();
+
+                while (!hwnd || !IsWindow(hwnd)) {
+
+                    if (GetTickCount64() - startTime > TIMEOUT_MS) {
+                        return 1;
+                    }
+                    hwnd = GetMainWindowHandle(GetCurrentProcessId());
+                    Sleep(1000);
+                }
+            }
+
             LOG("RawInput hidden window thread started.");
             WNDCLASSW wc = { 0 };
             wc.lpfnWndProc = RawInputWindowWndProc;
             wc.hInstance = GetModuleHandle(NULL);
             wc.lpszClassName = L"GtoMnK_RawInput_Window";
 
+            HWND parentWindow;
+            if (createdWindowIsOwned)
+                parentWindow = hwnd;
+            else
+                parentWindow = nullptr;
+
             if (RegisterClassW(&wc)) {
-                g_rawInputHwnd = CreateWindowW(wc.lpszClassName, L"GtoMnK RI Sink", 0, 0, 0, 0, 0, NULL, NULL, wc.hInstance, NULL);
+                g_rawInputHwnd = CreateWindowW(wc.lpszClassName, L"GtoMnK RI Sink", 0, 0, 0, 0, 0, parentWindow, NULL, wc.hInstance, NULL);
             }
 
             if (!g_rawInputHwnd) {

@@ -1,6 +1,4 @@
 #pragma once
-#include <windows.h>
-#include <vector>
 
 namespace GtoMnK {
     namespace RawInput {

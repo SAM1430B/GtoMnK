@@ -4,7 +4,6 @@
 #include "OverlayMenu.h"
 #include "Logging.h"
 #include "MainThread.h"
-#include <string>
 #include <time.h>
 
 extern bool disableOverlayOptions;
@@ -30,8 +29,8 @@ extern float curve_exponent;
 namespace GtoMnK {
 
     OverlayMenu OverlayMenu::state{};
-#define WM_MOVE_menuWindow (WM_APP + 2)
-#define WM_ZORDER_menuWindow (WM_APP + 3)
+#define WM_MOVE_menuWindow (WM_APP + 3)
+#define WM_ZORDER_menuWindow (WM_APP + 4)
 
     LRESULT WINAPI OverlayMenuWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         switch (msg) {
@@ -39,10 +38,8 @@ namespace GtoMnK {
             OverlayMenu::state.GetWindowDimensions(hWnd);
             break;
         case WM_ZORDER_menuWindow:
-        {
             OverlayMenu::state.GetWindowZorder(hWnd);
-        }
-        break;
+            break;
         case WM_DESTROY:
             PostQuitMessage(0);
             return 0;
@@ -119,6 +116,16 @@ namespace GtoMnK {
         static ULONGLONG dirHoldTimer = 0;
         static int lastDir = 0;
 
+        XINPUT_STATE state;
+        if (OpenXInputGetState(controllerID, &state) != ERROR_SUCCESS) {
+        return;
+    }
+        float stickX = state.Gamepad.sThumbLX;
+        float stickY = state.Gamepad.sThumbLY;
+        const int StickMenuDeadzone = 12000;
+        if (std::abs(stickX) < StickMenuDeadzone) stickX = 0;
+        if (std::abs(stickY) < StickMenuDeadzone) stickY = 0;
+
         // Close the overlay
         if ((gamepadButtons & XINPUT_GAMEPAD_START) || (gamepadButtons & XINPUT_GAMEPAD_B)) {
             EnableDisableMenu(false);
@@ -128,7 +135,7 @@ namespace GtoMnK {
             XINPUT_STATE state;
             do {
                 Sleep(100); // Important
-                if (XInputGetState(controllerID, &state) != ERROR_SUCCESS) {
+                if (OpenXInputGetState(controllerID, &state) != ERROR_SUCCESS) {
                     break;
                 }
             } while ((state.Gamepad.wButtons & XINPUT_GAMEPAD_START) ||
@@ -153,7 +160,7 @@ namespace GtoMnK {
             }
         }
         // Navigate up
-        if (gamepadButtons & XINPUT_GAMEPAD_DPAD_UP) {
+        if (gamepadButtons & XINPUT_GAMEPAD_DPAD_UP || (stickY > 0)) {
             do {
                 menuSelection--;
                 if (menuSelection < 0) menuSelection = (int)options.size() - 1;
@@ -161,7 +168,7 @@ namespace GtoMnK {
             input = true;
         }
         // Navigate down
-        else if (gamepadButtons & XINPUT_GAMEPAD_DPAD_DOWN) {
+        else if (gamepadButtons & XINPUT_GAMEPAD_DPAD_DOWN || (stickY < 0)) {
             do {
                 menuSelection++;
                 if (menuSelection >= options.size()) menuSelection = 0;
@@ -169,7 +176,7 @@ namespace GtoMnK {
             input = true;
         }
         // Value decrement
-        else if (gamepadButtons & XINPUT_GAMEPAD_DPAD_LEFT) {
+        else if (gamepadButtons & XINPUT_GAMEPAD_DPAD_LEFT || (stickX < 0)) {
             if (lastDir != 1 || (now - lastInputTime > 250)) {
                 dirHoldTimer = now;
                 lastDir = 1;
@@ -183,7 +190,7 @@ namespace GtoMnK {
             input = true;
         }
         // Value increment
-        else if (gamepadButtons & XINPUT_GAMEPAD_DPAD_RIGHT) {
+        else if (gamepadButtons & XINPUT_GAMEPAD_DPAD_RIGHT || (stickX > 0)) {
             if (lastDir != 2 || (now - lastInputTime > 250)) {
                 dirHoldTimer = now;
                 lastDir = 2;
@@ -390,7 +397,6 @@ namespace GtoMnK {
             hwnd = GetMainWindowHandle(GetCurrentProcessId());
             Sleep(1000);
         }
-
 
         transparencyBrush = CreateSolidBrush(transparencyKey);
         backgroundBrush = CreateSolidBrush(backgroundColor);
