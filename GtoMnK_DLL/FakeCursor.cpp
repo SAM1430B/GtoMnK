@@ -6,28 +6,29 @@ And is modified for GtoMnK usage. All credits to the original author.
 #include "pch.h"
 #include "FakeCursor.h"
 #include "Mouse.h"
-#include <windows.h>
-#include <string>
 #include "Logging.h"
 
+extern HWND GetMainWindowHandle(DWORD targetPID);
 extern HWND hwnd;
 extern int drawProtoFakeCursor;
+extern int createdWindowIsOwned;
 
 namespace GtoMnK
 {
 
     FakeCursor FakeCursor::state{};
 #define WM_MOVE_pointerWindow (WM_APP + 1)
-
+#define WM_ZORDER_pointerWindow (WM_APP + 2)
     LRESULT WINAPI FakeCursorWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         switch (msg)
         {
         case WM_MOVE_pointerWindow:
-        {
             FakeCursor::state.GetWindowDimensions(hWnd);
             break;
-        }
+        case WM_ZORDER_pointerWindow:
+            FakeCursor::state.GetWindowZorder(hWnd);
+            break;
         case WM_DESTROY:
             PostQuitMessage(0);
             return 0;
@@ -52,7 +53,13 @@ namespace GtoMnK
             POINT topLeft = { cRect.left, cRect.top };
             ClientToScreen(tHwnd, &topLeft);
 
-            SetWindowPos(pointerWindow, HWND_TOPMOST,
+            HWND zOrderValue;
+            if (createdWindowIsOwned)
+                zOrderValue = 0;
+            else
+                zOrderValue = HWND_TOPMOST;
+
+            SetWindowPos(pointerWindow, zOrderValue,
                 topLeft.x,
                 topLeft.y,
                 cRect.right - cRect.left,
@@ -61,6 +68,33 @@ namespace GtoMnK
         }
     }
 
+    void FakeCursor::GetWindowZorder(HWND pointerWindow) {
+        if (!IsWindow(hwnd)) return;
+
+        HWND tHwnd = hwnd;
+        if (pointerWindow == tHwnd)
+            return;
+
+        HWND foreground = GetForegroundWindow();
+        bool isGameActive = (foreground == hwnd || foreground == pointerWindow);
+
+        static bool wasGameActive = false;
+
+        if (isGameActive) {
+            if (!wasGameActive) {
+                SetWindowPos(pointerWindow, HWND_TOP, 0, 0, 0, 0,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
+                wasGameActive = true;
+            }
+        }
+        else {
+            if (wasGameActive) {
+                SetWindowPos(pointerWindow, HWND_NOTOPMOST, 0, 0, 0, 0,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
+                wasGameActive = false;
+            }
+        }
+    }
     
     void FakeCursor::DrawCursor()
     {
@@ -182,6 +216,9 @@ namespace GtoMnK
                 Sleep(2000);
                 continue;
             }
+            if (createdWindowIsOwned)
+                PostMessage(pointerWindow, WM_ZORDER_pointerWindow, 0, 0);
+
             PostMessage(pointerWindow, WM_MOVE_pointerWindow, 0, 0);
 
             Sleep(5000);
@@ -208,6 +245,24 @@ namespace GtoMnK
     {
         const auto hInstance = GetModuleHandle(NULL);
 
+        if (createdWindowIsOwned)
+        {
+			LOG("Pointer window is owned by the game window.");
+            // Wait for window game before creating the Overlay window to make window game as the owner.
+            const ULONGLONG TIMEOUT_MS = 60000; // = 1 Minute timeout
+            ULONGLONG startTime = GetTickCount64();
+
+            while (!hwnd || !IsWindow(hwnd)) {
+
+                if (GetTickCount64() - startTime > TIMEOUT_MS) {
+                    LOG("Timeout: Game Window never appeared. Overlay Menu aborting.");
+                    return;
+                }
+                hwnd = GetMainWindowHandle(GetCurrentProcessId());
+                Sleep(1000);
+            }
+        }
+
         // Like a green screen
         transparencyBrush = (HBRUSH)CreateSolidBrush(transparencyKey);
 
@@ -223,6 +278,19 @@ namespace GtoMnK
 
         wc.style = CS_OWNDC | CS_NOCLOSE;
 
+		HWND parentWindow;
+        DWORD ws_ex;
+        if (createdWindowIsOwned)
+        {
+            parentWindow = hwnd;
+			ws_ex = 0;
+        }
+        else
+        {
+			parentWindow = nullptr;
+			ws_ex = WS_EX_TOPMOST;
+        }
+
         if (!RegisterClassW(&wc)) {
 			LOG("Failed to register pointer window class!");
             return;
@@ -230,20 +298,24 @@ namespace GtoMnK
         else
         {
             pointerWindow = CreateWindowExW(WS_EX_NOACTIVATE | WS_EX_NOINHERITLAYOUT | WS_EX_NOPARENTNOTIFY |
-                WS_EX_TOPMOST | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_LAYERED,
+                ws_ex | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_LAYERED,
                 wc.lpszClassName, classNameStr.c_str(),
                 WS_POPUP | WS_VISIBLE,
                 0, 0, 800, 600,
-                nullptr, nullptr, hInstance, nullptr);
+                parentWindow, nullptr, hInstance, nullptr);
 
             SetLayeredWindowAttributes(pointerWindow, transparencyKey, 0, LWA_COLORKEY);
 
-            // Nucleus can put the game window above the pointer without this
-            SetWindowPos(pointerWindow, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOREDRAW | SWP_NOSIZE);
+            if (!createdWindowIsOwned)
+            {
+                // Nucleus can put the game window above the pointer without this
+                SetWindowPos(pointerWindow, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOREDRAW | SWP_NOSIZE);
 
-            // ShowWindow(pointerWindow, SW_SHOWDEFAULT);
-            // UpdateWindow(pointerWindow);
-            EnableDisableFakeCursor(drawingEnabled);
+                // ShowWindow(pointerWindow, SW_SHOWDEFAULT);
+                // UpdateWindow(pointerWindow);
+
+                EnableDisableFakeCursor(drawingEnabled);
+            }
 
             hdc = GetDC(pointerWindow);
 
@@ -261,6 +333,9 @@ namespace GtoMnK
 
             if (pointerThreadHandle != nullptr)
                 CloseHandle(pointerThreadHandle);
+
+            if (createdWindowIsOwned)
+                FakeCursor::EnableDisableFakeCursor(true);
 
             // Want to avoid doing anything in the message loop that might cause it to not respond, as the entire screen will say not responding...
             MSG msg;

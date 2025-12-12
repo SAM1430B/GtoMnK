@@ -11,7 +11,9 @@
 
 using namespace GtoMnK;
 
-#pragma comment(lib, "Xinput9_1_0.lib")
+//#pragma comment(lib, "Xinput9_1_0.lib")
+
+extern "C" BOOL WINAPI OpenXinputDllMain(HINSTANCE hInstDll, DWORD fdwReason, LPVOID lpvReserved);
 
 // For Initialization and Thread state
 HMODULE g_hModule = nullptr;
@@ -62,6 +64,7 @@ int responsetime = 4;
 // Drawing & cursor state
 int drawfakecursor = 0;
 int drawProtoFakeCursor = 0; // From ProtoInput also for the Cursor visibility hooks
+int createdWindowIsOwned = 1;
 int ShowProtoCursorWhenImageUpdated = 1; // From ProtoInput
 int mode = 1;
 bool onoroff = true;
@@ -230,14 +233,15 @@ void LoadIniSettings() {
     mode = GetPrivateProfileIntA("Settings", "Mode", 1, iniPath.c_str());
     drawfakecursor = GetPrivateProfileIntA("Settings", "drawfakecursor", 0, iniPath.c_str());
 	drawProtoFakeCursor = GetPrivateProfileIntA("Settings", "DrawProtoFakeCursor", 0, iniPath.c_str()); //From ProtoInput
-	ShowProtoCursorWhenImageUpdated = GetPrivateProfileIntA("Settings", "ShowCursorWhenImageUpdated", 1, iniPath.c_str());
-    //alwaysdrawcursor = GetPrivateProfileIntA("Settings", "DrawFakeCursorAlways", 0, iniPath.c_str());
+	ShowProtoCursorWhenImageUpdated = GetPrivateProfileIntA("Settings", "ShowCursorWhenImageUpdated", 1, iniPath.c_str()); //From ProtoInput
     if (drawProtoFakeCursor == 1) {
         if (drawfakecursor == 1) {
             LOG("INI Info: Both 'drawfakecursor' and 'drawProtoFakeCursor' are enabled. Prioritizing the ProtoInput cursor.");
             drawfakecursor = 0; // Force the old cursor to be disabled.
         }
     }
+    //Let the PointerWindow and RawInput window owned by the main window (game).
+    createdWindowIsOwned = GetPrivateProfileIntA("Settings", "CreatedWindowIsOwned", 1, iniPath.c_str());
     responsetime = GetPrivateProfileIntA("Settings", "Responsetime", 4, iniPath.c_str());
 
     // [StickToMouse]
@@ -321,8 +325,8 @@ void LoadIniSettings() {
 }
 
 POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
-
-    const double c = radial_deadzone;
+    // Make sure the deadzone is not 0
+    double c = (radial_deadzone < 0.01) ? 0.01 : radial_deadzone;
     const double s = axial_deadzone;
     const double m = max_threshold;
     const double b = curve_slope;
@@ -343,7 +347,7 @@ POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
     if (std::abs(normY) < s) normY = 0.0;
 
     double magnitude = std::sqrt(normX * normX + normY * normY);
-    if (magnitude < c) return { 0, 0 };
+    if (magnitude <= c) return { 0, 0 };
     if (magnitude > 1.0) magnitude = 1.0;
 
     double effectiveRange = 1.0 - c;
@@ -506,6 +510,8 @@ void ProcessTrigger(UINT triggerID, BYTE triggerValue) {
 DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     LOG("ThreadFunction started.");
 
+    OpenXinputDllMain(GetModuleHandle(NULL), DLL_PROCESS_ATTACH, NULL);
+
     LoadIniSettings();
     LOG("INI settings is Loaded");
 
@@ -540,7 +546,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     if (drawProtoFakeCursor == 1) {
         LOG("ProtoInput Fake Cursor is enabled. Initializing...");
         FakeCursor::Initialise();
-        FakeCursor::EnableDisableFakeCursor(true);
+        if (!createdWindowIsOwned)
+            FakeCursor::EnableDisableFakeCursor(true);
 		// CursorVisibilityHook will be enabled automatically when `drawProtoFakeCursor` is enabled. 
     }
     else if (drawfakecursor) {
@@ -587,7 +594,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         }
 
         XINPUT_STATE state;
-        if (XInputGetState(controllerID, &state) == ERROR_SUCCESS) {
+        if (OpenXInputGetState(controllerID, &state) == ERROR_SUCCESS) {
 
             if (!disableOverlayOptions)
             {
@@ -610,7 +617,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                         XINPUT_STATE waitState;
                         do {
                             Sleep(100); // Important
-                            if (XInputGetState(controllerID, &waitState) != ERROR_SUCCESS) {
+                            if (OpenXInputGetState(controllerID, &waitState) != ERROR_SUCCESS) {
                                 break;
                             }
                         } while ((waitState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ||
