@@ -8,7 +8,7 @@
 #include <algorithm>
 //#include <windowsx.h>
 #include "MinHook.h"
-#include <Xinput.h>
+//#include <Xinput.h>
 #include <tlhelp32.h>
 #include <tchar.h>
 #include <iostream>
@@ -22,8 +22,13 @@
 #include "dllmain.h"
 #pragma comment(lib, "dwmapi.lib")
 
+//#pragma comment(lib, "Xinput9_1_0.lib")
 
-#pragma comment(lib, "Xinput9_1_0.lib")
+// OpenXinput
+#define OPENXINPUT_XUSER_MAX_COUNT 64
+#include <OpenXinput.h>
+
+extern "C" BOOL WINAPI OpenXinputDllMain(HINSTANCE hInstDll, DWORD fdwReason, LPVOID lpvReserved);
 
 std::vector<POINT> staticPointA;
 std::vector<POINT> staticPointB;
@@ -499,7 +504,7 @@ void vibrateController(int controllerId, WORD strength)
     vibration.wRightMotorSpeed = strength;
 
     // Activate vibration
-    XInputSetState(controllerId, &vibration);
+    OpenXInputSetState(controllerId, &vibration);
 
     // Keep vibration on for 1 second
     Sleep(50); // milliseconds
@@ -507,7 +512,7 @@ void vibrateController(int controllerId, WORD strength)
     // Stop vibration
     vibration.wLeftMotorSpeed = 0;
     vibration.wRightMotorSpeed = 0;
-    XInputSetState(controllerId, &vibration);
+    OpenXInputSetState(controllerId, &vibration);
 }
 void Focuser()
 {
@@ -3152,6 +3157,9 @@ void ThreadFunction(HMODULE hModule)
 {
     Sleep(2000);
 
+    // OpenXinput
+    OpenXinputDllMain(GetModuleHandle(NULL), DLL_PROCESS_ATTACH, NULL);
+
     if (readsettings() == false)
     {
         //messagebox? settings not read
@@ -3270,7 +3278,7 @@ void ThreadFunction(HMODULE hModule)
             XINPUT_STATE state;
             ZeroMemory(&state, sizeof(XINPUT_STATE));
             // Check controller 0
-            DWORD dwResult = XInputGetState(controllerID, &state);
+            DWORD dwResult = OpenXInputGetState(controllerID, &state);
             bool leftPressed = IsTriggerPressed(state.Gamepad.bLeftTrigger);
             bool rightPressed = IsTriggerPressed(state.Gamepad.bRightTrigger);
 
