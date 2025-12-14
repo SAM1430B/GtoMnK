@@ -4,10 +4,8 @@
 #include "InputState.h"
 #include "KeyboardState.h"
 #include "RawInput.h"
-#include <vector>
 #include <sstream>
 #include <map>
-#include <algorithm>
 #include "MainThread.h"
 
 //extern HWND hwnd;

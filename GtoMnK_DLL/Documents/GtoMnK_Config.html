@@ -54,9 +54,48 @@
             border-radius: 8px;
             padding: 20px;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            justify-content: flex-start;
             align-items: center;
         }
+
+        .mode-toolbar {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: #202020;
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: 1px solid #444;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            z-index: 50;
+        }
+
+        .mode-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 20px;
+            transition: background 0.2s;
+            user-select: none;
+            font-size: 14px;
+            color: #ccc;
+        }
+
+            .mode-option:hover {
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+            }
+
+            .mode-option input[type="radio"] {
+                accent-color: var(--accent);
+                cursor: pointer;
+                width: 16px;
+                height: 16px;
+            }
 
         .image-container {
             position: relative;
@@ -82,7 +121,7 @@
             align-items: center;
             color: white;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 11px;
             text-shadow: 1px 1px 2px black;
             transition: all 0.1s;
             border-radius: 50%;
@@ -301,6 +340,8 @@
     <h1>GtoMnK Configuration</h1>
     <div id="gp-status" class="disconnected">Waiting for Controller... Press a button.</div>
 
+    <textarea id="virtual-key-input" style="position: fixed; top: 0; left: 0; opacity: 0; width: 1px; height: 1px;" autocomplete="off"></textarea>
+
     <div class="container">
         <div class="panel">
             <h2>Settings</h2>
@@ -390,8 +431,22 @@
         </div>
 
         <div class="controller-wrapper">
+            <div class="mode-toolbar">
+                <label class="mode-option" title="Standard single key binding">
+                    <input type="radio" name="bindMode" value="0" checked> Normal
+                </label>
+                <label class="mode-option" title="1st Key: On Release | 2nd Key: On Hold">
+                    <input type="radio" name="bindMode" value="1"> Release / Hold
+                </label>
+                <label class="mode-option" title="Both keys pressed simultaneously">
+                    <input type="radio" name="bindMode" value="2"> Compound
+                </label>
+            </div>
+
             <div class="image-container" id="overlay-container">
-                <img src="GtoMnK_Config.png" alt="Xbox Controller">
+                <img src="GtoMnK_Config.png"
+                     onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/SAM1430B/GtoMnK/master/GtoMnK_DLL/Documents/GtoMnK_Config.png'"
+                     alt="Xbox Controller">
             </div>
         </div>
     </div>
@@ -503,12 +558,21 @@
         for (let i = 0; i < 10; i++) keyMap["Digit" + i] = 51 + i;
         for (let i = 0; i < 10; i++) keyMap["Numpad" + i] = 73 + i;
 
+        const symbolMap = {
+            "-": "Minus", "=": "Equal", "[": "BracketLeft", "]": "BracketRight",
+            ";": "Semicolon", "'": "Quote", ",": "Comma", ".": "Period", "/": "Slash",
+            "\\": "Backslash", "`": "Backquote"
+        };
+
         let currentRecordingId = null;
         let previousValue = null;
         let previousLabel = null;
         let gamepadIndex = null;
 
-        //RENDER BUTTONS AND HANDLERS
+        let recordingStep = 0;
+        let firstKeyCaptured = null;
+
+        //RENDER BUTTONS
         const container = document.getElementById('overlay-container');
         xinputButtons.forEach(btn => {
             const pos = positions[btn.id];
@@ -546,18 +610,11 @@
                     e.stopPropagation();
 
                     div.classList.add('flash-red');
-                    setTimeout(() => {
-                        div.classList.remove('flash-red');
-                    }, 200);
-
+                    setTimeout(() => { div.classList.remove('flash-red'); }, 200);
                     div.dataset.value = "0";
                     div.innerText = "None";
-
                     if (currentRecordingId === btn.id) {
-                        div.classList.remove('recording');
-                        currentRecordingId = null;
-                        previousValue = null;
-                        previousLabel = null;
+                        finishRecording(div);
                     }
                 }
             };
@@ -582,7 +639,7 @@
                 stickSelect.disabled = true;
             } else {
                 // Mouse & Keyboard Mode
-                if (stick === "1") { // Right Stick is Mouse -> Disable R mapping
+                if (stick === "1") { // Right Stick is Mouse, Disable R mapping
                     rightStickDirs.forEach(id => {
                         const el = document.getElementById(`btn-${id}`);
                         if (el) el.classList.add('disabled');
@@ -603,6 +660,11 @@
             const el = document.getElementById(`btn-${btnId}`);
             if (el.classList.contains('disabled')) return;
 
+            // PRE-FILL INPUT WITH A DOT TO ENABLE BACKSPACE DETECTION ON ANDROID
+            const hiddenInput = document.getElementById('virtual-key-input');
+            hiddenInput.value = ".";
+            hiddenInput.focus();
+
             if (currentRecordingId && currentRecordingId !== btnId) {
                 const prevEl = document.getElementById(`btn-${currentRecordingId}`);
                 prevEl.dataset.value = previousValue;
@@ -616,42 +678,145 @@
             previousValue = el.dataset.value;
             previousLabel = el.innerText;
 
+            recordingStep = 0;
+            firstKeyCaptured = null;
+
             document.querySelectorAll('.btn-overlay').forEach(e => e.classList.remove('recording'));
             el.classList.add('recording');
-            el.innerText = "?";
+
+            const mode = document.querySelector('input[name="bindMode"]:checked').value;
+            if (mode === "0") {
+                el.innerText = "?";
+            } else {
+                el.innerText = "Key 1?";
+            }
+        }
+
+        function getCodeFromChar(char) {
+            if (!char) return 0;
+            if (char === " ") return 13;
+            const upper = char.toUpperCase();
+            if (upper.length === 1 && upper >= "A" && upper <= "Z") return keyMap["Key" + upper] || 0;
+            if (upper.length === 1 && upper >= "0" && upper <= "9") return keyMap["Digit" + upper] || 0;
+            if (symbolMap[char]) return keyMap[symbolMap[char]] || 0;
+            return 0;
         }
 
         function setMapping(code) {
             if (!currentRecordingId) return;
             const el = document.getElementById(`btn-${currentRecordingId}`);
-            el.dataset.value = code;
+            const mode = document.querySelector('input[name="bindMode"]:checked').value;
 
-            if (code == 0) el.innerText = "None";
-            else el.innerText = getLabel(code);
+            if (mode === "0") {
+                el.dataset.value = code;
+                if (code == 0) el.innerText = "None";
+                else el.innerText = getLabel(code);
+                finishRecording(el);
+            }
+            else {
+                if (code == 0) return;
 
+                if (recordingStep === 0) {
+                    firstKeyCaptured = code;
+                    recordingStep = 1;
+                    el.innerText = "Key 2?";
+                    el.style.backgroundColor = "rgba(255, 255, 0, 0.5)";
+                    setTimeout(() => el.style.backgroundColor = "", 150);
+
+                    const hiddenInput = document.getElementById('virtual-key-input');
+                    hiddenInput.value = "."; // Reset for next key
+                    hiddenInput.focus();
+                }
+                else {
+                    let finalString = "";
+                    let displayText = "";
+                    const label1 = getLabel(firstKeyCaptured);
+                    const label2 = getLabel(code);
+
+                    if (mode === "1") {
+                        finalString = `^${firstKeyCaptured}+*${code}`;
+                        displayText = `${label1}/${label2}`;
+                    }
+                    else if (mode === "2") {
+                        finalString = `${firstKeyCaptured}+${code}`;
+                        displayText = `${label1}+${label2}`;
+                    }
+
+                    el.dataset.value = finalString;
+                    el.innerText = displayText;
+                    finishRecording(el);
+                }
+            }
+        }
+
+        function finishRecording(el) {
             el.classList.remove('recording');
+            el.style.backgroundColor = "";
             currentRecordingId = null;
             previousValue = null;
             previousLabel = null;
+            recordingStep = 0;
+            firstKeyCaptured = null;
+            document.getElementById('virtual-key-input').blur();
         }
 
-        document.addEventListener('keydown', (e) => {
+        // ANDROID INPUT HANDLING
+        document.getElementById('virtual-key-input').addEventListener('input', (e) => {
             if (currentRecordingId) {
-                e.preventDefault();
-
-                if (e.code === "NumLock") { setMapping(keyMap["NumLock"]); return; }
-                if (e.code.startsWith("Numpad") && !e.getModifierState("NumLock")) {
-                    const numOffMap = { "Numpad0": 91, "Numpad1": 92, "Numpad2": 93, "Numpad3": 94, "Numpad4": 95, "Numpad6": 96, "Numpad7": 97, "Numpad8": 98, "Numpad9": 99, "NumpadDecimal": 100 };
-                    if (numOffMap[e.code]) { setMapping(numOffMap[e.code]); return; }
+                if (e.inputType === 'deleteContentBackward') {
+                    setMapping(18); // Backspace Code
+                    e.target.value = "."; // Reset just in case
+                    return;
                 }
 
-                let code = keyMap[e.code] || 0;
-                if (code === 0) console.log("Unknown:", e.code);
-                setMapping(code);
+                // Enter
+                if (e.inputType === 'insertLineBreak' || (e.data && e.data.includes('\n'))) {
+                    setMapping(2); // Enter Code
+                    e.target.value = ".";
+                    return;
+                }
+
+                // Normal Characters
+                if (e.data) {
+                    const char = e.data.slice(-1);
+                    const code = getCodeFromChar(char);
+                    if (code !== 0) {
+                        setMapping(code);
+                        e.target.value = ".";
+                    }
+                }
             }
         });
+
+        // DESKTOP / HARDWARE KEY HANDLING
+        document.addEventListener('keydown', (e) => {
+            if (currentRecordingId) {
+                // Special keys check
+                if (e.key === "Backspace") { e.preventDefault(); setMapping(18); return; }
+                if (e.key === "Enter") { e.preventDefault(); setMapping(2); return; }
+                if (e.key === "Escape") { e.preventDefault(); setMapping(1); return; }
+                if (e.key === "Tab") { e.preventDefault(); setMapping(3); return; }
+                if (e.key === " ") { e.preventDefault(); setMapping(13); return; }
+
+                // If Android is composing, ignore keydown
+                if (e.code === 'Unidentified' || e.keyCode === 229) { return; }
+
+                if (e.code === "NumLock") { setMapping(keyMap["NumLock"]); return; }
+
+                let codeKey = e.code;
+                if (!codeKey || codeKey === "Space") {
+                    const keyUpper = e.key.toUpperCase();
+                    if (keyUpper.length === 1 && keyUpper >= "A" && keyUpper <= "Z") codeKey = "Key" + keyUpper;
+                }
+
+                let code = keyMap[codeKey] || 0;
+                if (code !== 0) setMapping(code);
+            }
+        });
+
         document.addEventListener('mousedown', (e) => {
             if (currentRecordingId) {
+                if (e.target.id === 'virtual-key-input') return;
                 e.preventDefault();
                 e.stopPropagation();
                 let code = -1;
@@ -768,6 +933,8 @@
 
             document.getElementById('MouseButtonFilter').checked = true;
             document.getElementById('KeyboardButtonFilter').checked = true;
+
+            document.querySelector('input[name="bindMode"][value="0"]').checked = true;
 
             xinputButtons.forEach(btn => {
                 const el = document.getElementById(`btn-${btn.id}`);

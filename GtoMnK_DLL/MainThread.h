@@ -1,8 +1,5 @@
 #pragma once
-#include <windows.h>
 #include <map>
-#include <string>
-#include <vector>
 #include "Input.h"
 
 struct ButtonState {

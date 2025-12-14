@@ -4,8 +4,6 @@
 #include "Logging.h"
 #include "Mouse.h"
 #include "Keyboard.h"
-#include <easyhook.h>
-#include <algorithm>
 
 // Thanks to ProtoInput.
 
