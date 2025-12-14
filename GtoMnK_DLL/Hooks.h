@@ -1,5 +1,4 @@
 #pragma once
-#include <easyhook.h>
 
 namespace GtoMnK {
 
