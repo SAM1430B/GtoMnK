@@ -20,6 +20,7 @@
 #include <dwmapi.h>
 #include <thread>
 #include "dllmain.h"
+#include "MessageFilterHooks.h"
 #pragma comment(lib, "dwmapi.lib")
 
 //#pragma comment(lib, "Xinput9_1_0.lib")
@@ -490,6 +491,19 @@ void SetupHook() {
         MH_CreateHook(&RegisterRawInputDevices, &HookedRegisterRawInputDevices, reinterpret_cast<LPVOID*>(&fpRegisterRawInputDevices));
         MH_EnableHook(&RegisterRawInputDevices);
     }
+    if (g_filterRawInput || g_filterMouseMove || g_filterMouseActivate || g_filterWindowActivate
+        || g_filterWindowActivateApp || g_filterMouseWheel || g_filterMouseButton || g_filterKeyboardButton) // If one of them is enabled
+    { // MessageFilter hooks
+        // FIX: Add "MessageFilterHook::" before the function names
+        MH_CreateHook(&GetMessageA, &ScreenshotInput::MessageFilterHook::Hook_GetMessageA, reinterpret_cast<LPVOID*>(&fpGetMessageA));
+        MH_EnableHook(&GetMessageA);
+        MH_CreateHook(&GetMessageW, &ScreenshotInput::MessageFilterHook::Hook_GetMessageW, reinterpret_cast<LPVOID*>(&fpGetMessageW));
+        MH_EnableHook(&GetMessageW);
+        MH_CreateHook(&PeekMessageA, &ScreenshotInput::MessageFilterHook::Hook_PeekMessageA, reinterpret_cast<LPVOID*>(&fpPeekMessageA));
+        MH_EnableHook(&PeekMessageA);
+        MH_CreateHook(&PeekMessageW, &ScreenshotInput::MessageFilterHook::Hook_PeekMessageW, reinterpret_cast<LPVOID*>(&fpPeekMessageW));
+        MH_EnableHook(&PeekMessageW);
+    }
 
     //MessageBox(NULL, "Bmp + last setcursor. done", "other search", MB_OK | MB_ICONINFORMATION);
     hooksinited = true;
@@ -534,71 +548,87 @@ bool SendMouseClick(int x, int y, int z, int many) {
     heer.y = y;
     if (getcursorposhook == 2)
         ClientToScreen(hwnd, &heer);
-    if (userealmouse == 0) 
-        {
+    if (userealmouse == 0)
+    {
         LPARAM clickPos = MAKELPARAM(heer.x, heer.y);
-        if ( z == 1){
-            
-            PostMessage(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, clickPos);
-            PostMessage(hwnd, WM_LBUTTONUP, 0, clickPos);
 
-           // musLB = true;
-			//Sleep(5);
-           // rawmouse[0] = false;
+        // Define the signature to add to every message
+        WPARAM sig = ScreenshotInput_MOUSE_SIGNATURE;
+
+        if (z == 1) { // Left Click
+            WPARAM wParamDown = MK_LBUTTON | sig; // Add signature
+            WPARAM wParamUp = 0 | sig;            // Add signature
+
+            PostMessage(hwnd, WM_LBUTTONDOWN, wParamDown, clickPos);
+            PostMessage(hwnd, WM_LBUTTONUP, wParamUp, clickPos);
+
+            // musLB = true;
+             //Sleep(5);
+            // rawmouse[0] = false;
 
             keystatesend = VK_LEFT;
         }
-        if (z == 2) {
-            
-            PostMessage(hwnd, WM_RBUTTONDOWN, MK_RBUTTON, clickPos);
-            PostMessage(hwnd, WM_RBUTTONUP, 0, clickPos);
+        if (z == 2) { // Right Click
+            WPARAM wParamDown = MK_RBUTTON | sig;
+            WPARAM wParamUp = 0 | sig;
+
+            PostMessage(hwnd, WM_RBUTTONDOWN, wParamDown, clickPos);
+            PostMessage(hwnd, WM_RBUTTONUP, wParamUp, clickPos);
         }
-        if (z == 3) {
-            PostMessage(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, clickPos);
+        if (z == 3) { // Left Down (Hold)
+            WPARAM wParamDown = MK_LBUTTON | sig;
+
+            PostMessage(hwnd, WM_LBUTTONDOWN, wParamDown, clickPos);
             keystatesend = VK_LEFT;
             musLB = true;
         }
-        if (z == 4)
+        if (z == 4) // Left Up (Release)
         {
-            PostMessage(hwnd, WM_LBUTTONUP, 0, clickPos);
+            WPARAM wParamUp = 0 | sig;
+            PostMessage(hwnd, WM_LBUTTONUP, wParamUp, clickPos);
             musLB = false;
 
         }
-        if (z == 5) {
-            PostMessage(hwnd, WM_RBUTTONDOWN, MK_RBUTTON, clickPos);
+        if (z == 5) { // Right Down (Hold)
+            WPARAM wParamDown = MK_RBUTTON | sig;
+
+            PostMessage(hwnd, WM_RBUTTONDOWN, wParamDown, clickPos);
             keystatesend = VK_RIGHT;
             musRB = true;
         }
-        if (z == 6)
+        if (z == 6) // Right Up (Release)
         {
-            PostMessage(hwnd, WM_RBUTTONUP, 0, clickPos);
+            WPARAM wParamUp = 0 | sig;
+            PostMessage(hwnd, WM_RBUTTONUP, wParamUp, clickPos);
             musRB = false;
 
         }
         if (z == 20 || z == 21) //WM_mousewheel need desktop coordinates
         {
-
             ClientToScreen(hwnd, &heer);
             LPARAM clickPos = MAKELPARAM(heer.x, heer.y);
             WPARAM wParam = 0;
             if (z == 20) {
-                wParam = MAKEWPARAM(0, -120); 
+                wParam = MAKEWPARAM(0, -120);
                 rawmouseWd = true;
             }
             if (z == 21) {
                 wParam = MAKEWPARAM(0, 120);
                 rawmouseWu = true;
             }
+            wParam |= sig; // Add signature
+
             PostMessage(hwnd, WM_MOUSEWHEEL, wParam, clickPos);
         }
         if (z == 30) //WM_LBUTTONDBLCLK
         {
-            PostMessage(hwnd, WM_LBUTTONDBLCLK, 0, clickPos);
+            WPARAM wParam = 0 | sig;
+            PostMessage(hwnd, WM_LBUTTONDBLCLK, wParam, clickPos);
         }
-        else if (z == 8 || z == 10 || z == 11) //only mousemove
+        else if (z == 8 || z == 10 || z == 11) // only mousemove
         {
-            
-            PostMessage(hwnd, WM_MOUSEMOVE, 0, clickPos);
+            WPARAM wParam = 0 | sig;
+            PostMessage(hwnd, WM_MOUSEMOVE, wParam, clickPos);
             //PostMessage(hwnd, WM_SETCURSOR, (WPARAM)hwnd, MAKELPARAM(HTCLIENT, WM_MOUSEMOVE));
 
         }
@@ -675,13 +705,12 @@ bool SendMouseClick(int x, int y, int z, int many) {
         //z is 3 or anything just move mouse
         SendInput(many, input, sizeof(INPUT));
         Mutexlock(false);
-        
+
     }
     // Convert screen coordinates to absolute values
 
     return true;
 }
-
 std::string UGetExecutableFolder() {
     TCHAR path[MAX_PATH];
     GetModuleFileName(NULL, path, MAX_PATH);
@@ -1497,7 +1526,7 @@ void PostKeyFunction(HWND hwnd, int keytype, bool press) {
         lParam = (1 | (scanCode << 16) | (1 << 30) | (1 << 31));
         keystatesend = 0;
     }
-    
+    lParam |= ScreenshotInput_KEYBOARD_SIGNATURE;
 
     PostMessage(hwnd, presskey, mykey, lParam);
   //  for (HWND ahwnd : g_windows)
@@ -2949,7 +2978,8 @@ bool readsettings(){
     std::string iniSettings = "Settings";
 
     //controller settings
-    controllerID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", -9000, iniPath.c_str()); //simple test if settings read
+    //controllerID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", -9000, iniPath.c_str()); //simple test if settings read
+    int readID = GetPrivateProfileInt(iniSettings.c_str(), "Controllerid", -1, iniPath.c_str());
     AxisLeftsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisLeftsens", -9000, iniPath.c_str());
     AxisRightsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisRightsens", 9000, iniPath.c_str());
     AxisUpsens = GetPrivateProfileInt(iniSettings.c_str(), "AxisUpsens", 9000, iniPath.c_str());
@@ -3145,13 +3175,18 @@ bool readsettings(){
     mode = InitialMode;
     if (drawfakecursor == 3)
         DrawFakeCursorFix = true;
-    if (controllerID == -9999)
+    /*if (controllerID == -9999)
     {
         return false;
         controllerID = 0; //default controller  
 
     }
-    return true;
+    return true;*/
+    controllerID = readID - 1;
+    if (controllerID < 0 || controllerID >= OPENXINPUT_XUSER_MAX_COUNT)
+    {
+        controllerID = 0; // Fallback to Player 1
+    }
 }   
 void ThreadFunction(HMODULE hModule)
 {
@@ -3782,6 +3817,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             std::string iniPath = UGetExecutableFolder() + "\\Xinput.ini";
             std::string iniSettings = "Hooks";
+            std::string iniMessageFilter = "MessageFilter";
 
              //hook settings
             clipcursorhook = GetPrivateProfileInt(iniSettings.c_str(), "ClipCursorHook", 1, iniPath.c_str());
@@ -3799,6 +3835,17 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             rightrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectRight", 800, iniPath.c_str());
             bottomrect = GetPrivateProfileInt(iniSettings.c_str(), "SetRectBottom", 600, iniPath.c_str());
             registerrawinputhook = GetPrivateProfileInt(iniSettings.c_str(), "RegisterRawInputHook", 1, iniPath.c_str());
+
+            // [MessageFilter]
+            g_filterRawInput = GetPrivateProfileInt(iniMessageFilter.c_str(), "RawInputFilter", 0, iniPath.c_str());
+            g_filterMouseMove = GetPrivateProfileInt(iniMessageFilter.c_str(), "MouseMoveFilter", 0, iniPath.c_str());
+            g_filterMouseActivate = GetPrivateProfileInt(iniMessageFilter.c_str(), "MouseActivateFilter", 0, iniPath.c_str());
+            g_filterWindowActivate = GetPrivateProfileInt(iniMessageFilter.c_str(), "WindowActivateFilter", 0, iniPath.c_str());
+            g_filterWindowActivateApp = GetPrivateProfileInt(iniMessageFilter.c_str(), "WindowActivateAppFilter", 0, iniPath.c_str());
+            g_filterMouseWheel = GetPrivateProfileInt(iniMessageFilter.c_str(), "MouseWheelFilter", 0, iniPath.c_str());
+            g_filterMouseButton = GetPrivateProfileInt(iniMessageFilter.c_str(), "MouseButtonFilter", 0, iniPath.c_str());
+            g_filterKeyboardButton = GetPrivateProfileInt(iniMessageFilter.c_str(), "KeyboardButtonFilter", 0, iniPath.c_str());
+
             int hooksoninit = GetPrivateProfileInt(iniSettings.c_str(), "hooksoninit", 1, iniPath.c_str());
             if (hooksoninit)
                 {

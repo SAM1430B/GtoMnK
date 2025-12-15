@@ -156,10 +156,15 @@
   <ItemGroup>
     <ClInclude Include="dllmain.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="MessageFilterBase.h" />
+    <ClInclude Include="MessageFilterHooks.h" />
+    <ClInclude Include="MessageFilters.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="ProtoMessageFilterIDs.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="MessageFilterHooks.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

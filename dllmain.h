@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 //setttings
 
 //controller
@@ -44,6 +45,12 @@ typedef HWND(WINAPI* CreateWindowExW_t)( DWORD dwExStyle, LPCWSTR lpClassName, L
 
 
 typedef BOOL(WINAPI* RegisterRawInputDevices_t)( PRAWINPUTDEVICE pRawInputDevices, UINT uiNumDevices, UINT cbSize);
+
+// message filter hooks
+typedef BOOL(WINAPI* GetMessageA_t)(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax);
+typedef BOOL(WINAPI* GetMessageW_t)(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax);
+typedef BOOL(WINAPI* PeekMessageA_t)(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax, UINT wRemoveMsg);
+typedef BOOL(WINAPI* PeekMessageW_t)(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax, UINT wRemoveMsg);
 //std::vector<HWND> g_windows;
 
     
@@ -74,7 +81,10 @@ CreateWindowExA_t fpCreateWindowExA = nullptr;
 CreateWindowExW_t fpCreateWindowExW = nullptr;
 RegisterRawInputDevices_t fpRegisterRawInputDevices = nullptr;
 
-
+BOOL(WINAPI* fpGetMessageA)(LPMSG, HWND, UINT, UINT) = nullptr;
+BOOL(WINAPI* fpGetMessageW)(LPMSG, HWND, UINT, UINT) = nullptr;
+BOOL(WINAPI* fpPeekMessageA)(LPMSG, HWND, UINT, UINT, UINT) = nullptr;
+BOOL(WINAPI* fpPeekMessageW)(LPMSG, HWND, UINT, UINT, UINT) = nullptr;
 
 
 //POINT fakecursor;
@@ -185,6 +195,17 @@ bool nochange = false;
 
 bool oldHadShowCursor = true;
 
+// MessageFilter
+extern const WPARAM ScreenshotInput_MOUSE_SIGNATURE = 0x10000000;
+extern const LPARAM ScreenshotInput_KEYBOARD_SIGNATURE = 0x10000000;
+bool g_filterRawInput = false;
+bool g_filterMouseMove = false;
+bool g_filterMouseActivate = false;
+bool g_filterWindowActivate = false;
+bool g_filterWindowActivateApp = false;
+bool g_filterMouseWheel = false;
+bool g_filterMouseButton = true;
+bool g_filterKeyboardButton = false;
 
 //scroll type 3
 int tick = 0;
