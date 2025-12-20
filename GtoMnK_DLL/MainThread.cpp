@@ -86,12 +86,6 @@ bool g_filterMouseWheel = false;
 bool g_filterMouseButton = false;
 bool g_filterKeyboardButton = false;
 
-// For GetCursorPosHook
-POINT scroll = { 0, 0 };
-bool scrollmap = false;
-POINT rectignore = { 0, 0 };
-int ignorerect;
-
 // For SetRectHook and AdjustWindowRectHook
 int leftrect, toprect, rightrect, bottomrect;
 
@@ -107,6 +101,10 @@ int leftrect, toprect, rightrect, bottomrect;
 //int scrollenddelay;
 //int tick = 0;
 //bool doscrollyes = false;
+//POINT scroll = { 0, 0 };
+//bool scrollmap = false;
+//POINT rectignore = { 0, 0 };
+//int ignorerect;
 
 HWND GetMainWindowHandle(DWORD targetPID) {
     struct HandleData {
