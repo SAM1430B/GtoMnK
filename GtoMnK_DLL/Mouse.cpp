@@ -2,10 +2,6 @@
 #include "Mouse.h"
 
 extern HWND hwnd;
-extern bool scrollmap;
-extern POINT scroll;
-extern int ignorerect;
-extern POINT rectignore;
 extern HANDLE hMutex;
 
 namespace GtoMnK {
@@ -40,22 +36,11 @@ namespace GtoMnK {
         if (!lpPoint) return FALSE;
 
         POINT mpos;
-        if (!scrollmap) {
-            if (ignorerect == 1) {
-                mpos.x = Xf + rectignore.x;
-                mpos.y = Yf + rectignore.y;
-            }
-            else {
-                mpos.x = Xf;
-                mpos.y = Yf;
-                ClientToScreen(hwnd, &mpos);
-            }
-        }
-        else {
-            mpos.x = scroll.x;
-            mpos.y = scroll.y;
-            ClientToScreen(hwnd, &mpos);
-        }
+        mpos.x = Xf;
+        mpos.y = Yf;
+
+        ClientToScreen(hwnd, &mpos);
+
         *lpPoint = mpos;
         return TRUE;
     }
@@ -63,6 +48,16 @@ namespace GtoMnK {
     BOOL WINAPI Mouse::SetCursorPosHook(int X, int Y) {
         POINT point = { X, Y };
         ScreenToClient(hwnd, &point);
+
+        RECT rc;
+        if (GetClientRect(hwnd, &rc)) {
+            if (point.x < rc.left) point.x = rc.left;
+            else if (point.x >= rc.right) point.x = rc.right - 1;
+
+            if (point.y < rc.top) point.y = rc.top;
+            else if (point.y >= rc.bottom) point.y = rc.bottom - 1;
+        }
+
         Xf = point.x;
         Yf = point.y;
         return TRUE;
