@@ -29,16 +29,12 @@ extern float curve_exponent;
 namespace GtoMnK {
 
     OverlayMenu OverlayMenu::state{};
-#define WM_MOVE_menuWindow (WM_APP + 3)
-#define WM_ZORDER_menuWindow (WM_APP + 4)
+#define WM_MOVE_menuWindow (WM_APP + 2)
 
     LRESULT WINAPI OverlayMenuWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         switch (msg) {
         case WM_MOVE_menuWindow:
             OverlayMenu::state.GetWindowDimensions(hWnd);
-            break;
-        case WM_ZORDER_menuWindow:
-            OverlayMenu::state.GetWindowZorder(hWnd);
             break;
         case WM_DESTROY:
             PostQuitMessage(0);
@@ -461,10 +457,6 @@ namespace GtoMnK {
     void OverlayMenu::UpdatePositionLoopInternal() {
         while (true) {
             if (isMenuOpen && IsWindow(hwnd)) {
-                
-                // Don't set the Overlay window TOPMOST if the game isn't active
-                PostMessage(menuWindow, WM_ZORDER_menuWindow, 0, 0);
-
                 PostMessage(menuWindow, WM_MOVE_menuWindow, 0, 0);
             }
             Sleep(500);
@@ -479,45 +471,10 @@ namespace GtoMnK {
         POINT topLeft = { cRect.left, cRect.top };
         ClientToScreen(hwnd, &topLeft);
 
-        SetWindowPos(mWnd, 0,
+        SetWindowPos(mWnd, HWND_TOP,
             topLeft.x, topLeft.y,
             cRect.right - cRect.left, cRect.bottom - cRect.top,
             SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOREDRAW);
-    }
-
-    void OverlayMenu::GetWindowZorder(HWND mWnd) {
-        if (!IsWindow(hwnd)) return;
-
-        HWND foreground = GetForegroundWindow();
-        bool isGameActive = (foreground == hwnd || foreground == mWnd);
-
-        // Get the game style for "if it's TOPMOST" to keep the Overlay window as TOPMOST
-        /*LONG_PTR gameStyles = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
-        bool gameIsTopMost = (gameStyles & WS_EX_TOPMOST) != 0;*/
-
-        static bool wasGameActive = false;
-
-        if (isGameActive) {
-            if (!wasGameActive) {
-                // It seems HWND_TOP is enogh if the overlay window has an owner
-                SetWindowPos(mWnd, /*HWND_TOPMOST*/ HWND_TOP, 0, 0, 0, 0,
-                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
-
-                // If we used HWND_TOPMOST better to set HWND_NOTOPMOST after.
-                /*if (!gameIsTopMost) {
-                    SetWindowPos(mWnd, HWND_NOTOPMOST, 0, 0, 0, 0,
-                        SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
-                }*/
-                wasGameActive = true;
-            }
-        }
-        else {
-            if (wasGameActive) {
-                SetWindowPos(mWnd, HWND_NOTOPMOST, 0, 0, 0, 0,
-                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
-                wasGameActive = false;
-            }
-        }
     }
 
     void OverlayMenu::Initialise() {

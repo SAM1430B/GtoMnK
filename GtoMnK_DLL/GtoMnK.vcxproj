@@ -148,7 +148,7 @@
       <Command>echo Copying...
 copy "$(SolutionDir)include\EasyHook\EasyHook32.dll" "$(TargetDir)"
 copy "$(ProjectDir)Documents\GtoMnK_Keys.txt" "$(TargetDir)"
-copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -176,6 +176,7 @@ copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
     <PostBuildEvent>
       <Command>echo Copying...
 copy "$(SolutionDir)include\EasyHook\EasyHook32.dll" "$(TargetDir)"
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"
 robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x32" "$(TargetDir)Loader.x32" /E /MIR
 exit /b 0</Command>
     </PostBuildEvent>
@@ -205,6 +206,7 @@ exit /b 0</Command>
     <PostBuildEvent>
       <Command>echo Copying...
 copy "$(SolutionDir)include\EasyHook\EasyHook32.dll" "$(TargetDir)"
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"
 robocopy "$(ProjectDir)Documents" "$(TargetDir)Config" /E /MIR
 robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x32" "$(TargetDir)Loader.x32" /E /MIR
 exit /b 0</Command>
@@ -232,7 +234,7 @@ exit /b 0</Command>
       <Command>echo Copying...
 copy "$(SolutionDir)include\EasyHook\EasyHook64.dll" "$(TargetDir)"
 copy "$(ProjectDir)Documents\GtoMnK_Keys.txt" "$(TargetDir)"
-copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -259,7 +261,8 @@ copy "$(ProjectDir)Documents\GtoMnK.ini" "$(TargetDir)"</Command>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying...
-copy "$(SolutionDir)include\EasyHook\EasyHook64.dll" "$(TargetDir)"</Command>
+copy "$(SolutionDir)include\EasyHook\EasyHook64.dll" "$(TargetDir)"
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
@@ -287,6 +290,7 @@ copy "$(SolutionDir)include\EasyHook\EasyHook64.dll" "$(TargetDir)"</Command>
     <PostBuildEvent>
       <Command>echo Copying...
 copy "$(SolutionDir)include\EasyHook\EasyHook64.dll" "$(TargetDir)"
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"
 robocopy "$(ProjectDir)Documents" "$(TargetDir)Config" /E /MIR</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -336,8 +340,8 @@ robocopy "$(ProjectDir)Documents" "$(TargetDir)Config" /E /MIR</Command>
     <ClCompile Include="RawInput.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Documents\GtoMnK.ini" />
     <None Include="Documents\GtoMnK_Config.html" />
+    <None Include="INI\GtoMnK.ini" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Documents\GtoMnK_Keys.txt" />
