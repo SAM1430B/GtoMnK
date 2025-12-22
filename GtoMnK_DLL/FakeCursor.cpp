@@ -18,16 +18,12 @@ namespace GtoMnK
 
     FakeCursor FakeCursor::state{};
 #define WM_MOVE_pointerWindow (WM_APP + 1)
-#define WM_ZORDER_pointerWindow (WM_APP + 2)
     LRESULT WINAPI FakeCursorWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         switch (msg)
         {
         case WM_MOVE_pointerWindow:
             FakeCursor::state.GetWindowDimensions(hWnd);
-            break;
-        case WM_ZORDER_pointerWindow:
-            FakeCursor::state.GetWindowZorder(hWnd);
             break;
         case WM_DESTROY:
             PostQuitMessage(0);
@@ -55,7 +51,7 @@ namespace GtoMnK
 
             HWND zOrderValue;
             if (createdWindowIsOwned)
-                zOrderValue = 0;
+                zOrderValue = HWND_TOP;
             else
                 zOrderValue = HWND_TOPMOST;
 
@@ -65,34 +61,6 @@ namespace GtoMnK
                 cRect.right - cRect.left,
                 cRect.bottom - cRect.top,
                 SWP_NOACTIVATE);
-        }
-    }
-
-    void FakeCursor::GetWindowZorder(HWND pointerWindow) {
-        if (!IsWindow(hwnd)) return;
-
-        HWND tHwnd = hwnd;
-        if (pointerWindow == tHwnd)
-            return;
-
-        HWND foreground = GetForegroundWindow();
-        bool isGameActive = (foreground == hwnd || foreground == pointerWindow);
-
-        static bool wasGameActive = false;
-
-        if (isGameActive) {
-            if (!wasGameActive) {
-                SetWindowPos(pointerWindow, HWND_TOP, 0, 0, 0, 0,
-                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
-                wasGameActive = true;
-            }
-        }
-        else {
-            if (wasGameActive) {
-                SetWindowPos(pointerWindow, HWND_NOTOPMOST, 0, 0, 0, 0,
-                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
-                wasGameActive = false;
-            }
         }
     }
     
@@ -216,8 +184,6 @@ namespace GtoMnK
                 Sleep(2000);
                 continue;
             }
-            if (createdWindowIsOwned)
-                PostMessage(pointerWindow, WM_ZORDER_pointerWindow, 0, 0);
 
             PostMessage(pointerWindow, WM_MOVE_pointerWindow, 0, 0);
 

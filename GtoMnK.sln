@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.12.35521.163
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GtoMnK_DLL", "GtoMnK_DLL\GtoMnK.vcxproj", "{008D5134-AE8D-4EF4-B97D-D545124A9184}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7D4180C0-FA00-4ED3-9D09-458942FC45FF} = {7D4180C0-FA00-4ED3-9D09-458942FC45FF}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Xinput", "Xinput", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject

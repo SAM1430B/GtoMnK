@@ -44,7 +44,6 @@ namespace GtoMnK
 		void StartDrawLoopInternal();
 		void UpdatePointerWindowLoopInternal(); // Checks the selected window dimensions.
 		void GetWindowDimensions(HWND hWnd); // For pointerWindow
-		void GetWindowZorder(HWND hWnd); // For pointerWindow
 
 		static bool& GetToggleVisilbityShorcutEnabled()
 		{

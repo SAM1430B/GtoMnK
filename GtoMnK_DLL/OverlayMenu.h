@@ -22,7 +22,6 @@ namespace GtoMnK {
         void EnableDisableMenu(bool enable);
         void ProcessInput(int gamepadButtons); // Handles the overlay buttons
         void GetWindowDimensions(HWND mWnd);
-        void GetWindowZorder(HWND mWnd);
 
         void SetupOptions();
 

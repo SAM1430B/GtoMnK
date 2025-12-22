@@ -340,7 +340,8 @@
     <h1>GtoMnK Configuration</h1>
     <div id="gp-status" class="disconnected">Waiting for Controller... Press a button.</div>
 
-    <textarea id="virtual-key-input" style="position: fixed; top: 0; left: 0; opacity: 0; width: 1px; height: 1px;" autocomplete="off"></textarea>
+    <textarea id="virtual-key-input" style="position: absolute; opacity: 0; width: 1px; height: 1px; font-size: 16px; z-index: -1;"
+              autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
 
     <div class="container">
         <div class="panel">
@@ -662,6 +663,15 @@
 
             // PRE-FILL INPUT WITH A DOT TO ENABLE BACKSPACE DETECTION ON ANDROID
             const hiddenInput = document.getElementById('virtual-key-input');
+            const rect = el.getBoundingClientRect();
+            const scrollTop = window.scrollY || document.documentElement.scrollTop;
+            const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+
+            hiddenInput.style.top = (rect.top + scrollTop) + "px";
+            hiddenInput.style.left = (rect.left + scrollLeft) + "px";
+            hiddenInput.style.width = rect.width + "px";
+            hiddenInput.style.height = rect.height + "px";
+
             hiddenInput.value = ".";
             hiddenInput.focus();
 
@@ -779,6 +789,7 @@
                 // Normal Characters
                 if (e.data) {
                     const char = e.data.slice(-1);
+                    if (char === '\n') return;
                     const code = getCodeFromChar(char);
                     if (code !== 0) {
                         setMapping(code);
@@ -798,17 +809,14 @@
                 if (e.key === "Tab") { e.preventDefault(); setMapping(3); return; }
                 if (e.key === " ") { e.preventDefault(); setMapping(13); return; }
 
-                // If Android is composing, ignore keydown
                 if (e.code === 'Unidentified' || e.keyCode === 229) { return; }
+
+                const isSimpleChar = e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey;
+                if (isSimpleChar) return;
 
                 if (e.code === "NumLock") { setMapping(keyMap["NumLock"]); return; }
 
                 let codeKey = e.code;
-                if (!codeKey || codeKey === "Space") {
-                    const keyUpper = e.key.toUpperCase();
-                    if (keyUpper.length === 1 && keyUpper >= "A" && keyUpper <= "Z") codeKey = "Key" + keyUpper;
-                }
-
                 let code = keyMap[codeKey] || 0;
                 if (code !== 0) setMapping(code);
             }
@@ -820,7 +828,6 @@
                 e.preventDefault();
                 e.stopPropagation();
                 let code = -1;
-                // Mapping while recording:
                 if (e.button === 1) code = -3;
                 if (e.button === 2) code = -2;
                 if (e.button === 3) code = -4;

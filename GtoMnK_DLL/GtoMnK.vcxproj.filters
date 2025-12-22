@@ -112,6 +112,9 @@
     <Filter Include="Files\Overlay">
       <UniqueIdentifier>{d53a98ff-d9a8-4da3-8b17-f91202dbea42}</UniqueIdentifier>
     </Filter>
+    <Filter Include="INI">
+      <UniqueIdentifier>{fa813b98-d3cc-463d-9154-0b2773fc3090}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Documents\GtoMnK_Keys.txt">
@@ -119,11 +122,11 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Documents\GtoMnK.ini">
-      <Filter>Documents</Filter>
-    </None>
     <None Include="Documents\GtoMnK_Config.html">
       <Filter>Documents</Filter>
+    </None>
+    <None Include="INI\GtoMnK.ini">
+      <Filter>INI</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
