@@ -89,6 +89,10 @@ bool g_filterKeyboardButton = false;
 // For SetRectHook and AdjustWindowRectHook
 int leftrect, toprect, rightrect, bottomrect;
 
+// For finding the game window
+char iniWindowName[256] = { 0 };
+char iniClassName[256] = { 0 };
+
 // General
 //bool gotcursoryet = false;
 //POINT startdrag = { 0, 0 };
@@ -106,31 +110,69 @@ int leftrect, toprect, rightrect, bottomrect;
 //POINT rectignore = { 0, 0 };
 //int ignorerect;
 
-HWND GetMainWindowHandle(DWORD targetPID) {
+
+HWND GetMainWindowHandle(DWORD targetPID, const char* requiredName, const char* requiredClass, DWORD timeoutMS) {
     struct HandleData {
         DWORD pid;
-        HWND hwnd;
-    } data = { targetPID, nullptr };
+        HWND bestHandle;
+        const char* reqName;
+        const char* reqClass;
+    };
 
-    auto EnumWindowsCallback = [](HWND hWnd, LPARAM lParam) -> BOOL {
-        HandleData* pData = reinterpret_cast<HandleData*>(lParam);
-        DWORD windowPID = 0;
-        GetWindowThreadProcessId(hWnd, &windowPID);
+    ULONGLONG startTime = GetTickCount64();
 
-        if (windowPID == pData->pid) {
-            if (GetWindow(hWnd, GW_OWNER) == (HWND)0 && IsWindowVisible(hWnd)) {
-				// (ProtoInput FakeCursor) Ignore the pointer window
-                if (hWnd == FakeCursor::GetPointerWindow()) {
-                    return TRUE;
+    while (true) {
+        HandleData data = { targetPID, nullptr, requiredName, requiredClass };
+
+        auto EnumWindowsCallback = [](HWND hWnd, LPARAM lParam) -> BOOL {
+            HandleData* pData = reinterpret_cast<HandleData*>(lParam);
+            DWORD windowPID = 0;
+            GetWindowThreadProcessId(hWnd, &windowPID);
+
+            if (windowPID != pData->pid) return TRUE;
+
+            if (!IsWindowVisible(hWnd)) return TRUE;
+            if (hWnd == FakeCursor::GetPointerWindow()) return TRUE;
+
+            bool usingStrictFilters = (pData->reqName && pData->reqName[0]) ||
+                (pData->reqClass && pData->reqClass[0]);
+
+            if (usingStrictFilters) {
+
+                if (pData->reqClass && pData->reqClass[0] != '\0') {
+                    char className[256];
+                    GetClassNameA(hWnd, className, sizeof(className));
+                    if (strcmp(className, pData->reqClass) != 0) return TRUE;
                 }
-                pData->hwnd = hWnd;
-                return FALSE;
+
+                if (pData->reqName && pData->reqName[0] != '\0') {
+                    char windowName[256];
+                    GetWindowTextA(hWnd, windowName, sizeof(windowName));
+                    if (strcmp(windowName, pData->reqName) != 0) return TRUE;
+                }
             }
+            else {
+                if (GetWindowLongPtr(hWnd, GWL_EXSTYLE) & WS_EX_TOOLWINDOW) return TRUE;
+                if (GetWindow(hWnd, GW_OWNER) != (HWND)0) return TRUE;
+            }
+
+            pData->bestHandle = hWnd;
+            return FALSE;
+            };
+
+        EnumWindows(EnumWindowsCallback, reinterpret_cast<LPARAM>(&data));
+
+        if (data.bestHandle != nullptr) {
+            return data.bestHandle;
         }
-        return TRUE;
-        };
-    EnumWindows(EnumWindowsCallback, reinterpret_cast<LPARAM>(&data));
-    return data.hwnd;
+
+        if ((GetTickCount64() - startTime) >= timeoutMS) {
+            break;
+        }
+        Sleep(500);
+    }
+
+    return nullptr;
 }
 
 // UGetExecutableFolder_main is for getting the executable folder path
@@ -193,6 +235,10 @@ void LoadIniSettings() {
 
     char buffer[256];
 
+	// [FindWindow]
+    GetPrivateProfileStringA("FindWindow", "WindowName", NULL, iniWindowName, sizeof(iniWindowName), iniPath.c_str());
+    GetPrivateProfileStringA("FindWindow", "ClassName", NULL, iniClassName, sizeof(iniClassName), iniPath.c_str());
+
     // [API]
     int method = GetPrivateProfileIntA("API", "InputMethod", 0, iniPath.c_str());
     if (method == 1) {
@@ -210,8 +256,8 @@ void LoadIniSettings() {
     getKeyStateHook = GetPrivateProfileIntA("Hooks", "GetKeystateHook", 1, iniPath.c_str());
     getAsyncKeyStateHook = GetPrivateProfileIntA("Hooks", "GetAsynckeystateHook", 1, iniPath.c_str());
     getKeyboardStateHook = GetPrivateProfileIntA("Hooks", "GetKeyboardstateHook", 1, iniPath.c_str());
-    setCursorHook = GetPrivateProfileIntA("Hooks", "SetCursorHook", 0, iniPath.c_str());
-    setRectHook = GetPrivateProfileIntA("Hooks", "SetRectHook", 0, iniPath.c_str());
+    setCursorHook = GetPrivateProfileIntA("Hooks", "SetCursorHook", 0, iniPath.c_str()); // DrawProtoFakeCursor doewn't use this.
+	setRectHook = GetPrivateProfileIntA("Hooks", "SetRectHook", 0, iniPath.c_str());
 
 	// [MessageFilter]
     g_filterRawInput = GetPrivateProfileIntA("MessageFilter", "RawInputFilter", 0, iniPath.c_str()) == 1;
@@ -224,7 +270,7 @@ void LoadIniSettings() {
     g_filterKeyboardButton = GetPrivateProfileIntA("MessageFilter", "KeyboardButtonFilter", 0, iniPath.c_str()) == 1;
 
     // [Settings]
-	startUpDelay = GetPrivateProfileIntA("Settings", "StartUpDelay", 0, iniPath.c_str());
+    startUpDelay = GetPrivateProfileIntA("Settings", "StartUpDelay", 0, iniPath.c_str());
     recheckHWND = GetPrivateProfileIntA("Settings", "RecheckHWND", 1, iniPath.c_str()) == 1;
     disableOverlayOptions = (GetPrivateProfileIntA("Settings", "DisableOverlayOptions", 0, iniPath.c_str()) != 0);
     controllerID = GetPrivateProfileIntA("Settings", "Controllerid", 0, iniPath.c_str());
@@ -523,8 +569,30 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     }
 
     if (startUpDelay > 0) {
-        LOG("Waiting for startup delay of %dms before hooking...", startUpDelay);
-        Sleep(startUpDelay);
+        LOG("Waiting for startup delay of %dSec before hooking...", startUpDelay);
+        Sleep(startUpDelay * 1000);
+    }
+
+    LOG("Searching for Game Window...");
+    if (iniWindowName[0] != '\0') { LOG("Filter Name: '%s'", iniWindowName); }
+    if (iniClassName[0] != '\0') { LOG("Filter Class: '%s'", iniClassName); }
+    hwnd = GetMainWindowHandle(GetCurrentProcessId(), iniWindowName, iniClassName, 300000);
+    if (!hwnd) {
+        LOG("CRITICAL: Game window not found after 5min. Thread exiting to prevent crash.");
+        loop = false;
+        return 0;
+    }
+    LOG("Initial window handle acquired: 0x%p", hwnd);
+
+    if (drawProtoFakeCursor == 1) {
+        LOG("ProtoInput Fake Cursor is enabled. Initializing...");
+        FakeCursor::Initialise();
+        if (!createdWindowIsOwned)
+            FakeCursor::EnableDisableFakeCursor(true);
+        // CursorVisibilityHook will be enabled automatically when `drawProtoFakeCursor` is enabled. 
+    }
+    else if (drawfakecursor) {
+        LOG("Simple Fake Cursor is enabled.");
     }
 
     Hooks::SetupHooks();
@@ -533,25 +601,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     if (g_InputMethod == InputMethod::RawInput) {
         RawInput::Initialize();
     }
-
-    if ((hwnd = GetMainWindowHandle(GetCurrentProcessId()))) {
-        LOG("Initial window handle acquired: 0x%p", hwnd);
-    }
-    else {
-        LOG("No initial window handle found. Will attempt to acquire later.");
-	}
-
-    if (drawProtoFakeCursor == 1) {
-        LOG("ProtoInput Fake Cursor is enabled. Initializing...");
-        FakeCursor::Initialise();
-        if (!createdWindowIsOwned)
-            FakeCursor::EnableDisableFakeCursor(true);
-		// CursorVisibilityHook will be enabled automatically when `drawProtoFakeCursor` is enabled. 
-    }
-    else if (drawfakecursor) {
-        LOG("Simple Fake Cursor is enabled.");
-    }
-
+    
 	// Overlay Options
     if (!disableOverlayOptions)
     {
@@ -578,10 +628,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         }
 
         if (!hwnd) {
-            hwnd = GetMainWindowHandle(GetCurrentProcessId());
+            hwnd = GetMainWindowHandle(GetCurrentProcessId(), iniWindowName, iniClassName, 300000);
+
             if (!hwnd) {
-                Sleep(100);
-                continue;
+                LOG("CRITICAL: Game window missing for 5 minute.");
+                loop = false;
+                break;
             }
             LOG("Acquired new window handle: 0x%p", hwnd);
         }

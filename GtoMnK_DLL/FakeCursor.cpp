@@ -6,10 +6,9 @@ And is modified for GtoMnK usage. All credits to the original author.
 #include "pch.h"
 #include "FakeCursor.h"
 #include "Mouse.h"
+#include "MainThread.h"
 #include "Logging.h"
 
-extern HWND GetMainWindowHandle(DWORD targetPID);
-extern HWND hwnd;
 extern int drawProtoFakeCursor;
 extern int createdWindowIsOwned;
 
@@ -211,23 +210,18 @@ namespace GtoMnK
     {
         const auto hInstance = GetModuleHandle(NULL);
 
-        if (createdWindowIsOwned)
+        /*if (createdWindowIsOwned)
         {
-			LOG("Pointer window is owned by the game window.");
-            // Wait for window game before creating the Overlay window to make window game as the owner.
-            const ULONGLONG TIMEOUT_MS = 60000; // = 1 Minute timeout
-            ULONGLONG startTime = GetTickCount64();
+            hwnd = GetMainWindowHandle(GetCurrentProcessId(), iniWindowName, iniClassName, 60000);
 
-            while (!hwnd || !IsWindow(hwnd)) {
-
-                if (GetTickCount64() - startTime > TIMEOUT_MS) {
-                    LOG("Timeout: Game Window never appeared. Overlay Menu aborting.");
-                    return;
-                }
-                hwnd = GetMainWindowHandle(GetCurrentProcessId());
-                Sleep(1000);
+            if (!hwnd || !IsWindow(hwnd)) {
+                LOG("Timeout: Game Window never appeared. Fake Cursor aborting.");
+                return;
             }
-        }
+            LOG("Pointer window is owned by the game window.");
+        }*/
+
+		LOG("Creating pointer window...");
 
         // Like a green screen
         transparencyBrush = (HBRUSH)CreateSolidBrush(transparencyKey);
