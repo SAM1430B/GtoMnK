@@ -7,8 +7,6 @@
 #include <time.h>
 
 extern bool disableOverlayOptions;
-extern HWND GetMainWindowHandle(DWORD targetPID);
-extern HWND hwnd;
 extern int controllerID;
 
 extern float sensitivity;
@@ -380,19 +378,16 @@ namespace GtoMnK {
     void OverlayMenu::StartInternal() {
         const auto hInstance = GetModuleHandle(NULL);
 
-        // Wait for window game before creating the Overlay window to make window game as the owner.
-        const ULONGLONG TIMEOUT_MS = 60000; // = 1 Minute timeout
-        ULONGLONG startTime = GetTickCount64();
+		Sleep(5000);
 
-        while (!hwnd || !IsWindow(hwnd)) {
+       /* hwnd = GetMainWindowHandle(GetCurrentProcessId(), iniWindowName, iniClassName, 60000);
 
-            if (GetTickCount64() - startTime > TIMEOUT_MS) {
-                LOG("Timeout: Game Window never appeared. Overlay Menu aborting.");
-                return;
-            }
-            hwnd = GetMainWindowHandle(GetCurrentProcessId());
-            Sleep(1000);
-        }
+        if (!hwnd || !IsWindow(hwnd)) {
+            LOG("Timeout: Game Window never appeared after 60 seconds. Overlay Menu aborting.");
+            return;
+        }*/
+
+		LOG("Overlay Menu Window is being created...");
 
         transparencyBrush = CreateSolidBrush(transparencyKey);
         backgroundBrush = CreateSolidBrush(backgroundColor);

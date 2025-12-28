@@ -1,10 +1,9 @@
 #include "pch.h"
 #include "RawInput.h"
 #include "RawInputHooks.h"
+#include "MainThread.h"
 #include "Logging.h"
 
-extern HWND GetMainWindowHandle(DWORD targetPID);
-extern HWND hwnd;
 extern int createdWindowIsOwned;
 
 namespace GtoMnK {
@@ -76,20 +75,16 @@ namespace GtoMnK {
         DWORD WINAPI RawInputWindowThread(LPVOID lpParameter) {
             HANDLE hWindowReadyEvent = (HANDLE)lpParameter;
 
-            if (createdWindowIsOwned) {
-                // Wait for window game before creating the Overlay window to make window game as the owner.
-                const ULONGLONG TIMEOUT_MS = 60000; // = 1 Minute timeout
-                ULONGLONG startTime = GetTickCount64();
+            /*if (createdWindowIsOwned)
+            {
+                hwnd = GetMainWindowHandle(GetCurrentProcessId(), iniWindowName, iniClassName, 60000);
 
-                while (!hwnd || !IsWindow(hwnd)) {
-
-                    if (GetTickCount64() - startTime > TIMEOUT_MS) {
-                        return 1;
-                    }
-                    hwnd = GetMainWindowHandle(GetCurrentProcessId());
-                    Sleep(1000);
+                if (!hwnd || !IsWindow(hwnd)) {
+                    LOG("Timeout: Game Window never appeared. RawInput aborting.");
+                    return 1;
                 }
-            }
+                LOG("RawInput window is owned by the game window.");
+            }*/
 
             LOG("RawInput hidden window thread started.");
             WNDCLASSW wc = { 0 };
