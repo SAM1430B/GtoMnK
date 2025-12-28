@@ -426,8 +426,13 @@
                 </div>
             </div>
             <div id="filters-options" class="hidden-content">
+                <div class="setting-row"><label>Mouse Move</label><input type="checkbox" id="MouseMoveFilter" title="Filters the real mouse move."></div>
+                <div class="setting-row"><label>Mouse Activate</label><input type="checkbox" id="MouseActivateFilter" title=""></div>
+                <div class="setting-row"><label>Window Activate</label><input type="checkbox" id="WindowActivateFilter" title=""></div>
+                <div class="setting-row"><label>Window Activate App</label><input type="checkbox" id="WindowActivateAppFilter" title=""></div>
+                <div class="setting-row"><label>Mouse Wheel</label><input type="checkbox" id="MouseWheelFilter" title=""></div>
                 <div class="setting-row"><label>Mouse Button</label><input type="checkbox" id="MouseButtonFilter" title="Prevents `the real mouse` interactions." checked></div>
-                <div class="setting-row"><label>Key Button</label><input type="checkbox" id="KeyboardButtonFilter" title="Prevents `the real keyboard` interactions." checked></div>
+                <div class="setting-row"><label>Keyboard Button</label><input type="checkbox" id="KeyboardButtonFilter" title="Prevents `the real keyboard` interactions." checked></div>
             </div>
         </div>
 
@@ -938,6 +943,11 @@
             document.getElementById('GetAsynckeystateHook').checked = true;
             document.getElementById('GetKeyboardstateHook').checked = true;
 
+            document.getElementById('MouseMoveFilter').checked = false;
+            document.getElementById('MouseActivateFilter').checked = false;
+            document.getElementById('WindowActivateFilter').checked = false;
+            document.getElementById('WindowActivateAppFilter').checked = false;
+            document.getElementById('MouseWheelFilter').checked = false;
             document.getElementById('MouseButtonFilter').checked = true;
             document.getElementById('KeyboardButtonFilter').checked = true;
 
@@ -976,6 +986,11 @@ GetAsynckeystateHook=${getSet('GetAsynckeystateHook')}
 GetKeyboardstateHook=${getSet('GetKeyboardstateHook')}
 
 [MessageFilter]
+MouseMoveFilter=${getSet('MouseMoveFilter')}
+MouseActivateFilter=${getSet('MouseActivateFilter')}
+WindowActivateFilter=${getSet('WindowActivateFilter')}
+WindowActivateAppFilter=${getSet('WindowActivateAppFilter')}
+MouseWheelFilter=${getSet('MouseWheelFilter')}
 MouseButtonFilter=${getSet('MouseButtonFilter')}
 KeyboardButtonFilter=${getSet('KeyboardButtonFilter')}
 
