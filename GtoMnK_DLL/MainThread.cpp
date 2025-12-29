@@ -653,6 +653,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                 bool dpadDown = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0;
 
                 if (backDown && dpadDown) {
+                    ProcessButton(XINPUT_GAMEPAD_BACK, false);
+                    ProcessButton(XINPUT_GAMEPAD_DPAD_DOWN, false);
                     if (!menuTogglePending) {
                         menuToggleTimer = GetTickCount64();
                         menuTogglePending = true;
