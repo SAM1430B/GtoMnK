@@ -35,6 +35,8 @@ namespace GtoMnK {
             if (actionCode == -1) isLMB_Down = press; if (actionCode == -2) isRMB_Down = press;
             if (actionCode == -3) isMMB_Down = press; if (actionCode == -4) isX1B_Down = press;
             if (actionCode == -5) isX2B_Down = press; if (actionCode == -8) isLMB_Down = press;
+            if (actionCode == -9) isRMB_Down = press; if (actionCode == -10) isMMB_Down = press;
+            if (actionCode == -11) isX1B_Down = press; if (actionCode == -12) isX2B_Down = press;
 
             POINT currentPos = { Mouse::Xf, Mouse::Yf };
             LPARAM clickPos = MAKELPARAM(currentPos.x, currentPos.y);
@@ -50,6 +52,10 @@ namespace GtoMnK {
             case -6: if (press) { msg = WM_MOUSEWHEEL; wParam |= MAKEWPARAM(0, 120); } break;
             case -7: if (press) { msg = WM_MOUSEWHEEL; wParam |= MAKEWPARAM(0, -120); } break;
             case -8: msg = press ? WM_LBUTTONDBLCLK : WM_LBUTTONUP; break;
+            case -9: msg = press ? WM_RBUTTONDBLCLK : WM_RBUTTONUP; break;
+            case -10: msg = press ? WM_MBUTTONDBLCLK : WM_MBUTTONUP; break;
+            case -11: msg = press ? WM_XBUTTONDBLCLK : WM_XBUTTONUP; wParam |= MAKEWPARAM(0, XBUTTON1); break;
+            case -12: msg = press ? WM_XBUTTONDBLCLK : WM_XBUTTONUP; wParam |= MAKEWPARAM(0, XBUTTON2); break;
             }
 			wParam |= GtoMnK_MOUSE_SIGNATURE; // For filter identification
             if (msg != 0) PostMessage(hwnd, msg, wParam, clickPos);
@@ -98,9 +104,25 @@ namespace GtoMnK {
             RAWINPUT ri = {};
             ri.header.dwType = RIM_TYPEMOUSE;
             ri.header.hDevice = NULL;
-            if (actionCode == -8) {
+			if (actionCode == -8) { // Left Double
                 GenerateRawMouseButton(-1, true); GenerateRawMouseButton(-1, false);
                 GenerateRawMouseButton(-1, press); return;
+            }
+            if (actionCode == -9) { // Right Double
+                GenerateRawMouseButton(-2, true); GenerateRawMouseButton(-2, false);
+                GenerateRawMouseButton(-2, press); return;
+            }
+            if (actionCode == -10) { // Middle Double
+                GenerateRawMouseButton(-3, true); GenerateRawMouseButton(-3, false);
+                GenerateRawMouseButton(-3, press); return;
+            }
+            if (actionCode == -11) { // X1 Double
+                GenerateRawMouseButton(-4, true); GenerateRawMouseButton(-4, false);
+                GenerateRawMouseButton(-4, press); return;
+            }
+            if (actionCode == -12) { // X2 Double
+                GenerateRawMouseButton(-5, true); GenerateRawMouseButton(-5, false);
+                GenerateRawMouseButton(-5, press); return;
             }
             switch (actionCode) {
             case -1: ri.data.mouse.usButtonFlags = press ? RI_MOUSE_LEFT_BUTTON_DOWN : RI_MOUSE_LEFT_BUTTON_UP; break;
@@ -203,10 +225,10 @@ namespace GtoMnK {
                 int vkCode = 0;
                 switch (actionCode) {
                 case -1: case -8: vkCode = VK_LBUTTON; break;
-                case -2: vkCode = VK_RBUTTON; break;
-                case -3: vkCode = VK_MBUTTON; break;
-                case -4: vkCode = VK_XBUTTON1; break;
-                case -5: vkCode = VK_XBUTTON2; break;
+                case -2: case -9: vkCode = VK_RBUTTON; break;
+                case -3: case -10: vkCode = VK_MBUTTON; break;
+                case -4: case -11: vkCode = VK_XBUTTON1; break;
+                case -5: case -12: vkCode = VK_XBUTTON2; break;
                 }
                 if (vkCode != 0) {
                     if (press) g_heldVirtualKeys.insert(vkCode);
@@ -233,10 +255,10 @@ namespace GtoMnK {
                 int vkCode = 0;
                 switch (actionCode) {
                 case -1: case -8: vkCode = VK_LBUTTON; break;
-                case -2: vkCode = VK_RBUTTON; break;
-                case -3: vkCode = VK_MBUTTON; break;
-                case -4: vkCode = VK_XBUTTON1; break;
-                case -5: vkCode = VK_XBUTTON2; break;
+                case -2: case -9: vkCode = VK_RBUTTON; break;
+                case -3: case -10: vkCode = VK_MBUTTON; break;
+                case -4: case -11: vkCode = VK_XBUTTON1; break;
+                case -5: case -12: vkCode = VK_XBUTTON2; break;
                 }
                 if (vkCode != 0) {
                     if (press) g_heldVirtualKeys.insert(vkCode);
@@ -307,14 +329,49 @@ namespace GtoMnK {
                 : DispatchAction_PostMessage;
 
             static ULONGLONG lastLeftClickTime = 0;
-            if (actionString.find("-1") != std::string::npos && g_EnableMouseDoubleClick && press) {
+            if (g_EnableMouseDoubleClick && press) {
                 ULONGLONG currentTime = GetTickCount64();
-                if (currentTime - lastLeftClickTime < GetDoubleClickTime()) {
-                    dispatcher(-8, true);
-                    lastLeftClickTime = 0;
-                    return;
+
+                // Left Click (-1) -> Double (-8)
+                static ULONGLONG lastL = 0;
+                if (actionString.find("-1") != std::string::npos) {
+                    if (currentTime - lastL < GetDoubleClickTime()) {
+                        dispatcher(-8, true); lastL = 0; return;
+                    }
+                    lastL = currentTime;
                 }
-                lastLeftClickTime = currentTime;
+                // Right Click (-2) -> Double (-9)
+                static ULONGLONG lastR = 0;
+                if (actionString.find("-2") != std::string::npos) {
+                    if (currentTime - lastR < GetDoubleClickTime()) {
+                        dispatcher(-9, true); lastR = 0; return;
+                    }
+                    lastR = currentTime;
+                }
+                // Middle Click (-3) -> Double (-10)
+                static ULONGLONG lastM = 0;
+                if (actionString.find("-3") != std::string::npos) {
+                    if (currentTime - lastM < GetDoubleClickTime()) {
+                        dispatcher(-10, true); lastM = 0; return;
+                    }
+                    lastM = currentTime;
+                }
+                // X1 Click (-4) -> Double (-11)
+                static ULONGLONG lastX1 = 0;
+                if (actionString.find("-4") != std::string::npos) {
+                    if (currentTime - lastX1 < GetDoubleClickTime()) {
+                        dispatcher(-11, true); lastX1 = 0; return;
+                    }
+                    lastX1 = currentTime;
+                }
+                // X2 Click (-5) -> Double (-12)
+                static ULONGLONG lastX2 = 0;
+                if (actionString.find("-5") != std::string::npos) {
+                    if (currentTime - lastX2 < GetDoubleClickTime()) {
+                        dispatcher(-12, true); lastX2 = 0; return;
+                    }
+                    lastX2 = currentTime;
+                }
             }
 
             if (actionString.find('+') == std::string::npos) {
