@@ -757,8 +757,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                     POINT delta = ThumbstickMouseMove(thumbX, thumbY);
                     if (delta.x != 0 || delta.y != 0) {
                         Mouse::Xf += delta.x; Mouse::Yf += delta.y;
-                        Mouse::Xf = std::max((LONG)rect.left, std::min((LONG)Mouse::Xf, (LONG)rect.right));
-                        Mouse::Yf = std::max((LONG)rect.top, std::min((LONG)Mouse::Yf, (LONG)rect.bottom));
+                        Mouse::Xf = std::max((LONG)rect.left, std::min((LONG)Mouse::Xf, (LONG)rect.right - 1));
+                        Mouse::Yf = std::max((LONG)rect.top, std::min((LONG)Mouse::Yf, (LONG)rect.bottom - 1));
                         movedmouse = true;
 
                         //ProtoInput Fake Cursor update
