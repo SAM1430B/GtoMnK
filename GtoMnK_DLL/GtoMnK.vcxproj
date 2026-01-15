@@ -102,27 +102,30 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IntDir>$(PlatformShortName)\$(Configuration)\</IntDir>
     <TargetName>$(SolutionName)$(PlatformArchitecture)</TargetName>
+    <OutDir>$(SolutionDir)$(Configuration)\$(PlatformName)</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">
     <IntDir>$(PlatformShortName)\$(Configuration)\</IntDir>
     <TargetName>$(SolutionName)$(PlatformArchitecture)</TargetName>
+    <OutDir>$(SolutionDir)$(Configuration)\$(PlatformName)</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)$(Configuration)\$(PlatformName)</OutDir>
     <IntDir>$(PlatformShortName)\$(Configuration)\</IntDir>
     <TargetName>$(SolutionName)$(PlatformArchitecture)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
-    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)$(Configuration)\$(PlatformName)</OutDir>
     <IntDir>$(PlatformShortName)\$(Configuration)\</IntDir>
     <TargetName>$(SolutionName)$(PlatformArchitecture)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IntDir>$(PlatformShortName)\$(Configuration)\</IntDir>
     <TargetName>$(SolutionName)$(PlatformArchitecture)</TargetName>
+    <OutDir>$(SolutionDir)$(Configuration)\$(PlatformName)</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)$(Configuration)\$(PlatformName)</OutDir>
     <IntDir>$(PlatformShortName)\$(Configuration)\</IntDir>
     <TargetName>$(SolutionName)$(PlatformArchitecture)</TargetName>
   </PropertyGroup>
@@ -176,7 +179,7 @@ copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
     <PostBuildEvent>
       <Command>echo Copying...
 copy "$(SolutionDir)include\EasyHook\EasyHook32.dll" "$(TargetDir)"
-copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"
 robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x32" "$(TargetDir)Loader.x32" /E /MIR
 exit /b 0</Command>
     </PostBuildEvent>
@@ -206,9 +209,9 @@ exit /b 0</Command>
     <PostBuildEvent>
       <Command>echo Copying...
 copy "$(SolutionDir)include\EasyHook\EasyHook32.dll" "$(TargetDir)"
-copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"
-robocopy "$(ProjectDir)Documents" "$(TargetDir)Config" /E /MIR
-robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x32" "$(TargetDir)Loader.x32" /E /MIR
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"
+robocopy "$(ProjectDir)Documents" ""$(SolutionDir)$(Configuration)\Config"
+robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x32" "$(TargetDir)Loader.x32"
 exit /b 0</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -262,7 +265,7 @@ copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
     <PostBuildEvent>
       <Command>echo Copying...
 copy "$(SolutionDir)include\EasyHook\EasyHook64.dll" "$(TargetDir)"
-copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
@@ -290,8 +293,8 @@ copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
     <PostBuildEvent>
       <Command>echo Copying...
 copy "$(SolutionDir)include\EasyHook\EasyHook64.dll" "$(TargetDir)"
-copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"
-robocopy "$(ProjectDir)Documents" "$(TargetDir)Config" /E /MIR</Command>
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"
+robocopy "$(ProjectDir)Documents" "$(SolutionDir)$(Configuration)\Config"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
