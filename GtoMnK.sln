@@ -14,6 +14,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenXinput", "include\OpenX
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DEVOBJ", "include\OpenXinput1_4\DEVOBJ\DEVOBJ.vcxproj", "{8007E347-8033-4031-AFD4-06579D463942}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BlockInput", "BlockInput", "{8FCE7557-C24C-4F01-8D6C-D4E7A66AB067}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dinput8_nojoy", "include\dinput8_nojoy\dinput8_nojoy.vcxproj", "{5232A0A8-E3F2-4166-B28E-DD69B96243F3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -58,6 +62,18 @@ Global
 		{8007E347-8033-4031-AFD4-06579D463942}.Release|x64.Build.0 = Release|x64
 		{8007E347-8033-4031-AFD4-06579D463942}.Release|x86.ActiveCfg = Release|Win32
 		{8007E347-8033-4031-AFD4-06579D463942}.Release|x86.Build.0 = Release|Win32
+		{5232A0A8-E3F2-4166-B28E-DD69B96243F3}.Debug|x64.ActiveCfg = Debug|Win32
+		{5232A0A8-E3F2-4166-B28E-DD69B96243F3}.Debug|x64.Build.0 = Debug|Win32
+		{5232A0A8-E3F2-4166-B28E-DD69B96243F3}.Debug|x86.ActiveCfg = Debug|Win32
+		{5232A0A8-E3F2-4166-B28E-DD69B96243F3}.Debug|x86.Build.0 = Debug|Win32
+		{5232A0A8-E3F2-4166-B28E-DD69B96243F3}.Profile|x64.ActiveCfg = Release|Win32
+		{5232A0A8-E3F2-4166-B28E-DD69B96243F3}.Profile|x64.Build.0 = Release|Win32
+		{5232A0A8-E3F2-4166-B28E-DD69B96243F3}.Profile|x86.ActiveCfg = Release|Win32
+		{5232A0A8-E3F2-4166-B28E-DD69B96243F3}.Profile|x86.Build.0 = Release|Win32
+		{5232A0A8-E3F2-4166-B28E-DD69B96243F3}.Release|x64.ActiveCfg = Release|Win32
+		{5232A0A8-E3F2-4166-B28E-DD69B96243F3}.Release|x64.Build.0 = Release|Win32
+		{5232A0A8-E3F2-4166-B28E-DD69B96243F3}.Release|x86.ActiveCfg = Release|Win32
+		{5232A0A8-E3F2-4166-B28E-DD69B96243F3}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -65,6 +81,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{7D4180C0-FA00-4ED3-9D09-458942FC45FF} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{8007E347-8033-4031-AFD4-06579D463942} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{5232A0A8-E3F2-4166-B28E-DD69B96243F3} = {8FCE7557-C24C-4F01-8D6C-D4E7A66AB067}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {86B4F1A0-07A1-418F-8F83-192D3F3C2F20}

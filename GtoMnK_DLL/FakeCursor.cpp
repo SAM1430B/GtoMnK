@@ -260,7 +260,7 @@ namespace GtoMnK
             pointerWindow = CreateWindowExW(WS_EX_NOACTIVATE | WS_EX_NOINHERITLAYOUT | WS_EX_NOPARENTNOTIFY |
                 ws_ex | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_LAYERED,
                 wc.lpszClassName, classNameStr.c_str(),
-                WS_POPUP | WS_VISIBLE,
+                WS_POPUP,
                 0, 0, 800, 600,
                 parentWindow, nullptr, hInstance, nullptr);
 
@@ -324,7 +324,7 @@ namespace GtoMnK
     {
         state.drawingEnabled = enable;
 
-        ShowWindow(state.pointerWindow, enable ? SW_SHOWDEFAULT : SW_HIDE);
+        ShowWindow(state.pointerWindow, enable ? SW_SHOWNOACTIVATE : SW_HIDE);
         UpdateWindow(state.pointerWindow);
     }
 
