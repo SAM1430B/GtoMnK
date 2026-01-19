@@ -371,7 +371,7 @@
                 <div class="note-row"><p><strong>NOTE:</strong> It's recommended to set the lowest sensitivity in the game for the smoothest mouse movement.</p></div>
                 <div class="setting-row"><label title="Sensitivity Multiplier. 1.0 uses global Sensitivity.">Sensitivity Multiplier</label><input type="text" id="Sensitivity_Multiplier" title="Further scales the base sensitivity.&#10;Higher values make the cursor move faster." value="2.40"></div>
                 <div class="setting-row"><label title="Horizontal Sensitivity. 0.0 uses global Sensitivity.">Horiz. Sens.</label><input type="text" id="Horizontal_Sensitivity" title="Horizontal Sensitivity.&#10;Range: -1.0 (-100%) to 1.0 (100%)." value="0.0"></div>
-                <div class="setting-row"><label title="Vertical Sensitivity. 0.0 uses global Sensitivity.">Vert. Sens.</label><input type="text" id="Vertical_Sensitivity" title="Vertical Sensitivity.&#10;Range: -1.0 (-100%) to 1.0 (100%)." value="0.58"></div>
+                <div class="setting-row"><label title="Vertical Sensitivity. 0.0 uses global Sensitivity.">Vert. Sens.</label><input type="text" id="Vertical_Sensitivity" title="Vertical Sensitivity.&#10;Range: -1.0 (-100%) to 1.0 (100%)." value="-0.58"></div>
                 <div class="setting-row"><label>Max Threshold</label><input type="text" id="Max_Threshold" title="An outer deadzone. Allows the mouse to reach max speed before the stick is fully pushed.&#10;Range: 0.0 to 0.15 (15%)." value="0.045"></div>
                 <div class="setting-row"><label title="Look Accel Multiplier. 1.0 uses global Sensitivity.">Look_Accel_Multiplier.</label><input type="text" id="Look_Accel_Multiplier" title="Boosts speed when stick is near the edge.&#10;Value = 1.0: No boost. Value > 1.0: Boosts speed." value="1.40"></div>
                 <div class="setting-row"><label>Curve Slope</label><input type="text" id="Curve_Slope" title="The initial, linear part of the movement..&#10;Higher value = more linear." value="0.16"></div>
@@ -980,7 +980,6 @@ InputMethod=${getSet('InputMethod')}
 GetCursorposHook=${getSet('GetCursorposHook')}
 SetCursorposHook=${getSet('SetCursorposHook')}
 ClipCursorHook=${getSet('ClipCursorHook')}
-SetCursorHook=0
 
 GetKeystateHook=${getSet('GetKeystateHook')}
 GetAsynckeystateHook=${getSet('GetAsynckeystateHook')}
