@@ -40,6 +40,9 @@
     <ClCompile Include="OverlayMenu.cpp">
       <Filter>Files\Overlay</Filter>
     </ClCompile>
+    <ClCompile Include="NotificationWindow.cpp">
+      <Filter>Files\Overlay</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -95,6 +98,10 @@
     <ClInclude Include="OverlayMenu.h">
       <Filter>Files\Overlay</Filter>
     </ClInclude>
+    <ClInclude Include="NotificationWindow.h">
+      <Filter>Files\Overlay</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Files">
@@ -115,6 +122,12 @@
     <Filter Include="INI">
       <UniqueIdentifier>{fa813b98-d3cc-463d-9154-0b2773fc3090}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Files\Block">
+      <UniqueIdentifier>{620f3e9f-400d-4da4-870b-023d20eb6292}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Files\Block\DirectInput">
+      <UniqueIdentifier>{1cd950fa-5009-44af-9bc0-6d2ff2080d35}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Documents\GtoMnK_Keys.txt">
@@ -133,6 +146,7 @@
     <Image Include="Documents\GtoMnK_Config.png">
       <Filter>Documents</Filter>
     </Image>
+    <Image Include="ControllerW.png" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Version.rc" />

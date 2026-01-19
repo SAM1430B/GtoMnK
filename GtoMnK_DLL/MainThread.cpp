@@ -8,10 +8,11 @@
 #include "MainThread.h"
 #include "FakeCursor.h"
 #include "OverlayMenu.h"
+#include "NotificationWindow.h"
+#include "resource.h"
 
 using namespace GtoMnK;
 
-//#pragma comment(lib, "Xinput9_1_0.lib")
 
 extern "C" BOOL WINAPI OpenXinputDllMain(HINSTANCE hInstDll, DWORD fdwReason, LPVOID lpvReserved);
 
@@ -74,7 +75,7 @@ bool pausedraw = false;
 
 // For the Hooks
 InputMethod g_InputMethod = InputMethod::PostMessage;
-int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setCursorHook, setRectHook;
+int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setRectHook;
 
 // For MessageFilterHook
 bool g_filterRawInput = false;
@@ -256,7 +257,6 @@ void LoadIniSettings() {
     getKeyStateHook = GetPrivateProfileIntA("Hooks", "GetKeystateHook", 1, iniPath.c_str());
     getAsyncKeyStateHook = GetPrivateProfileIntA("Hooks", "GetAsynckeystateHook", 1, iniPath.c_str());
     getKeyboardStateHook = GetPrivateProfileIntA("Hooks", "GetKeyboardstateHook", 1, iniPath.c_str());
-    setCursorHook = GetPrivateProfileIntA("Hooks", "SetCursorHook", 0, iniPath.c_str()); // DrawProtoFakeCursor doewn't use this.
 	setRectHook = GetPrivateProfileIntA("Hooks", "SetRectHook", 0, iniPath.c_str());
 
 	// [MessageFilter]
@@ -446,25 +446,6 @@ bool IsTriggerPressed(BYTE triggerValue) {
     return triggerValue > g_TriggerThreshold;
 }
 
-void DrawOverlay() {
-    if (showmessage == 0 && !(drawfakecursor && mode == 1 && onoroff)) {
-        return;
-    }
-    HDC hdcWindow = GetDC(hwnd);
-    if (!hdcWindow) {
-        return;
-    }
-    if (showmessage == 1) TextOutA(hdcWindow, Mouse::Xf, Mouse::Yf, "KEYBOARD MODE", 13);
-    else if (showmessage == 2) TextOutA(hdcWindow, Mouse::Xf, Mouse::Yf, "CURSOR MODE", 11);
-    else if (showmessage == 69) TextOutA(hdcWindow, Mouse::Xf, Mouse::Yf, "DISABLED", 8);
-    else if (showmessage == 70) TextOutA(hdcWindow, Mouse::Xf, Mouse::Yf, "ENABLED", 7);
-    else if (showmessage == 12) TextOutA(hdcWindow, 20, 20, "CONTROLLER DISCONNECTED", 23);
-    else if (drawfakecursor && mode == 1 && onoroff) {
-        Mouse::DrawBeautifulCursor(hdcWindow);
-    }
-    ReleaseDC(hwnd, hdcWindow);
-}
-
 void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
     ButtonState& bs = buttonStates[buttonFlag];
 
@@ -601,8 +582,15 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     if (g_InputMethod == InputMethod::RawInput) {
         RawInput::Initialize();
     }
-    
-	// Overlay Options
+
+    //Notification
+    NotificationWindow::state.Initialise();
+    std::vector<int> tutorialRes;
+    tutorialRes.push_back(IDB_PNG1); 
+    NotificationWindow::state.LoadTutorialResources(tutorialRes);
+    NotificationWindow::state.Show();
+
+    // Overlay Options
     if (!disableOverlayOptions)
     {
         OverlayMenu::state.Initialise();
@@ -643,6 +631,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
             rect.left = 0; rect.top = 0; rect.right = 800; rect.bottom = 600;
         }
 
+        if (showmessage != 0) {
+            NotificationWindow::state.ShowMessage(showmessage);
+            showmessage = 0;
+        }
+
         XINPUT_STATE state;
         if (OpenXInputGetState(controllerID, &state) == ERROR_SUCCESS) {
 
@@ -681,8 +674,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                     menuTogglePending = false;
                 }
             }
-
-            if (showmessage == 12) showmessage = 0; // "disconnected" message on reconnect
 
             if (!disableOverlayOptions && OverlayMenu::state.isMenuOpen) {
                 OverlayMenu::state.ProcessInput(state.Gamepad.wButtons);
@@ -783,18 +774,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
             }
         }
         else {
-            showmessage = 12; // Controller disconnected
+            // Controller Disconnected
+            // Trigger the disconnected message
+            NotificationWindow::state.ShowMessage(12);
         }
 
-        // Drawing and Message
-        DrawOverlay();
-        if (showmessage != 0 && showmessage != 12) {
-            if (++counter > 150) {
-                showmessage = 0;
-                counter = 0;
-            }
-        }
-        
         if (responsetime <= 0)
             responsetime = 1;
         Sleep(responsetime);

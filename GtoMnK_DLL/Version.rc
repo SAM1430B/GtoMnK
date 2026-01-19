@@ -1,44 +1,96 @@
-#include <windows.h>
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+/////////////////////////////////////////////////////////////////////////////
+// English (United States) resources
 
-#ifdef _WIN64
-#define FILE_NAME "GtoMnK64.dll"
-#else
-#define FILE_NAME "GtoMnK32.dll"
-#endif
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 1, 2, 1, 0
-PRODUCTVERSION 1, 2, 1, 0
-FILEFLAGSMASK 0x3fL
+ FILEVERSION 1,2,1,0
+ PRODUCTVERSION 1,2,1,0
+ FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
-FILEFLAGS 0x1L
+ FILEFLAGS 0x1L
 #else
-FILEFLAGS 0x0L
+ FILEFLAGS 0x0L
 #endif
-FILEOS 0x40004L
-FILETYPE 0x2L
-FILESUBTYPE 0x0L
+ FILEOS 0x40004L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
 BEGIN
-BLOCK "StringFileInfo"
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "FileDescription", "Gamepad to Mouse Keyboard Mapper"
+            VALUE "CompanyName", "https://github.com/SAM1430B/GtoMnK"
+            VALUE "FileVersion", "1.2.1"
+            VALUE "ProductVersion", "1.2.1"
+            VALUE "LegalCopyright", "Copyright (C) 2025"
+            VALUE "OriginalFilename", "GtoMnK32.dll"
+            VALUE "InternalName", "GtoMnK32.dll"
+            VALUE "ProductName", "GtoMnK"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
 BEGIN
-BLOCK "040904b0"
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
 BEGIN
-
-VALUE "FileDescription", "Gamepad to Mouse Keyboard Mapper"
-
-
-VALUE "CompanyName", "https://github.com/SAM1430B/GtoMnK"
-VALUE "FileVersion", "1.2.1"
-VALUE "ProductVersion", "1.2.1"
-VALUE "LegalCopyright", "Copyright (C) 2025"
-VALUE "OriginalFilename", FILE_NAME
-VALUE "InternalName", FILE_NAME
-VALUE "ProductName", "GtoMnK"
+    "\0"
 END
-END
-BLOCK "VarFileInfo"
+
+3 TEXTINCLUDE 
 BEGIN
+    "\r\n"
+    "\0"
+END
 
-VALUE "Translation", 0x409, 1200
-END
-END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// PNG
+//
+
+IDB_PNG1                PNG                     "ControllerW.png"
+
+#endif    // English (United States) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

@@ -11,7 +11,7 @@
 
 // External global variables from dllmain.cpp
 extern int leftrect, toprect, rightrect, bottomrect;
-extern int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setCursorHook, setRectHook;
+extern int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setRectHook;
 
 extern GtoMnK::InputMethod g_InputMethod;
 extern int drawProtoFakeCursor;
@@ -28,7 +28,6 @@ HOOK_TRACE_INFO g_clipCursorHookHandle = { NULL };
 HOOK_TRACE_INFO g_getKeyStateHookHandle = { NULL };
 HOOK_TRACE_INFO g_getAsyncKeyStateHookHandle = { NULL };
 HOOK_TRACE_INFO g_getKeyboardStateHookHandle = { NULL };
-HOOK_TRACE_INFO g_setCursorHookHandle = { NULL };
 HOOK_TRACE_INFO g_setRectHookHandle = { NULL };
 HOOK_TRACE_INFO g_adjustWindowRectHookHandle = { NULL };
 
@@ -132,11 +131,6 @@ namespace GtoMnK {
             result = LhInstallHook(GetProcAddress(hUser32, "GetKeyboardState"), Keyboard::GetKeyboardStateHook, NULL, &g_getKeyboardStateHookHandle);
             if (FAILED(result)) LOG("Failed to install hook for GetKeyboardState: %S", RtlGetLastErrorString());
         }
-        if (setCursorHook && drawProtoFakeCursor != 1) {
-			LOG("Installing SetCursorHook...");
-            result = LhInstallHook(GetProcAddress(hUser32, "SetCursor"), SetCursorHook, NULL, &g_setCursorHookHandle);
-            if (FAILED(result)) LOG("Failed to install hook for SetCursor: %S", RtlGetLastErrorString());
-        }
         if (setRectHook) {
 			LOG("Installing SetRectHook...");
             result = LhInstallHook(GetProcAddress(hUser32, "SetRect"), SetRectHook, NULL, &g_setRectHookHandle);
@@ -160,7 +154,6 @@ namespace GtoMnK {
         if (getKeyStateHook) LhSetExclusiveACL(threadIdList, 1, &g_getKeyStateHookHandle);
         if (getAsyncKeyStateHook) LhSetExclusiveACL(threadIdList, 1, &g_getAsyncKeyStateHookHandle);
         if (getKeyboardStateHook) LhSetExclusiveACL(threadIdList, 1, &g_getKeyboardStateHookHandle);
-        if (setCursorHook) LhSetExclusiveACL(threadIdList, 1, &g_setCursorHookHandle);
         if (setRectHook) {
             LhSetExclusiveACL(threadIdList, 1, &g_setRectHookHandle);
             LhSetExclusiveACL(threadIdList, 1, &g_adjustWindowRectHookHandle);
@@ -182,11 +175,6 @@ namespace GtoMnK {
     void Hooks::RemoveHooks() {
 		LOG("Removing hooks...");
         LhUninstallAllHooks();
-    }
-
-    HCURSOR WINAPI Hooks::SetCursorHook(HCURSOR hcursor) {
-        Mouse::hCursor = hcursor;
-        return SetCursor(hcursor);
     }
 
     BOOL WINAPI Hooks::ClipCursorHook(const RECT* lpRect) {
