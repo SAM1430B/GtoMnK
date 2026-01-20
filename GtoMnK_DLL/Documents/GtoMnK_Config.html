@@ -427,6 +427,7 @@
                 </div>
             </div>
             <div id="filters-options" class="hidden-content">
+                <div class="setting-row"><label>RawInput</label><input type="checkbox" id="RawInputFilter" title="Filters the real mouse and keyboard for RawInput."></div>
                 <div class="setting-row"><label>Mouse Move</label><input type="checkbox" id="MouseMoveFilter" title="Filters the real mouse move."></div>
                 <div class="setting-row"><label>Mouse Activate</label><input type="checkbox" id="MouseActivateFilter" title=""></div>
                 <div class="setting-row"><label>Window Activate</label><input type="checkbox" id="WindowActivateFilter" title=""></div>
@@ -944,6 +945,7 @@
             document.getElementById('GetAsynckeystateHook').checked = true;
             document.getElementById('GetKeyboardstateHook').checked = true;
 
+            document.getElementById('RawInputFilter').checked = false;
             document.getElementById('MouseMoveFilter').checked = false;
             document.getElementById('MouseActivateFilter').checked = false;
             document.getElementById('WindowActivateFilter').checked = false;
@@ -986,6 +988,7 @@ GetAsynckeystateHook=${getSet('GetAsynckeystateHook')}
 GetKeyboardstateHook=${getSet('GetKeyboardstateHook')}
 
 [MessageFilter]
+RawInputFilter=${getSet('RawInputFilter')}
 MouseMoveFilter=${getSet('MouseMoveFilter')}
 MouseActivateFilter=${getSet('MouseActivateFilter')}
 WindowActivateFilter=${getSet('WindowActivateFilter')}

@@ -20,6 +20,8 @@ namespace GtoMnK {
         void Initialize() {
             LOG("RawInput System: Initializing...");
 
+            RecoverMissedRegistration();
+
             HANDLE hWindowReadyEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
             if (hWindowReadyEvent == NULL) {
                 LOG("FATAL: Could not create window ready event!");
@@ -121,5 +123,41 @@ namespace GtoMnK {
             return 0;
         }
 
+		// A fix for RawInput registrations that get lost. e.g when we use `StartUpDelay` or add a dinput.dll
+        void RecoverMissedRegistration() {
+            UINT nDevices = 0;
+            GetRegisteredRawInputDevices(NULL, &nDevices, sizeof(RAWINPUTDEVICE));
+
+            if (nDevices == 0) return;
+
+            std::vector<RAWINPUTDEVICE> devices(nDevices);
+            if (GetRegisteredRawInputDevices(devices.data(), &nDevices, sizeof(RAWINPUTDEVICE)) == (UINT)-1) {
+                return;
+            }
+
+            LOG("Recovery: checking %u registered RawInput devices...", nDevices);
+
+            for (const auto& device : devices) {
+                if (device.usUsagePage == 1 && device.usUsage == 2) {
+
+                    HWND target = device.hwndTarget;
+
+                    // If target is NULL, it means "Focus Window", so we rely on our Foreground check.
+                    // But if it is NOT NULL, it is the specific window (likely hidden) the game wants.
+                    if (target != NULL) {
+
+                        bool known = false;
+                        for (auto w : g_forwardingWindows) {
+                            if (w == target) { known = true; break; }
+                        }
+
+                        if (!known) {
+                            LOG("Recovery: Found registered RawInput Target (0x%p). Adding to list.", target);
+                            g_forwardingWindows.push_back(target);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
