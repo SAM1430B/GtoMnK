@@ -319,6 +319,7 @@ robocopy "$(ProjectDir)Documents" "$(SolutionDir)$(Configuration)\Config"</Comma
     <ClInclude Include="RawInput.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="EnableOpenXinput.h" />
     <ClCompile Include="OverlayMenu.cpp" />
     <ClCompile Include="CursorVisibilityHooks.cpp" />
     <ClCompile Include="dllmain.cpp" />

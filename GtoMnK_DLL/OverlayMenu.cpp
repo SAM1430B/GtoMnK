@@ -5,6 +5,7 @@
 #include "Logging.h"
 #include "MainThread.h"
 #include <time.h>
+#include "EnableOpenXinput.h"
 
 extern bool disableOverlayOptions;
 extern int controllerID;
@@ -111,7 +112,8 @@ namespace GtoMnK {
         static int lastDir = 0;
 
         XINPUT_STATE state;
-        if (OpenXInputGetState(controllerID, &state) != ERROR_SUCCESS) {
+        ZeroMemory(&state, sizeof(XINPUT_STATE));
+        if (pXInputGetState(controllerID, &state) != ERROR_SUCCESS) {
         return;
     }
         float stickX = state.Gamepad.sThumbLX;
@@ -127,9 +129,10 @@ namespace GtoMnK {
 
             // Hide the Overlay Menu
             XINPUT_STATE state;
+            ZeroMemory(&state, sizeof(XINPUT_STATE));
             do {
                 Sleep(100); // Important
-                if (OpenXInputGetState(controllerID, &state) != ERROR_SUCCESS) {
+                if (pXInputGetState(controllerID, &state) != ERROR_SUCCESS) {
                     break;
                 }
             } while ((state.Gamepad.wButtons & XINPUT_GAMEPAD_START) ||

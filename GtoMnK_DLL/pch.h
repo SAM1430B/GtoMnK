@@ -26,7 +26,9 @@
 #include <cstdlib>
 
 // Other Libraries
-//#include <Xinput.h>
+#include <Xinput.h>
+#pragma comment(lib, "Xinput9_1_0.lib")
+
 #include <dwmapi.h>
 #include <psapi.h>
 #include <tchar.h>
@@ -37,7 +39,9 @@
 #include <easyhook.h>
 
 // OpenXinput
+namespace OXI {
 #define OPENXINPUT_XUSER_MAX_COUNT 64
 #include "OpenXinput.h"
+}
 
 #endif
