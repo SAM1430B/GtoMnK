@@ -15,6 +15,7 @@
 */
 
 #include "dinput.h"
+#include "ChainLoad.h"
 
 std::ofstream Log::LOG("dinput.log");
 AddressLookupTable<void> ProxyAddressLookupTable = AddressLookupTable<void>();
@@ -61,6 +62,8 @@ bool WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 			Log() << "Failed to load GtoMnK32.dll. Error code: " << GetLastError();
 		}
 #endif
+		// Load any .ChainLoad$.dll files
+		ChainLoader::LoadDlls();
 
 		// Get function addresses
 		m_pDirectInputCreateA = (DirectInputCreateAProc)GetProcAddress(dinputdll, "DirectInputCreateA");

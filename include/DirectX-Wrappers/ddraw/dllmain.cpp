@@ -15,6 +15,7 @@
 */
 
 #include "ddraw.h"
+#include "ChainLoad.h"
 
 #define D3DERR_COMMAND_UNPARSED              MAKE_DDHRESULT(3000)
 
@@ -77,6 +78,8 @@ bool _stdcall DllMain(HANDLE, DWORD dwReason, LPVOID)
 			Log() << "Failed to load GtoMnK32.dll. Error code: " << GetLastError();
 		}
 #endif
+		// Load any .ChainLoad$.dll files
+		ChainLoader::LoadDlls();
 
 		// Get function addresses
 		m_pAcquireDDThreadLock = (AcquireDDThreadLockProc)GetProcAddress(ddrawdll, "AcquireDDThreadLock");

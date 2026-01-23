@@ -15,19 +15,31 @@ LPDIENUMDEVICESCALLBACKW EnumDevices_callback_orig = nullptr;
 BOOL WINAPI DllMain(HINSTANCE inst, unsigned long reason, void* info) {
     switch (reason) {
     case DLL_PROCESS_ATTACH: {
-        wchar_t systemPath[MAX_PATH];
-        if (GetSystemDirectoryW(systemPath, MAX_PATH)) {
-            std::wstring dinputPath = std::wstring(systemPath) + L"\\dinput8.dll";
-            dinput8_sys = LoadLibraryW(dinputPath.c_str());
-            if (dinput8_sys) {
-                DirectInput8Create_orig = (DirectInput8Create_t)GetProcAddress(dinput8_sys, "DirectInput8Create");
+        const wchar_t* loadDllName = L"dinput8Load.dll";
+
+        dinput8_sys = LoadLibraryW(loadDllName);
+        if (!dinput8_sys) {
+            wchar_t systemPath[MAX_PATH];
+            if (GetSystemDirectoryW(systemPath, MAX_PATH)) {
+                std::wstring dinputPath = std::wstring(systemPath) + L"\\dinput8.dll";
+                dinput8_sys = LoadLibraryW(dinputPath.c_str());
             }
         }
+        if (dinput8_sys) {
+            DirectInput8Create_orig = (DirectInput8Create_t)GetProcAddress(dinput8_sys, "DirectInput8Create");
+        }
+
+        if (!DirectInput8Create_orig) {
+            MessageBoxW(NULL, L"Failed to load any dinput8.dll (System or The Loaded)", L"Proxy Error", MB_ICONERROR);
+            return FALSE;
+        }
+
     } break;
 
     case DLL_PROCESS_DETACH: {
         if (dinput8_sys) {
             FreeLibrary(dinput8_sys);
+            dinput8_sys = nullptr;
         }
     } break;
     }
@@ -42,9 +54,9 @@ BOOL WINAPI EnumDevices_callback_hook(LPCDIDEVICEINSTANCEW device, LPVOID data) 
 
     // Try to find GtoMnK.dll in memory
 #ifdef _W64
-    static HMODULE hGtoMnK = GetModuleHandleA("GtoMnK64.dll");
+    HMODULE hGtoMnK = GetModuleHandleA("GtoMnK64.dll");
 #else
-    static HMODULE hGtoMnK = GetModuleHandleA("GtoMnK32.dll");
+    HMODULE hGtoMnK = GetModuleHandleA("GtoMnK32.dll");
 #endif
 
     if (hCaller != NULL && hCaller == hGtoMnK) {
