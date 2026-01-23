@@ -15,7 +15,7 @@ namespace GtoMnK {
 
         LRESULT WINAPI RawInputWindowWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
         DWORD WINAPI RawInputWindowThread(LPVOID lpParameter);
-        void ProcessRealRawInput(HRAWINPUT rawInputHandle);
+        void RecoverMissedRegistration();
 
         void Initialize() {
             LOG("RawInput System: Initializing...");
@@ -56,16 +56,8 @@ namespace GtoMnK {
             }
         }
 
-        void ProcessRealRawInput(HRAWINPUT rawInputHandle) {
-            // We could add logic to block the real mouse/keyboard here.
-        }
-
         LRESULT WINAPI RawInputWindowWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             switch (msg) {
-            case WM_INPUT: {
-                ProcessRealRawInput((HRAWINPUT)lParam);
-                break;
-            }
             case WM_DESTROY: {
                 PostQuitMessage(0);
                 return 0;
