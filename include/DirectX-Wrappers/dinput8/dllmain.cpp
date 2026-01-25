@@ -36,8 +36,17 @@ bool WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 	case DLL_PROCESS_ATTACH:
 		// Load dll
 		char path[MAX_PATH];
-		GetSystemDirectoryA(path, MAX_PATH);
-		strcat_s(path, "\\dinput8.dll");
+		if (GetFileAttributesA("dinput8.Chained.dll") != INVALID_FILE_ATTRIBUTES)
+		{
+			// If dinput8.Chained.dll exists, load it
+			strcpy_s(path, "dinput8.Chained.dll");
+		}
+		else
+		{
+			// Load system dinput8.dll
+			GetSystemDirectoryA(path, MAX_PATH);
+			strcat_s(path, "\\dinput8.dll");
+		}
 		Log() << "Loading " << path;
 		dinput8dll = LoadLibraryA(path);
 

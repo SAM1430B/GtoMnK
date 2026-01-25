@@ -34,8 +34,17 @@ bool WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 	case DLL_PROCESS_ATTACH:
 		// Load dll
 		char path[MAX_PATH];
-		GetSystemDirectoryA(path, MAX_PATH);
-		strcat_s(path, "\\d3d8.dll");
+		if (GetFileAttributesA("d3d8.Chained.dll") != INVALID_FILE_ATTRIBUTES)
+		{
+			// If d3d8.Chained.dll exists, load it
+			strcpy_s(path, "d3d8.Chained.dll");
+		}
+		else
+		{
+			// Otherwise, load system d3d8.dll
+			GetSystemDirectoryA(path, MAX_PATH);
+			strcat_s(path, "\\d3d8.dll");
+		}
 		Log() << "Loading " << path;
 		d3d8dll = LoadLibraryA(path);
 
