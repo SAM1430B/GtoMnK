@@ -15,6 +15,7 @@
 */
 
 #include "ddraw.h"
+#include "ChainLoad.h"
 
 #define D3DERR_COMMAND_UNPARSED              MAKE_DDHRESULT(3000)
 
@@ -52,8 +53,17 @@ bool _stdcall DllMain(HANDLE, DWORD dwReason, LPVOID)
 	case DLL_PROCESS_ATTACH:
 		// Load dll
 		char path[MAX_PATH];
-		GetSystemDirectoryA(path, MAX_PATH);
-		strcat_s(path, "\\ddraw.dll");
+		if (GetFileAttributesA("ddraw.Chained.dll") != INVALID_FILE_ATTRIBUTES)
+		{
+			// If ddraw.Chained.dll exists, load it
+			strcpy_s(path, "ddraw.Chained.dll");
+		}
+		else
+		{
+			// Otherwise, load system ddraw.dll
+			GetSystemDirectoryA(path, MAX_PATH);
+			strcat_s(path, "\\ddraw.dll");
+		}
 		Log() << "Loading " << path;
 		ddrawdll = LoadLibraryA(path);
 
@@ -77,6 +87,8 @@ bool _stdcall DllMain(HANDLE, DWORD dwReason, LPVOID)
 			Log() << "Failed to load GtoMnK32.dll. Error code: " << GetLastError();
 		}
 #endif
+		// Load any .ChainLoad$.dll files
+		ChainLoader::LoadDlls();
 
 		// Get function addresses
 		m_pAcquireDDThreadLock = (AcquireDDThreadLockProc)GetProcAddress(ddrawdll, "AcquireDDThreadLock");

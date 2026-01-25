@@ -15,6 +15,7 @@
 */
 
 #include "d3d9.h"
+#include "ChainLoad.h"
 
 std::ofstream Log::LOG("d3d9.log");
 
@@ -43,8 +44,17 @@ bool WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 	case DLL_PROCESS_ATTACH:
 		// Load dll
 		char path[MAX_PATH];
-		GetSystemDirectoryA(path, MAX_PATH);
-		strcat_s(path, "\\d3d9.dll");
+		if (GetFileAttributesA("d3d9.Chained.dll") != INVALID_FILE_ATTRIBUTES)
+		{
+			// If d3d9.Chained.dll exists, load it
+			strcpy_s(path, "d3d9.Chained.dll");
+		}
+		else
+		{
+			// Otherwise, load system d3d9.dll
+			GetSystemDirectoryA(path, MAX_PATH);
+			strcat_s(path, "\\d3d9.dll");
+		}
 		Log() << "Loading " << path;
 		d3d9dll = LoadLibraryA(path);
 
@@ -68,6 +78,8 @@ bool WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 			Log() << "Failed to load GtoMnK32.dll. Error code: " << GetLastError();
 		}
 #endif
+		// Load any .ChainLoad$.dll files
+		ChainLoader::LoadDlls();
 
 		// Get function addresses
 		m_pDirect3DShaderValidatorCreate9 = (Direct3DShaderValidatorCreate9Proc)GetProcAddress(d3d9dll, "Direct3DShaderValidatorCreate9");

@@ -15,6 +15,7 @@
 */
 
 #include "dinput8.h"
+#include "ChainLoad.h"
 
 std::ofstream Log::LOG("dinput8.log");
 AddressLookupTable<void> ProxyAddressLookupTable = AddressLookupTable<void>();
@@ -35,8 +36,17 @@ bool WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 	case DLL_PROCESS_ATTACH:
 		// Load dll
 		char path[MAX_PATH];
-		GetSystemDirectoryA(path, MAX_PATH);
-		strcat_s(path, "\\dinput8.dll");
+		if (GetFileAttributesA("dinput8.Chained.dll") != INVALID_FILE_ATTRIBUTES)
+		{
+			// If dinput8.Chained.dll exists, load it
+			strcpy_s(path, "dinput8.Chained.dll");
+		}
+		else
+		{
+			// Load system dinput8.dll
+			GetSystemDirectoryA(path, MAX_PATH);
+			strcat_s(path, "\\dinput8.dll");
+		}
 		Log() << "Loading " << path;
 		dinput8dll = LoadLibraryA(path);
 
@@ -60,6 +70,8 @@ bool WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 			Log() << "Failed to load GtoMnK32.dll. Error code: " << GetLastError();
 		}
 #endif
+		// Load any .ChainLoad$.dll files
+		ChainLoader::LoadDlls();
 
 		// Get function addresses
 		m_pDirectInput8Create = (DirectInput8CreateProc)GetProcAddress(dinput8dll, "DirectInput8Create");

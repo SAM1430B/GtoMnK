@@ -8,11 +8,11 @@
 #include "MainThread.h"
 #include "FakeCursor.h"
 #include "OverlayMenu.h"
+#include "EnableOpenXinput.h"
 
 using namespace GtoMnK;
 
-//#pragma comment(lib, "Xinput9_1_0.lib")
-
+XInputGetStateFunc pXInputGetState = nullptr;
 extern "C" BOOL WINAPI OpenXinputDllMain(HINSTANCE hInstDll, DWORD fdwReason, LPVOID lpvReserved);
 
 // For Initialization and Thread state
@@ -22,6 +22,7 @@ bool loop = true;
 int startUpDelay = 0;
 bool recheckHWND = true;
 bool disableOverlayOptions = false;
+bool g_EnableOpenXinput = false;
 
 // For Controller Input
 std::string A_Action, B_Action, X_Action, Y_Action;
@@ -274,6 +275,7 @@ void LoadIniSettings() {
     recheckHWND = GetPrivateProfileIntA("Settings", "RecheckHWND", 1, iniPath.c_str()) == 1;
     disableOverlayOptions = (GetPrivateProfileIntA("Settings", "DisableOverlayOptions", 0, iniPath.c_str()) != 0);
     controllerID = GetPrivateProfileIntA("Settings", "Controllerid", 0, iniPath.c_str());
+    g_EnableOpenXinput = GetPrivateProfileIntA("Settings", "EnableOpenXinput", 0, iniPath.c_str()) == 1;
     mode = GetPrivateProfileIntA("Settings", "Mode", 1, iniPath.c_str());
     drawfakecursor = GetPrivateProfileIntA("Settings", "drawfakecursor", 0, iniPath.c_str());
 	drawProtoFakeCursor = GetPrivateProfileIntA("Settings", "DrawProtoFakeCursor", 0, iniPath.c_str()); //From ProtoInput
@@ -554,10 +556,18 @@ void ProcessTrigger(UINT triggerID, BYTE triggerValue) {
 DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     LOG("ThreadFunction started.");
 
-    OpenXinputDllMain(GetModuleHandle(NULL), DLL_PROCESS_ATTACH, NULL);
-
     LoadIniSettings();
     LOG("INI settings is Loaded");
+
+    if (g_EnableOpenXinput) {
+        LOG("Initializing OpenXinput...");
+        OpenXinputDllMain(GetModuleHandle(NULL), DLL_PROCESS_ATTACH, NULL);
+        pXInputGetState = (XInputGetStateFunc)OXI::OpenXInputGetState;
+    }
+    else {
+        LOG("Using Standard XInput.");
+        pXInputGetState = (XInputGetStateFunc)XInputGetState;
+    }
 
     if (controllerID < 0) {
         LOG("Controller is disabled by INI. Thread is exiting.");
@@ -644,7 +654,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         }
 
         XINPUT_STATE state;
-        if (OpenXInputGetState(controllerID, &state) == ERROR_SUCCESS) {
+        ZeroMemory(&state, sizeof(XINPUT_STATE));
+        if (pXInputGetState(controllerID, &state) == ERROR_SUCCESS) {
 
             if (!disableOverlayOptions)
             {
@@ -667,9 +678,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                         menuTogglePending = false;
                         Mouse::Xf = Mouse::Xf;
                         XINPUT_STATE waitState;
+                        ZeroMemory(&waitState, sizeof(XINPUT_STATE));
                         do {
                             Sleep(100); // Important
-                            if (OpenXInputGetState(controllerID, &waitState) != ERROR_SUCCESS) {
+                            if (pXInputGetState(controllerID, &waitState) != ERROR_SUCCESS) {
                                 break;
                             }
                         } while ((waitState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ||
