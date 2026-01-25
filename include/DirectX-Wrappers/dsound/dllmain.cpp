@@ -15,6 +15,7 @@
 */
 
 #include "dsound.h"
+#include "ChainLoad.h"
 
 #pragma comment (lib, "dxguid.lib")
 
@@ -45,8 +46,17 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved)
 	case DLL_PROCESS_ATTACH:
 		// Load dll
 		char path[MAX_PATH];
-		GetSystemDirectoryA(path, MAX_PATH);
-		strcat_s(path, "\\dsound.dll");
+		if (GetFileAttributesA("dsound.Chained.dll") != INVALID_FILE_ATTRIBUTES)
+		{
+			// If dsound.Chained.dll exists, load it
+			strcpy_s(path, "dsound.Chained.dll");
+		}
+		else
+		{
+			// Otherwise, load system dsound.dll
+			GetSystemDirectoryA(path, MAX_PATH);
+			strcat_s(path, "\\dsound.dll");
+		}
 		Log() << "Loading " << path;
 		dsounddll = LoadLibraryA(path);
 
@@ -70,6 +80,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved)
 			Log() << "Failed to load GtoMnK32.dll. Error code: " << GetLastError();
 		}
 #endif
+		// Load any .ChainLoad$.dll files
+		ChainLoader::LoadDlls();
 
 		// Get function addresses
 		m_pDirectSoundCreate = (DirectSoundCreateProc)GetProcAddress(dsounddll, "DirectSoundCreate");

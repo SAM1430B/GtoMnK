@@ -21,6 +21,9 @@ KeyboardButtonFilter
 class RawInputFilter : public GtoMnK::MessageFilterBase<RawInputFilterID, WM_INPUT> {
 public:
     static bool Filter(unsigned int message, unsigned int* lparam, unsigned int* wparam, intptr_t hwnd) {
+        if ((*lparam & 0xFF000000) == 0xAB000000) {
+            return true;
+        }
         return false;
     }
 };

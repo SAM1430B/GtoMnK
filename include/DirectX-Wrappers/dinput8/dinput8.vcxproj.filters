@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="IDirectInput8A.cpp" />
+    <ClCompile Include="IDirectInput8W.cpp" />
+    <ClCompile Include="IDirectInputDevice8A.cpp" />
+    <ClCompile Include="IDirectInputDevice8W.cpp" />
+    <ClCompile Include="IDirectInputEffect.cpp" />
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="InterfaceQuery.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AddressLookupTable.h" />
+    <ClInclude Include="dinput8.h" />
+    <ClInclude Include="IDirectInput8A.h" />
+    <ClInclude Include="IDirectInput8W.h" />
+    <ClInclude Include="IDirectInputDevice8A.h" />
+    <ClInclude Include="IDirectInputDevice8W.h" />
+    <ClInclude Include="IDirectInputEffect.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dinput8.def" />
+  </ItemGroup>
+</Project>
