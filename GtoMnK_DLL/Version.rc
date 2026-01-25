@@ -7,8 +7,8 @@
 #endif
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 1, 2, 2, 0
-PRODUCTVERSION 1, 2, 2, 0
+FILEVERSION 1, 2, 5, 0
+PRODUCTVERSION 1, 2, 5, 0
 FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
 FILEFLAGS 0x1L
@@ -28,9 +28,9 @@ VALUE "FileDescription", "Gamepad to Mouse Keyboard Mapper"
 
 
 VALUE "CompanyName", "https://github.com/SAM1430B/GtoMnK"
-VALUE "FileVersion", "1.2.2"
-VALUE "ProductVersion", "1.2.2"
-VALUE "LegalCopyright", "Copyright (C) 2025"
+VALUE "FileVersion", "1.2.5"
+VALUE "ProductVersion", "1.2.5"
+VALUE "LegalCopyright", "Copyright (C) 2026"
 VALUE "OriginalFilename", FILE_NAME
 VALUE "InternalName", FILE_NAME
 VALUE "ProductName", "GtoMnK"
