@@ -40,6 +40,9 @@
     <ClCompile Include="OverlayMenu.cpp">
       <Filter>Files\Overlay</Filter>
     </ClCompile>
+    <ClCompile Include="INISettings.cpp">
+      <Filter>INI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -97,6 +100,9 @@
     </ClInclude>
     <ClInclude Include="EnableOpenXinput.h">
       <Filter>Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INISettings.h">
+      <Filter>INI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
