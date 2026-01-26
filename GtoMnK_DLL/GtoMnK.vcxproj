@@ -298,6 +298,7 @@ robocopy "$(ProjectDir)Documents" "$(SolutionDir)$(Configuration)\Config"</Comma
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="HandleMainWindow.h" />
     <ClInclude Include="INISettings.h" />
     <ClInclude Include="OverlayMenu.h" />
     <ClInclude Include="CursorVisibilityHooks.h" />
@@ -321,6 +322,7 @@ robocopy "$(ProjectDir)Documents" "$(SolutionDir)$(Configuration)\Config"</Comma
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EnableOpenXinput.h" />
+    <ClCompile Include="HandleMainWindow.cpp" />
     <ClCompile Include="INISettings.cpp" />
     <ClCompile Include="OverlayMenu.cpp" />
     <ClCompile Include="CursorVisibilityHooks.cpp" />

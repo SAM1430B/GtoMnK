@@ -43,6 +43,9 @@
     <ClCompile Include="INISettings.cpp">
       <Filter>INI</Filter>
     </ClCompile>
+    <ClCompile Include="HandleMainWindow.cpp">
+      <Filter>Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -103,6 +106,9 @@
     </ClInclude>
     <ClInclude Include="INISettings.h">
       <Filter>INI</Filter>
+    </ClInclude>
+    <ClInclude Include="HandleMainWindow.h">
+      <Filter>Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
