@@ -46,6 +46,9 @@
     <ClCompile Include="HandleMainWindow.cpp">
       <Filter>Files</Filter>
     </ClCompile>
+    <ClCompile Include="GamepadState.cpp">
+      <Filter>Files\Gamepad</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -110,6 +113,9 @@
     <ClInclude Include="HandleMainWindow.h">
       <Filter>Files</Filter>
     </ClInclude>
+    <ClInclude Include="GamepadState.h">
+      <Filter>Files\Gamepad</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Files">
@@ -129,6 +135,9 @@
     </Filter>
     <Filter Include="INI">
       <UniqueIdentifier>{fa813b98-d3cc-463d-9154-0b2773fc3090}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Files\Gamepad">
+      <UniqueIdentifier>{5c5b6fd9-923a-45d5-a597-a7b08d260770}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
