@@ -1,5 +1,6 @@
 #pragma once
 #include <mutex>
+#include "GamepadState.h"
 
 namespace GtoMnK {
 
@@ -20,7 +21,7 @@ namespace GtoMnK {
 
         void Initialise();
         void EnableDisableMenu(bool enable);
-        void ProcessInput(int gamepadButtons); // Handles the overlay buttons
+        void ProcessInput(const CustomControllerState& state); // Handles the overlay buttons
         void GetWindowDimensions(HWND mWnd);
 
         void SetupOptions();

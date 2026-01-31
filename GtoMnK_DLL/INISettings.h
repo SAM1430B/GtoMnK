@@ -9,8 +9,24 @@ using namespace GtoMnK;
 
 // For Controller Input
 enum CustomInputID {
+    CUSTOM_ID_A = 0,
+    CUSTOM_ID_B,
+    CUSTOM_ID_X,
+    CUSTOM_ID_Y,
+    CUSTOM_ID_LB,
+    CUSTOM_ID_RB,
+    CUSTOM_ID_LSB,
+    CUSTOM_ID_RSB,
+    CUSTOM_ID_START,
+    CUSTOM_ID_BACK,
+    CUSTOM_ID_DPAD_UP,
+    CUSTOM_ID_DPAD_DOWN,
+    CUSTOM_ID_DPAD_LEFT,
+    CUSTOM_ID_DPAD_RIGHT,
+
     CUSTOM_ID_LT = 0x10000,
     CUSTOM_ID_RT,
+
     CUSTOM_ID_LSU,
     CUSTOM_ID_LSD,
     CUSTOM_ID_LSL,
@@ -63,11 +79,5 @@ extern bool g_EnableMouseDoubleClick;
 extern float stick_as_button_deadzone;
 extern float g_TriggerThreshold;
 extern std::map<UINT, ButtonState> buttonStates;
-
-extern std::string A_Action, B_Action, X_Action, Y_Action;
-extern std::string RB_Action, LB_Action, RSB_Action, LSB_Action;
-extern std::string D_UP_Action, D_DOWN_Action, D_LEFT_Action, D_RIGHT_Action;
-extern std::string Start_Action, Back_Action;
-extern std::string LT_Action, RT_Action;
 
 void LoadIniSettings();

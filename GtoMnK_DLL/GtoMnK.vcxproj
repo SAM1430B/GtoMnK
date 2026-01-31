@@ -320,8 +320,10 @@ robocopy "$(ProjectDir)Documents" "$(SolutionDir)$(Configuration)\Config"</Comma
     <ClInclude Include="Mouse.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="RawInput.h" />
+    <ClInclude Include="XInput_Gamepad.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="XInput_Gamepad.cpp" />
     <ClInclude Include="EnableOpenXinput.h" />
     <ClCompile Include="GamepadState.cpp" />
     <ClCompile Include="HandleMainWindow.cpp" />

@@ -12,11 +12,9 @@
 #include "INISettings.h"
 #include "HandleMainWindow.h"
 #include "GamepadState.h"
+#include "Xinput_Gamepad.h"
 
 using namespace GtoMnK;
-
-XInputGetStateFunc pXInputGetState = nullptr;
-extern "C" BOOL WINAPI OpenXinputDllMain(HINSTANCE hInstDll, DWORD fdwReason, LPVOID lpvReserved);
 
 // For Initialization and Thread state
 HMODULE g_hModule = nullptr;
@@ -82,16 +80,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     LoadIniSettings();
     LOG("INI settings is Loaded");
 
-    if (g_EnableOpenXinput) {
-        LOG("Initializing OpenXinput...");
-        OpenXinputDllMain(GetModuleHandle(NULL), DLL_PROCESS_ATTACH, NULL);
-        pXInputGetState = (XInputGetStateFunc)OXI::OpenXInputGetState;
-    }
-    else {
-        LOG("Using Standard XInput.");
-        pXInputGetState = (XInputGetStateFunc)XInputGetState;
-    }
-
+    // Check Controller ID
     if (controllerID < 0) {
         LOG("Controller is disabled by INI. Thread is exiting.");
         loop = false;
@@ -101,11 +90,13 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         LOG("Using controller ID: %d", controllerID);
     }
 
+    // Startup Delay
     if (startUpDelay > 0) {
         LOG("Waiting for startup delay of %dSec before hooking...", startUpDelay);
         Sleep(startUpDelay * 1000);
     }
 
+    // Find Main Window
     LOG("Searching for Game Window...");
     if (iniWindowName[0] != '\0') { LOG("Filter Name: '%s'", iniWindowName); }
     if (iniClassName[0] != '\0') { LOG("Filter Class: '%s'", iniClassName); }
@@ -117,25 +108,26 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     }
     LOG("Initial window handle acquired: 0x%p", hwnd);
 
+    // Initialize Fake Cursor
     if (drawProtoFakeCursor == 1) {
         LOG("ProtoInput Fake Cursor is enabled. Initializing...");
         FakeCursor::Initialise();
         if (!createdWindowIsOwned)
             FakeCursor::EnableDisableFakeCursor(true);
-        // CursorVisibilityHook will be enabled automatically when `drawProtoFakeCursor` is enabled. 
     }
     else if (drawfakecursor) {
         LOG("Simple Fake Cursor is enabled.");
     }
 
+    // Setup Hooks
     Hooks::SetupHooks();
     hooksinited = true;
 
     if (g_InputMethod == InputMethod::RawInput) {
         RawInput::Initialize();
     }
-    
-	// Overlay Options
+
+    // Initialize Overlay
     if (!disableOverlayOptions)
     {
         OverlayMenu::state.Initialise();
@@ -144,11 +136,15 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     else {
         LOG("Overlay Options is disabled.");
     }
+
+    // Initialize Input API
+    XInput_Initialize();
+
     ULONGLONG menuToggleTimer = 0;
     bool menuTogglePending = false;
-
     ULONGLONG lastMoveTime = 0;
     const DWORD MOVE_UPDATE_INTERVAL = 8;
+    CustomControllerState state; // Reused every frame
 
     while (loop) {
         bool movedmouse = false;
@@ -162,7 +158,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
 
         if (!hwnd) {
             hwnd = GetMainWindowHandle(GetCurrentProcessId(), iniWindowName, iniClassName, 300000);
-
             if (!hwnd) {
                 LOG("CRITICAL: Game window missing for 5 minute.");
                 loop = false;
@@ -176,39 +171,36 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
             rect.left = 0; rect.top = 0; rect.right = 800; rect.bottom = 600;
         }
 
-        XINPUT_STATE state;
-        ZeroMemory(&state, sizeof(XINPUT_STATE));
-        if (pXInputGetState(controllerID, &state) == ERROR_SUCCESS) {
+        bool isConnected = XInput_GetState(state);
+
+        if (isConnected) {
 
             if (!disableOverlayOptions)
             {
-                // Buttons to open the overlay window
-                bool backDown = (state.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) != 0;
-                bool dpadDown = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0;
+                bool backDown = state.buttons[CUSTOM_ID_BACK];
+                bool dpadDown = state.buttons[CUSTOM_ID_DPAD_DOWN];
 
                 if (backDown && dpadDown) {
-                    ProcessButton(XINPUT_GAMEPAD_BACK, false);
-                    ProcessButton(XINPUT_GAMEPAD_DPAD_DOWN, false);
+                    ProcessButton(CUSTOM_ID_BACK, false);
+                    ProcessButton(CUSTOM_ID_DPAD_DOWN, false);
+
                     if (!menuTogglePending) {
                         menuToggleTimer = GetTickCount64();
                         menuTogglePending = true;
                     }
                     else if (GetTickCount64() - menuToggleTimer > 50) {
-                        // Toggle the State
+                        // Toggle Menu
                         bool newState = !OverlayMenu::state.isMenuOpen;
                         OverlayMenu::state.EnableDisableMenu(newState);
-
                         menuTogglePending = false;
                         Mouse::Xf = Mouse::Xf;
-                        XINPUT_STATE waitState;
-                        ZeroMemory(&waitState, sizeof(XINPUT_STATE));
+
+                        // Wait for release
+                        CustomControllerState waitState;
                         do {
                             Sleep(100); // Important
-                            if (pXInputGetState(controllerID, &waitState) != ERROR_SUCCESS) {
-                                break;
-                            }
-                        } while ((waitState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) ||
-                            (waitState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN));
+                            if (!XInput_GetState(waitState)) break;
+                        } while (waitState.buttons[CUSTOM_ID_BACK] || waitState.buttons[CUSTOM_ID_DPAD_DOWN]);
                         continue;
                     }
                 }
@@ -220,37 +212,35 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
             if (showmessage == 12) showmessage = 0; // "disconnected" message on reconnect
 
             if (!disableOverlayOptions && OverlayMenu::state.isMenuOpen) {
-                OverlayMenu::state.ProcessInput(state.Gamepad.wButtons);
+                OverlayMenu::state.ProcessInput(state);
             }
-
             else {
                 // Buttons
-                ProcessButton(XINPUT_GAMEPAD_A, (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) != 0);
-                ProcessButton(XINPUT_GAMEPAD_B, (state.Gamepad.wButtons & XINPUT_GAMEPAD_B) != 0);
-                ProcessButton(XINPUT_GAMEPAD_X, (state.Gamepad.wButtons & XINPUT_GAMEPAD_X) != 0);
-                ProcessButton(XINPUT_GAMEPAD_Y, (state.Gamepad.wButtons & XINPUT_GAMEPAD_Y) != 0);
-                ProcessButton(XINPUT_GAMEPAD_RIGHT_SHOULDER, (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0);
-                ProcessButton(XINPUT_GAMEPAD_LEFT_SHOULDER, (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0);
-                ProcessButton(XINPUT_GAMEPAD_RIGHT_THUMB, (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) != 0);
-                ProcessButton(XINPUT_GAMEPAD_LEFT_THUMB, (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) != 0);
-                ProcessButton(XINPUT_GAMEPAD_DPAD_UP, (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) != 0);
-                ProcessButton(XINPUT_GAMEPAD_DPAD_DOWN, (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0);
-                ProcessButton(XINPUT_GAMEPAD_DPAD_LEFT, (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) != 0);
-                ProcessButton(XINPUT_GAMEPAD_DPAD_RIGHT, (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0);
-                ProcessButton(XINPUT_GAMEPAD_START, (state.Gamepad.wButtons & XINPUT_GAMEPAD_START) != 0);
-                ProcessButton(XINPUT_GAMEPAD_BACK, (state.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) != 0);
+                ProcessButton(CUSTOM_ID_A, state.buttons[CUSTOM_ID_A]);
+                ProcessButton(CUSTOM_ID_B, state.buttons[CUSTOM_ID_B]);
+                ProcessButton(CUSTOM_ID_X, state.buttons[CUSTOM_ID_X]);
+                ProcessButton(CUSTOM_ID_Y, state.buttons[CUSTOM_ID_Y]);
+                ProcessButton(CUSTOM_ID_RB, state.buttons[CUSTOM_ID_RB]);
+                ProcessButton(CUSTOM_ID_LB, state.buttons[CUSTOM_ID_LB]);
+                ProcessButton(CUSTOM_ID_RSB, state.buttons[CUSTOM_ID_RSB]);
+                ProcessButton(CUSTOM_ID_LSB, state.buttons[CUSTOM_ID_LSB]);
+                ProcessButton(CUSTOM_ID_DPAD_UP, state.buttons[CUSTOM_ID_DPAD_UP]);
+                ProcessButton(CUSTOM_ID_DPAD_DOWN, state.buttons[CUSTOM_ID_DPAD_DOWN]);
+                ProcessButton(CUSTOM_ID_DPAD_LEFT, state.buttons[CUSTOM_ID_DPAD_LEFT]);
+                ProcessButton(CUSTOM_ID_DPAD_RIGHT, state.buttons[CUSTOM_ID_DPAD_RIGHT]);
+                ProcessButton(CUSTOM_ID_START, state.buttons[CUSTOM_ID_START]);
+                ProcessButton(CUSTOM_ID_BACK, state.buttons[CUSTOM_ID_BACK]);
 
                 // Triggers
-                ProcessTrigger(CUSTOM_ID_LT, state.Gamepad.bLeftTrigger);
-                ProcessTrigger(CUSTOM_ID_RT, state.Gamepad.bRightTrigger);
+                ProcessTrigger(CUSTOM_ID_LT, state.LeftTrigger);
+                ProcessTrigger(CUSTOM_ID_RT, state.RightTrigger);
 
                 // Analog Sticks (as buttons)
                 // Left Stick
                 if (onoroff && (mode == 0 || (mode == 1 && righthanded == 1))) {
-                    float normLX = static_cast<float>(state.Gamepad.sThumbLX) / 32767.0f;
-                    float normLY = static_cast<float>(state.Gamepad.sThumbLY) / 32767.0f;
+                    float normLX = static_cast<float>(state.ThumbLX) / 32767.0f;
+                    float normLY = static_cast<float>(state.ThumbLY) / 32767.0f;
                     float magnitudeL = static_cast<float>(sqrt(normLX * normLX + normLY * normLY));
-
                     bool isLSU = false, isLSD = false, isLSL = false, isLSR = false;
                     if (magnitudeL > stick_as_button_deadzone) {
                         float angleDeg = atan2(normLY, normLX) * 180.0f / 3.1415926535f;
@@ -267,8 +257,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                 }
                 // Right Stick
                 if (onoroff && (mode == 0 || (mode == 1 && righthanded == 0))) {
-                    float normRX = static_cast<float>(state.Gamepad.sThumbRX) / 32767.0f;
-                    float normRY = static_cast<float>(state.Gamepad.sThumbRY) / 32767.0f;
+                    float normRX = static_cast<float>(state.ThumbRX) / 32767.0f;
+                    float normRY = static_cast<float>(state.ThumbRY) / 32767.0f;
                     float magnitudeR = static_cast<float>(sqrt(normRX * normRX + normRY * normRY));
                     bool isRSU = false, isRSD = false, isRSL = false, isRSR = false;
                     if (magnitudeR > stick_as_button_deadzone) {
@@ -285,16 +275,15 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                     ProcessButton(CUSTOM_ID_RSR, isRSR);
                 }
 
-                // Mouse MOVEMENT
+                // Mouse Movement
                 if (mode == 1 && onoroff) {
-                    SHORT thumbX = (righthanded == 1) ? state.Gamepad.sThumbRX : state.Gamepad.sThumbLX;
-                    SHORT thumbY = (righthanded == 1) ? state.Gamepad.sThumbRY : state.Gamepad.sThumbLY;
+                    SHORT thumbX = (righthanded == 1) ? state.ThumbRX : state.ThumbLX;
+                    SHORT thumbY = (righthanded == 1) ? state.ThumbRY : state.ThumbLY;
                     POINT delta = ThumbstickMouseMove(thumbX, thumbY);
                     if (delta.x != 0 || delta.y != 0) {
                         Mouse::Xf += delta.x; Mouse::Yf += delta.y;
                         Mouse::Xf = std::max((LONG)rect.left, std::min((LONG)Mouse::Xf, (LONG)rect.right - 1));
                         Mouse::Yf = std::max((LONG)rect.top, std::min((LONG)Mouse::Yf, (LONG)rect.bottom - 1));
-                        movedmouse = true;
 
                         //ProtoInput Fake Cursor update
                         if (drawProtoFakeCursor == 1) {
@@ -329,7 +318,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                 counter = 0;
             }
         }
-        
+
         if (responsetime <= 0)
             responsetime = 1;
         Sleep(responsetime);

@@ -6,13 +6,6 @@
 
 extern HMODULE g_hModule;
 
-// For Controller Input
-std::string A_Action, B_Action, X_Action, Y_Action;
-std::string RB_Action, LB_Action, RSB_Action, LSB_Action;
-std::string D_UP_Action, D_DOWN_Action, D_LEFT_Action, D_RIGHT_Action;
-std::string Start_Action, Back_Action;
-std::string LT_Action, RT_Action;
-
 // For Controller Button States
 std::map<UINT, ButtonState> buttonStates;
 bool g_EnableMouseDoubleClick = false;
@@ -189,13 +182,13 @@ void LoadIniSettings() {
     GetPrivateProfileStringA("KeyMapping", "StickAsButtonDeadzone", "0.25", buffer, sizeof(buffer), iniPath.c_str()); stick_as_button_deadzone = std::stof(buffer);
 
     GetPrivateProfileStringA("KeyMapping", "A", "13", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[XINPUT_GAMEPAD_A].actions = Input::ParseActionString(buffer);
+    buttonStates[CUSTOM_ID_A].actions = Input::ParseActionString(buffer);
     GetPrivateProfileStringA("KeyMapping", "B", "0", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[XINPUT_GAMEPAD_B].actions = Input::ParseActionString(buffer);
+    buttonStates[CUSTOM_ID_B].actions = Input::ParseActionString(buffer);
     GetPrivateProfileStringA("KeyMapping", "X", "42", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[XINPUT_GAMEPAD_X].actions = Input::ParseActionString(buffer);
+    buttonStates[CUSTOM_ID_X].actions = Input::ParseActionString(buffer);
     GetPrivateProfileStringA("KeyMapping", "Y", "0", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[XINPUT_GAMEPAD_Y].actions = Input::ParseActionString(buffer);
+    buttonStates[CUSTOM_ID_Y].actions = Input::ParseActionString(buffer);
 
     // Triggers
     GetPrivateProfileStringA("KeyMapping", "LT", "-2", buffer, sizeof(buffer), iniPath.c_str());
@@ -205,31 +198,31 @@ void LoadIniSettings() {
 
     // Shoulder Buttons
     GetPrivateProfileStringA("KeyMapping", "RB", "0", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[XINPUT_GAMEPAD_RIGHT_SHOULDER].actions = Input::ParseActionString(buffer);
+    buttonStates[CUSTOM_ID_RB].actions = Input::ParseActionString(buffer);
     GetPrivateProfileStringA("KeyMapping", "LB", "0", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[XINPUT_GAMEPAD_LEFT_SHOULDER].actions = Input::ParseActionString(buffer);
+    buttonStates[CUSTOM_ID_LB].actions = Input::ParseActionString(buffer);
 
     // D-Pad
     GetPrivateProfileStringA("KeyMapping", "D_UP", "14", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[XINPUT_GAMEPAD_DPAD_UP].actions = Input::ParseActionString(buffer);
+    buttonStates[CUSTOM_ID_DPAD_UP].actions = Input::ParseActionString(buffer);
     GetPrivateProfileStringA("KeyMapping", "D_DOWN", "15", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[XINPUT_GAMEPAD_DPAD_DOWN].actions = Input::ParseActionString(buffer);
+    buttonStates[CUSTOM_ID_DPAD_DOWN].actions = Input::ParseActionString(buffer);
     GetPrivateProfileStringA("KeyMapping", "D_LEFT", "16", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[XINPUT_GAMEPAD_DPAD_LEFT].actions = Input::ParseActionString(buffer);
+    buttonStates[CUSTOM_ID_DPAD_LEFT].actions = Input::ParseActionString(buffer);
     GetPrivateProfileStringA("KeyMapping", "D_RIGHT", "17", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[XINPUT_GAMEPAD_DPAD_RIGHT].actions = Input::ParseActionString(buffer);
+    buttonStates[CUSTOM_ID_DPAD_RIGHT].actions = Input::ParseActionString(buffer);
 
     // Start & Back
     GetPrivateProfileStringA("KeyMapping", "Start", "1", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[XINPUT_GAMEPAD_START].actions = Input::ParseActionString(buffer);
+    buttonStates[CUSTOM_ID_START].actions = Input::ParseActionString(buffer);
     GetPrivateProfileStringA("KeyMapping", "Back", "3", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[XINPUT_GAMEPAD_BACK].actions = Input::ParseActionString(buffer);
+    buttonStates[CUSTOM_ID_BACK].actions = Input::ParseActionString(buffer);
 
     // Stick Buttons
     GetPrivateProfileStringA("KeyMapping", "RSB", "0", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[XINPUT_GAMEPAD_RIGHT_THUMB].actions = Input::ParseActionString(buffer);
+    buttonStates[CUSTOM_ID_RSB].actions = Input::ParseActionString(buffer);
     GetPrivateProfileStringA("KeyMapping", "LSB", "4", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[XINPUT_GAMEPAD_LEFT_THUMB].actions = Input::ParseActionString(buffer);
+    buttonStates[CUSTOM_ID_LSB].actions = Input::ParseActionString(buffer);
 
     // Left Stick
     GetPrivateProfileStringA("KeyMapping", "LSU", "47", buffer, sizeof(buffer), iniPath.c_str());

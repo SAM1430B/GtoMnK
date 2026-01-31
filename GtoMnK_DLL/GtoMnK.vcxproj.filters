@@ -49,6 +49,9 @@
     <ClCompile Include="GamepadState.cpp">
       <Filter>Files\Gamepad</Filter>
     </ClCompile>
+    <ClCompile Include="XInput_Gamepad.cpp">
+      <Filter>Files\Gamepad</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -114,6 +117,9 @@
       <Filter>Files</Filter>
     </ClInclude>
     <ClInclude Include="GamepadState.h">
+      <Filter>Files\Gamepad</Filter>
+    </ClInclude>
+    <ClInclude Include="XInput_Gamepad.h">
       <Filter>Files\Gamepad</Filter>
     </ClInclude>
   </ItemGroup>
