@@ -38,6 +38,9 @@
 //#include "MinHook.h"
 #include <easyhook.h>
 
+// SDL2
+#include <SDL.h>
+
 // OpenXinput
 namespace OXI {
 #define OPENXINPUT_XUSER_MAX_COUNT 64

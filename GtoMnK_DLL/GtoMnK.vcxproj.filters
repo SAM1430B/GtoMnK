@@ -52,6 +52,12 @@
     <ClCompile Include="XInput_Gamepad.cpp">
       <Filter>Files\Gamepad</Filter>
     </ClCompile>
+    <ClCompile Include="SDL2_Gamepad.cpp">
+      <Filter>Files\Gamepad</Filter>
+    </ClCompile>
+    <ClCompile Include="SDL2_gamecontrollerdb.cpp">
+      <Filter>Files\Gamepad</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -120,6 +126,12 @@
       <Filter>Files\Gamepad</Filter>
     </ClInclude>
     <ClInclude Include="XInput_Gamepad.h">
+      <Filter>Files\Gamepad</Filter>
+    </ClInclude>
+    <ClInclude Include="SDL2_Gamepad.h">
+      <Filter>Files\Gamepad</Filter>
+    </ClInclude>
+    <ClInclude Include="SDL2_gamecontrollerdb.h">
       <Filter>Files\Gamepad</Filter>
     </ClInclude>
   </ItemGroup>

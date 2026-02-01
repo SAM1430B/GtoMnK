@@ -13,6 +13,7 @@
 #include "HandleMainWindow.h"
 #include "GamepadState.h"
 #include "Xinput_Gamepad.h"
+#include "SDL2_Gamepad.h"
 
 using namespace GtoMnK;
 
@@ -138,7 +139,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     }
 
     // Initialize Input API
-    XInput_Initialize();
+    if (g_GamepadMethod == GamepadMethod::SDL2) {
+        SDL2_Initialize();
+    }
+    else {
+        XInput_Initialize();
+    }
 
     ULONGLONG menuToggleTimer = 0;
     bool menuTogglePending = false;
@@ -171,11 +177,21 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
             rect.left = 0; rect.top = 0; rect.right = 800; rect.bottom = 600;
         }
 
-        bool isConnected = XInput_GetState(state);
+        bool isConnected = false;
+
+        switch (g_GamepadMethod) {
+        case GamepadMethod::SDL2:
+            isConnected = SDL2_GetState(state);
+            break;
+        case GamepadMethod::XInput:
+        default:
+            isConnected = XInput_GetState(state);
+            break;
+        }
 
         if (isConnected) {
 
-            if (!disableOverlayOptions)
+            if (!disableOverlayOptions && OverlayMenu::state.IsReady())
             {
                 bool backDown = state.buttons[CUSTOM_ID_BACK];
                 bool dpadDown = state.buttons[CUSTOM_ID_DPAD_DOWN];
@@ -195,11 +211,13 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                         menuTogglePending = false;
                         Mouse::Xf = Mouse::Xf;
 
-                        // Wait for release
                         CustomControllerState waitState;
                         do {
                             Sleep(100); // Important
-                            if (!XInput_GetState(waitState)) break;
+                            bool waitConnected = false;
+                            if (g_GamepadMethod == GamepadMethod::SDL2) {waitConnected = SDL2_GetState(waitState);}
+                            else {waitConnected = XInput_GetState(waitState);}
+                            if (!waitConnected) break;
                         } while (waitState.buttons[CUSTOM_ID_BACK] || waitState.buttons[CUSTOM_ID_DPAD_DOWN]);
                         continue;
                     }
@@ -236,7 +254,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                 ProcessTrigger(CUSTOM_ID_RT, state.RightTrigger);
 
                 // Analog Sticks (as buttons)
-                // Left Stick
+                // Left Thumbsticks
                 if (onoroff && (mode == 0 || (mode == 1 && righthanded == 1))) {
                     float normLX = static_cast<float>(state.ThumbLX) / 32767.0f;
                     float normLY = static_cast<float>(state.ThumbLY) / 32767.0f;
@@ -255,7 +273,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                     ProcessButton(CUSTOM_ID_LSL, isLSL);
                     ProcessButton(CUSTOM_ID_LSR, isLSR);
                 }
-                // Right Stick
+				// Right Thumbsticks
                 if (onoroff && (mode == 0 || (mode == 1 && righthanded == 0))) {
                     float normRX = static_cast<float>(state.ThumbRX) / 32767.0f;
                     float normRY = static_cast<float>(state.ThumbRY) / 32767.0f;
@@ -322,6 +340,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         if (responsetime <= 0)
             responsetime = 1;
         Sleep(responsetime);
+    }
+
+	// Cleanup
+    if (g_GamepadMethod == GamepadMethod::SDL2) {
+        SDL2_Cleanup();
     }
 
     LOG("ThreadFunction gracefully exiting.");

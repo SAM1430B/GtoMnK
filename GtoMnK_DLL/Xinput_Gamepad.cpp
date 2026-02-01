@@ -34,12 +34,7 @@ bool XInput_GetState(CustomControllerState& outState) {
         return false;
     }
 
-    // Map XInput Flags -> Your Custom IDs
-    // We use the ID as an index if possible, or just map them directly to the struct members
-    // Since your Enums are large (0x10000), we can't use them as array indices directly.
-    // Instead, we will fill the struct manually.
-
-    // Standard Buttons
+    // Buttons
     outState.buttons[CUSTOM_ID_A] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_A);
     outState.buttons[CUSTOM_ID_B] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_B);
     outState.buttons[CUSTOM_ID_X] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_X);
@@ -58,11 +53,15 @@ bool XInput_GetState(CustomControllerState& outState) {
     outState.buttons[CUSTOM_ID_DPAD_LEFT] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_LEFT);
     outState.buttons[CUSTOM_ID_DPAD_RIGHT] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_RIGHT);
 
-    // Triggers & Sticks Raw Data
+    // Triggers
     outState.LeftTrigger = state.Gamepad.bLeftTrigger;
     outState.RightTrigger = state.Gamepad.bRightTrigger;
+
+	// Left Thumbsticks
     outState.ThumbLX = state.Gamepad.sThumbLX;
     outState.ThumbLY = state.Gamepad.sThumbLY;
+
+	// Right Thumbsticks
     outState.ThumbRX = state.Gamepad.sThumbRX;
     outState.ThumbRY = state.Gamepad.sThumbRY;
 

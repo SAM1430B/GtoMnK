@@ -7,6 +7,12 @@
 
 using namespace GtoMnK;
 
+// Gamepad Input Method
+enum class GamepadMethod {
+    SDL2, // 0
+    XInput// 1
+};
+
 // For Controller Input
 enum CustomInputID {
     CUSTOM_ID_A = 0,
@@ -43,6 +49,7 @@ extern char iniClassName[256];
 
 // API
 extern InputMethod g_InputMethod;
+extern GamepadMethod g_GamepadMethod;
 
 // Hooks
 extern int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setCursorHook, setRectHook;

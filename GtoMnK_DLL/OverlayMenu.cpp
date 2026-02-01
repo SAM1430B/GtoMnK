@@ -400,6 +400,8 @@ namespace GtoMnK {
                 OverlayMenu::state.UpdatePositionLoopInternal(); return 0;
                 }), 0, 0, 0);
 
+            m_isReady = true;
+
             MSG msg;
             ZeroMemory(&msg, sizeof(msg));
             while (msg.message != WM_QUIT) {
@@ -409,6 +411,7 @@ namespace GtoMnK {
                 }
             }
         }
+        m_isReady = false;
     }
 
     void OverlayMenu::StartDrawLoopInternal() {

@@ -13,6 +13,7 @@ int righthanded;
 
 // For Controller Setting
 int controllerID = 0;
+GamepadMethod g_GamepadMethod = GamepadMethod::SDL2;
 float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, sensitivity_multiplier, horizontal_sensitivity, vertical_sensitivity, look_accel_multiplier;
 float stick_as_button_deadzone;
 float g_TriggerThreshold = 175;
@@ -114,14 +115,25 @@ void LoadIniSettings() {
     GetPrivateProfileStringA("FindWindow", "ClassName", NULL, iniClassName, sizeof(iniClassName), iniPath.c_str());
 
     // [API]
-    int method = GetPrivateProfileIntA("API", "InputMethod", 0, iniPath.c_str());
-    if (method == 1) {
+    int inputMethod = GetPrivateProfileIntA("API", "InputMethod", 0, iniPath.c_str());
+    if (inputMethod == 1) {
         g_InputMethod = InputMethod::RawInput;
     }
     else {
         g_InputMethod = InputMethod::PostMessage;
     }
     LOG("Using Input Method: %s", (g_InputMethod == InputMethod::RawInput) ? "RawInput" : "PostMessage");
+
+    int gamepadMethod = GetPrivateProfileIntA("API", "GamepadMethod", 0, iniPath.c_str());
+    if (gamepadMethod == 1) {
+        g_GamepadMethod = GamepadMethod::XInput;
+    }
+    else {
+        g_GamepadMethod = GamepadMethod::SDL2;   
+    }
+	LOG("Using Gamepad Method: %s", (g_GamepadMethod == GamepadMethod::XInput) ? "XInput" : "SDL2");
+
+    g_EnableOpenXinput = GetPrivateProfileIntA("API", "EnableOpenXinput", 0, iniPath.c_str()) == 1;
 
     // [Hooks]
     getCursorPosHook = GetPrivateProfileIntA("Hooks", "GetCursorposHook", 1, iniPath.c_str());
@@ -148,7 +160,6 @@ void LoadIniSettings() {
     recheckHWND = GetPrivateProfileIntA("Settings", "RecheckHWND", 1, iniPath.c_str()) == 1;
     disableOverlayOptions = (GetPrivateProfileIntA("Settings", "DisableOverlayOptions", 0, iniPath.c_str()) != 0);
     controllerID = GetPrivateProfileIntA("Settings", "Controllerid", 0, iniPath.c_str());
-    g_EnableOpenXinput = GetPrivateProfileIntA("Settings", "EnableOpenXinput", 0, iniPath.c_str()) == 1;
     mode = GetPrivateProfileIntA("Settings", "Mode", 1, iniPath.c_str());
     drawfakecursor = GetPrivateProfileIntA("Settings", "drawfakecursor", 0, iniPath.c_str());
     drawProtoFakeCursor = GetPrivateProfileIntA("Settings", "DrawProtoFakeCursor", 0, iniPath.c_str());

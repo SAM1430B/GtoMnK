@@ -1,6 +1,7 @@
 #pragma once
 #include <mutex>
 #include "GamepadState.h"
+#include <atomic>
 
 namespace GtoMnK {
 
@@ -26,6 +27,7 @@ namespace GtoMnK {
 
         void SetupOptions();
 
+        bool IsReady() const { return m_isReady; }
         bool isMenuOpen = false;
 
     private:
@@ -39,6 +41,7 @@ namespace GtoMnK {
         HDC hdc = nullptr;
         HBRUSH transparencyBrush = nullptr;
         HBRUSH backgroundBrush = nullptr;
+        std::atomic<bool> m_isReady = false;
 
         // Visual settings
         const COLORREF transparencyKey = RGB(1, 1, 1);
