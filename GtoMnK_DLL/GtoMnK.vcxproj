@@ -133,23 +133,31 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);SDL_MAIN_HANDLED</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook;$(SolutionDir)include\OpenXinput1_4;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook\Public;$(SolutionDir)include\OpenXinput1_4;$(SolutionDir)include\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>EasyHook32.lib;OpenXinput32.lib;setupapi.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\;$(SolutionDir)include\OpenXinput1_4\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>EasyHook32.lib;OpenXinput32.lib;SDL2-static.lib;winmm.lib;imm32.lib;setupapi.lib;version.lib;gdi32.lib;user32.lib;ole32.lib;oleaut32.lib;
+shell32.lib;
+advapi32.lib;libcmt.lib;
+libcpmt.lib;
+libvcruntime.lib;
+libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\Build\x86\netfx4-Debug;$(SolutionDir)include\OpenXinput1_4\Debug;$(SolutionDir)include\SDL2\VisualC\SDL-static\Debug\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying...
-copy "$(SolutionDir)include\EasyHook\EasyHook32.dll" "$(TargetDir)"
 copy "$(ProjectDir)Documents\GtoMnK_Keys.txt" "$(TargetDir)"
 copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
     </PostBuildEvent>
@@ -160,11 +168,11 @@ copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);SDL_MAIN_HANDLED</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook;$(SolutionDir)include\OpenXinput1_4;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook\Public;$(SolutionDir)include\OpenXinput1_4;$(SolutionDir)include\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -173,12 +181,20 @@ copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>EasyHook32.lib;OpenXinput32.lib;setupapi.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\;$(SolutionDir)include\OpenXinput1_4\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>EasyHook32.lib;OpenXinput32.lib;SDL2-static.lib;winmm.lib;imm32.lib;setupapi.lib;version.lib;gdi32.lib;user32.lib;ole32.lib;oleaut32.lib;
+shell32.lib;
+advapi32.lib;libcmt.lib;
+libcpmt.lib;
+libvcruntime.lib;
+libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\OpenXinput1_4\Release;$(SolutionDir)include\SDL2\VisualC\SDL-static\Release\Win32;$(SolutionDir)include\EasyHook\Build\x86\netfx4-Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying...
-copy "$(SolutionDir)include\EasyHook\EasyHook32.dll" "$(TargetDir)"
 copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"
 robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x32" "$(TargetDir)Loader.x32" /E /MIR
 exit /b 0</Command>
@@ -190,11 +206,11 @@ exit /b 0</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;ENABLE_LOGGING;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;ENABLE_LOGGING;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);SDL_MAIN_HANDLED</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook;$(SolutionDir)include\OpenXinput1_4;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook\Public;$(SolutionDir)include\OpenXinput1_4;$(SolutionDir)include\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -203,12 +219,20 @@ exit /b 0</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>EasyHook32.lib;OpenXinput32.lib;setupapi.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\;$(SolutionDir)include\OpenXinput1_4\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>EasyHook32.lib;OpenXinput32.lib;SDL2-static.lib;winmm.lib;imm32.lib;setupapi.lib;version.lib;gdi32.lib;user32.lib;ole32.lib;oleaut32.lib;
+shell32.lib;
+advapi32.lib;libcmt.lib;
+libcpmt.lib;
+libvcruntime.lib;
+libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\OpenXinput1_4\Release;$(SolutionDir)include\SDL2\VisualC\SDL-static\Release\Win32;$(SolutionDir)include\EasyHook\Build\x86\netfx4-Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying...
-copy "$(SolutionDir)include\EasyHook\EasyHook32.dll" "$(TargetDir)"
 copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"
 robocopy "$(ProjectDir)Documents" ""$(SolutionDir)$(Configuration)\Config"
 robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x32" "$(TargetDir)Loader.x32"
@@ -219,23 +243,31 @@ exit /b 0</Command>
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);SDL_MAIN_HANDLED</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook;$(SolutionDir)include\OpenXinput1_4;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook\Public;$(SolutionDir)include\OpenXinput1_4;$(SolutionDir)include\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>EasyHook64.lib;OpenXinput64.lib;setupapi.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\;$(SolutionDir)include\OpenXinput1_4\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>EasyHook64.lib;OpenXinput64.lib;SDL2-static.lib;winmm.lib;imm32.lib;setupapi.lib;version.lib;gdi32.lib;user32.lib;ole32.lib;oleaut32.lib;
+shell32.lib;
+advapi32.lib;libcmt.lib;
+libcpmt.lib;
+libvcruntime.lib;
+libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\Build\x64\netfx4-Debug;$(SolutionDir)include\OpenXinput1_4\Debug;$(SolutionDir)include\SDL2\VisualC\SDL-static\Debug\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying...
-copy "$(SolutionDir)include\EasyHook\EasyHook64.dll" "$(TargetDir)"
 copy "$(ProjectDir)Documents\GtoMnK_Keys.txt" "$(TargetDir)"
 copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
     </PostBuildEvent>
@@ -246,11 +278,11 @@ copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);SDL_MAIN_HANDLED</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook;$(SolutionDir)include\OpenXinput1_4;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook\Public;$(SolutionDir)include\OpenXinput1_4;$(SolutionDir)include\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -259,12 +291,20 @@ copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>EasyHook64.lib;OpenXinput64.lib;setupapi.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\;$(SolutionDir)include\OpenXinput1_4\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>EasyHook64.lib;OpenXinput64.lib;SDL2-static.lib;winmm.lib;imm32.lib;setupapi.lib;version.lib;gdi32.lib;user32.lib;ole32.lib;oleaut32.lib;
+shell32.lib;
+advapi32.lib;libcmt.lib;
+libcpmt.lib;
+libvcruntime.lib;
+libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\OpenXinput1_4\Release;$(SolutionDir)include\SDL2\VisualC\SDL-static\Release\x64;$(SolutionDir)include\EasyHook\Build\x64\netfx4-Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying...
-copy "$(SolutionDir)include\EasyHook\EasyHook64.dll" "$(TargetDir)"
 copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -274,11 +314,11 @@ copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"</
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;ENABLE_LOGGING;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;ENABLE_LOGGING;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);SDL_MAIN_HANDLED</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook;$(SolutionDir)include\OpenXinput1_4;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook\Public;$(SolutionDir)include\OpenXinput1_4;$(SolutionDir)include\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -287,17 +327,28 @@ copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"</
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>EasyHook64.lib;OpenXinput64.lib;setupapi.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)include\EasyHook\;$(SolutionDir)include\OpenXinput1_4\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>EasyHook64.lib;OpenXinput64.lib;SDL2-static.lib;winmm.lib;imm32.lib;setupapi.lib;version.lib;gdi32.lib;user32.lib;ole32.lib;oleaut32.lib;
+shell32.lib;
+advapi32.lib;libcmt.lib;
+libcpmt.lib;
+libvcruntime.lib;
+libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\OpenXinput1_4\Release;$(SolutionDir)include\SDL2\VisualC\SDL-static\Release\x64;$(SolutionDir)include\EasyHook\Build\x64\netfx4-Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying...
-copy "$(SolutionDir)include\EasyHook\EasyHook64.dll" "$(TargetDir)"
 copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"
 robocopy "$(ProjectDir)Documents" "$(SolutionDir)$(Configuration)\Config"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="GamepadState.h" />
+    <ClInclude Include="HandleMainWindow.h" />
+    <ClInclude Include="INISettings.h" />
     <ClInclude Include="OverlayMenu.h" />
     <ClInclude Include="CursorVisibilityHooks.h" />
     <ClInclude Include="FakeCursor.h" />
@@ -317,9 +368,17 @@ robocopy "$(ProjectDir)Documents" "$(SolutionDir)$(Configuration)\Config"</Comma
     <ClInclude Include="Mouse.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="RawInput.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="SDL2_Gamepad.h" />
+    <ClInclude Include="XInput_Gamepad.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="SDL2_Gamepad.cpp" />
+    <ClCompile Include="XInput_Gamepad.cpp" />
     <ClInclude Include="EnableOpenXinput.h" />
+    <ClCompile Include="GamepadState.cpp" />
+    <ClCompile Include="HandleMainWindow.cpp" />
+    <ClCompile Include="INISettings.cpp" />
     <ClCompile Include="OverlayMenu.cpp" />
     <ClCompile Include="CursorVisibilityHooks.cpp" />
     <ClCompile Include="dllmain.cpp" />
@@ -349,11 +408,13 @@ robocopy "$(ProjectDir)Documents" "$(SolutionDir)$(Configuration)\Config"</Comma
   </ItemGroup>
   <ItemGroup>
     <Text Include="Documents\GtoMnK_Keys.txt" />
+    <Text Include="Resources\gamecontrollerdb.txt" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Documents\GtoMnK_Config.png" />
   </ItemGroup>
   <ItemGroup>
+    <ResourceCompile Include="SDL_Resource.rc" />
     <ResourceCompile Include="Version.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

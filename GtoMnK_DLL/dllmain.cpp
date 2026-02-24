@@ -10,32 +10,24 @@
 #include <easyhook.h>
 #include "MainThread.h"
 
-
 using namespace GtoMnK;
 
-volatile bool g_isInitialized = false;
-bool g_isLoadedByDll = false;
+HMODULE g_hModule = nullptr;
 
 // Entry point for EasyHook DLL injection
-extern "C" void __declspec(dllexport) __stdcall NativeInjectionEntryPoint(REMOTE_ENTRY_INFO* inRemoteInfo) {
-    if (g_isInitialized) {
-        RhWakeUpProcess();
-        return;
-    }
-
-    g_isInitialized = true;
-
-    LOG("Initialization started via NativeInjectionEntryPoint (EasyHook).");
-
-    HANDLE hThread = CreateThread(nullptr, 0, ThreadFunction, NULL, 0, NULL);
-    if (hThread) {
-        CloseHandle(hThread);
-    }
+extern "C" __declspec(dllexport) void __stdcall NativeInjectionEntryPoint(REMOTE_ENTRY_INFO* inRemoteInfo)
+{
+    LOG("EasyHook NativeInjectionEntryPoint called");
 
     RhWakeUpProcess();
 }
 
+EASYHOOK_BOOL_EXPORT EasyHookDllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved);
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
+
+    EasyHookDllMain(hModule, ul_reason_for_call, lpReserved);
+
     switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH: {
         g_hModule = hModule;
@@ -44,21 +36,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         INIT_LOGGER();
         LOG("================== DLL Attached (PID: %lu) ==================", GetCurrentProcessId());
 
-		// Create a thread if not using EasyHook injection
-        CreateThread(nullptr, 0, [](LPVOID) -> DWORD {
-            Sleep(100);
-            if (!g_isInitialized) {
-                g_isInitialized = true;
-				g_isLoadedByDll = true;
-                LOG("Initialization started via DllMain.");
-
-                HANDLE hThread = CreateThread(nullptr, 0, ThreadFunction, NULL, 0, NULL);
-                if (hThread) {
-                    CloseHandle(hThread);
-                }
-            }
-            return 0;
-            }, NULL, 0, NULL);
+        HANDLE hThread = CreateThread(nullptr, 0, ThreadFunction, NULL, 0, NULL);
+        if (hThread) {
+            CloseHandle(hThread);
+        }
         break;
     }
 
@@ -69,7 +50,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             LOG("DLL Detaching gracefully (FreeLibrary called).");
             Sleep(50);
 
-            if (g_isLoadedByDll && hooksinited) {
+            if (hooksinited) {
                 LOG("Running as master. Performing full cleanup...");
                 Hooks::RemoveHooks();
                 LOG("Hooks removed.");

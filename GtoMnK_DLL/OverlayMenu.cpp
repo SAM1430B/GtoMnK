@@ -5,25 +5,7 @@
 #include "Logging.h"
 #include "MainThread.h"
 #include <time.h>
-#include "EnableOpenXinput.h"
-
-extern bool disableOverlayOptions;
-extern int controllerID;
-
-extern float sensitivity;
-extern float sensitivity_multiplier;
-extern float horizontal_sensitivity;
-extern float vertical_sensitivity;
-extern float max_threshold;
-
-extern float radial_deadzone;
-extern float axial_deadzone;
-extern float stick_as_button_deadzone;
-extern float g_TriggerThreshold;
-
-extern float look_accel_multiplier;
-extern float curve_slope;
-extern float curve_exponent;
+#include "INISettings.h"
 
 namespace GtoMnK {
 
@@ -99,7 +81,7 @@ namespace GtoMnK {
     }
 
     // Overlay menu input process
-    void OverlayMenu::ProcessInput(int gamepadButtons) {
+    void OverlayMenu::ProcessInput(const CustomControllerState& state) {
         if (!isMenuOpen) return;
 
         // Delay between presses
@@ -111,37 +93,25 @@ namespace GtoMnK {
         static ULONGLONG dirHoldTimer = 0;
         static int lastDir = 0;
 
-        XINPUT_STATE state;
-        ZeroMemory(&state, sizeof(XINPUT_STATE));
-        if (pXInputGetState(controllerID, &state) != ERROR_SUCCESS) {
-        return;
-    }
-        float stickX = state.Gamepad.sThumbLX;
-        float stickY = state.Gamepad.sThumbLY;
+        float stickX = (float)state.ThumbLX;
+        float stickY = (float)state.ThumbLY;
         const int StickMenuDeadzone = 12000;
         if (std::abs(stickX) < StickMenuDeadzone) stickX = 0;
         if (std::abs(stickY) < StickMenuDeadzone) stickY = 0;
 
         // Close the overlay
-        if ((gamepadButtons & XINPUT_GAMEPAD_START) || (gamepadButtons & XINPUT_GAMEPAD_B)) {
+        if (state.buttons[CUSTOM_ID_START] || state.buttons[CUSTOM_ID_B]) {
             EnableDisableMenu(false);
             input = true;
+			Sleep(250); // TODO: Add button release wait loop here instead of just sleeping.
 
             // Hide the Overlay Menu
-            XINPUT_STATE state;
-            ZeroMemory(&state, sizeof(XINPUT_STATE));
-            do {
-                Sleep(100); // Important
-                if (pXInputGetState(controllerID, &state) != ERROR_SUCCESS) {
-                    break;
-                }
-            } while ((state.Gamepad.wButtons & XINPUT_GAMEPAD_START) ||
-                (state.Gamepad.wButtons & XINPUT_GAMEPAD_B));
+            // Note: Wait loop removed as we are passive now. Logic handled in MainThread.
             lastInputTime = GetTickCount64();
             return;
         }
         // Toggle expand children option
-        if (gamepadButtons & XINPUT_GAMEPAD_X) {
+        if (state.buttons[CUSTOM_ID_X]) {
             int currentPId = options[menuSelection].parentId;
             int targetId = (currentPId == 0) ? options[menuSelection].id : currentPId;
             for (int i = 0; i < (int)options.size(); i++) {
@@ -157,7 +127,7 @@ namespace GtoMnK {
             }
         }
         // Navigate up
-        if (gamepadButtons & XINPUT_GAMEPAD_DPAD_UP || (stickY > 0)) {
+        if (state.buttons[CUSTOM_ID_DPAD_UP] || (stickY > 0)) {
             do {
                 menuSelection--;
                 if (menuSelection < 0) menuSelection = (int)options.size() - 1;
@@ -165,7 +135,7 @@ namespace GtoMnK {
             input = true;
         }
         // Navigate down
-        else if (gamepadButtons & XINPUT_GAMEPAD_DPAD_DOWN || (stickY < 0)) {
+        else if (state.buttons[CUSTOM_ID_DPAD_DOWN] || (stickY < 0)) {
             do {
                 menuSelection++;
                 if (menuSelection >= options.size()) menuSelection = 0;
@@ -173,7 +143,7 @@ namespace GtoMnK {
             input = true;
         }
         // Value decrement
-        else if (gamepadButtons & XINPUT_GAMEPAD_DPAD_LEFT || (stickX < 0)) {
+        else if (state.buttons[CUSTOM_ID_DPAD_LEFT] || (stickX < 0)) {
             if (lastDir != 1 || (now - lastInputTime > 250)) {
                 dirHoldTimer = now;
                 lastDir = 1;
@@ -187,7 +157,7 @@ namespace GtoMnK {
             input = true;
         }
         // Value increment
-        else if (gamepadButtons & XINPUT_GAMEPAD_DPAD_RIGHT || (stickX > 0)) {
+        else if (state.buttons[CUSTOM_ID_DPAD_RIGHT] || (stickX > 0)) {
             if (lastDir != 2 || (now - lastInputTime > 250)) {
                 dirHoldTimer = now;
                 lastDir = 2;
@@ -431,6 +401,9 @@ namespace GtoMnK {
                 OverlayMenu::state.UpdatePositionLoopInternal(); return 0;
                 }), 0, 0, 0);
 
+            m_isReady = true;
+			LOG("Overlay Menu Window created successfully.");
+
             MSG msg;
             ZeroMemory(&msg, sizeof(msg));
             while (msg.message != WM_QUIT) {
@@ -440,6 +413,7 @@ namespace GtoMnK {
                 }
             }
         }
+        m_isReady = false;
     }
 
     void OverlayMenu::StartDrawLoopInternal() {

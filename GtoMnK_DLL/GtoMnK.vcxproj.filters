@@ -40,6 +40,21 @@
     <ClCompile Include="OverlayMenu.cpp">
       <Filter>Files\Overlay</Filter>
     </ClCompile>
+    <ClCompile Include="INISettings.cpp">
+      <Filter>INI</Filter>
+    </ClCompile>
+    <ClCompile Include="HandleMainWindow.cpp">
+      <Filter>Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GamepadState.cpp">
+      <Filter>Files\Gamepad</Filter>
+    </ClCompile>
+    <ClCompile Include="SDL2_Gamepad.cpp">
+      <Filter>Files\Gamepad\SDL_Gamepad</Filter>
+    </ClCompile>
+    <ClCompile Include="XInput_Gamepad.cpp">
+      <Filter>Files\Gamepad\XInput_Gamepad</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -98,6 +113,22 @@
     <ClInclude Include="EnableOpenXinput.h">
       <Filter>Files</Filter>
     </ClInclude>
+    <ClInclude Include="INISettings.h">
+      <Filter>INI</Filter>
+    </ClInclude>
+    <ClInclude Include="HandleMainWindow.h">
+      <Filter>Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GamepadState.h">
+      <Filter>Files\Gamepad</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="SDL2_Gamepad.h">
+      <Filter>Files\Gamepad\SDL_Gamepad</Filter>
+    </ClInclude>
+    <ClInclude Include="XInput_Gamepad.h">
+      <Filter>Files\Gamepad\XInput_Gamepad</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Files">
@@ -118,10 +149,22 @@
     <Filter Include="INI">
       <UniqueIdentifier>{fa813b98-d3cc-463d-9154-0b2773fc3090}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Files\Gamepad">
+      <UniqueIdentifier>{5c5b6fd9-923a-45d5-a597-a7b08d260770}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Files\Gamepad\SDL_Gamepad">
+      <UniqueIdentifier>{d45b91c9-6c4c-4fe1-b831-7a1d35e182c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Files\Gamepad\XInput_Gamepad">
+      <UniqueIdentifier>{efcdc56e-a776-45a4-a33c-dde643b10761}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Documents\GtoMnK_Keys.txt">
       <Filter>Documents</Filter>
+    </Text>
+    <Text Include="Resources\gamecontrollerdb.txt">
+      <Filter>Files\Gamepad\SDL_Gamepad</Filter>
     </Text>
   </ItemGroup>
   <ItemGroup>
@@ -139,5 +182,8 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Version.rc" />
+    <ResourceCompile Include="SDL_Resource.rc">
+      <Filter>Files\Gamepad\SDL_Gamepad</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

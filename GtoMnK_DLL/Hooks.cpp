@@ -58,6 +58,9 @@ namespace GtoMnK {
         if (g_InputMethod == InputMethod::RawInput) {
             LOG("Installing hooks for RawInput mode...");
 
+            RawInputHooks::TrueGetRawInputData = (UINT(WINAPI*)(HRAWINPUT, UINT, LPVOID, PUINT, UINT))GetProcAddress(hUser32, "GetRawInputData");
+            RawInputHooks::TrueRegisterRawInputDevices = (BOOL(WINAPI*)(PCRAWINPUTDEVICE, UINT, UINT))GetProcAddress(hUser32, "RegisterRawInputDevices");
+
 			LOG("Installing GetRawInputDataHook...");
             result = LhInstallHook(GetProcAddress(hUser32, "GetRawInputData"), GtoMnK::RawInputHooks::GetRawInputDataHook, NULL, &g_getRawInputDataHook);
             if (FAILED(result)) LOG("Failed to install hook for GetRawInputData: %S", RtlGetLastErrorString());

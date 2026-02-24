@@ -1,5 +1,7 @@
 #pragma once
 #include <mutex>
+#include "GamepadState.h"
+#include <atomic>
 
 namespace GtoMnK {
 
@@ -20,11 +22,12 @@ namespace GtoMnK {
 
         void Initialise();
         void EnableDisableMenu(bool enable);
-        void ProcessInput(int gamepadButtons); // Handles the overlay buttons
+        void ProcessInput(const CustomControllerState& state); // Handles the overlay buttons
         void GetWindowDimensions(HWND mWnd);
 
         void SetupOptions();
 
+        bool IsReady() const { return m_isReady; }
         bool isMenuOpen = false;
 
     private:
@@ -38,6 +41,7 @@ namespace GtoMnK {
         HDC hdc = nullptr;
         HBRUSH transparencyBrush = nullptr;
         HBRUSH backgroundBrush = nullptr;
+        std::atomic<bool> m_isReady = false;
 
         // Visual settings
         const COLORREF transparencyKey = RGB(1, 1, 1);

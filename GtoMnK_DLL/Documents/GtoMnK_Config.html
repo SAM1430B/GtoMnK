@@ -977,6 +977,8 @@
 
             const iniContent = `[API]
 InputMethod=${getSet('InputMethod')}
+GamepadMethod=0
+EnableOpenXinput=0
 
 [Hooks]
 GetCursorposHook=${getSet('GetCursorposHook')}
@@ -999,7 +1001,7 @@ KeyboardButtonFilter=${getSet('KeyboardButtonFilter')}
 
 [Settings]
 Controllerid=0
-EnableOpenXinput=0
+
 Mode=${getSet('Mode')}
 DrawProtoFakeCursor=${getSet('DrawProtoFakeCursor')}
 Responsetime=4
