@@ -11,7 +11,6 @@ struct ButtonState {
     std::string heldActionString = "0";
 };
 
-extern volatile bool g_isInitialized;
 extern HMODULE g_hModule;
 extern bool loop;
 extern bool hooksinited;

@@ -18,7 +18,6 @@
 using namespace GtoMnK;
 
 // For Initialization and Thread state
-HMODULE g_hModule = nullptr;
 bool hooksinited = false;
 bool loop = true;
 
@@ -154,7 +153,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     CustomControllerState state; // Reused every frame
 
     while (loop) {
-        bool movedmouse = false;
 
         if (recheckHWND) {
             if (hwnd && !IsWindow(hwnd)) {
