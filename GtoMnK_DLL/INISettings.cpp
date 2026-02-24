@@ -126,12 +126,12 @@ void LoadIniSettings() {
 
     int gamepadMethod = GetPrivateProfileIntA("API", "GamepadMethod", 0, iniPath.c_str());
     if (gamepadMethod == 1) {
-        g_GamepadMethod = GamepadMethod::XInput;
+        g_GamepadMethod = GamepadMethod::SDL2;
     }
     else {
-        g_GamepadMethod = GamepadMethod::SDL2;   
+        g_GamepadMethod = GamepadMethod::XInput;
     }
-	LOG("Using Gamepad Method: %s", (g_GamepadMethod == GamepadMethod::XInput) ? "XInput" : "SDL2");
+	LOG("Using Gamepad Method: %s", (g_GamepadMethod == GamepadMethod::SDL2) ? "SDL2" : "XInput");
 
     g_EnableOpenXinput = GetPrivateProfileIntA("API", "EnableOpenXinput", 0, iniPath.c_str()) == 1;
 

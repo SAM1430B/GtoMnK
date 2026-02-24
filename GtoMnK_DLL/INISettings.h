@@ -9,8 +9,8 @@ using namespace GtoMnK;
 
 // Gamepad Input Method
 enum class GamepadMethod {
-    SDL2, // 0
-    XInput// 1
+    XInput, // 0
+    SDL2 // 1
 };
 
 // For Controller Input

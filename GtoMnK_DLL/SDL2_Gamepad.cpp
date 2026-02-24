@@ -2,10 +2,14 @@
 #include "SDL2_Gamepad.h"
 #include "Logging.h"
 #include "INISettings.h"
-#include "SDL2_gamecontrollerdb.h"
 #include <string>
+#include "resource.h"
 
 SDL_GameController* g_GameController = nullptr;
+SDL_JoystickID g_JoyID = -1;
+
+std::string g_JoySerialNum = "";
+std::string g_JoyHardwarePath = "";
 
 // Opens the SDL_GameController at the given virtual index (skipping non-gamepad devices).
 SDL_GameController* OpenControllerByVirtualIndex(int virtualIndex) {
@@ -13,9 +17,7 @@ SDL_GameController* OpenControllerByVirtualIndex(int virtualIndex) {
     int foundGamepads = 0;
 
     for (int i = 0; i < joyCount; ++i) {
-        if (!SDL_IsGameController(i)) {
-            continue;
-        }
+        if (!SDL_IsGameController(i)) continue;
 
         if (foundGamepads == virtualIndex) {
             return SDL_GameControllerOpen(i);
@@ -29,36 +31,58 @@ void SDL2_Initialize() {
     LOG("Initializing SDL2...");
 
     SDL_SetHint(SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS, "0");
-    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH, "1");
     SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
-    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_XBOX, "0");
+
+    SDL_SetHint(SDL_HINT_JOYSTICK_RAWINPUT, "1");
+    //SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_XBOX, "1");
+    //SDL_SetHint(SDL_HINT_XINPUT_ENABLED, "0");
+
+    //SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH, "1");
+
+    //SDL_SetHint(SDL_HINT_JOYSTICK_THREAD, "1");
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) < 0) {
         LOG("SDL2 Init Failed: %s", SDL_GetError());
         return;
     }
 
-	// Load gamecontrollerdb.txt if it exists.
     int mappingsAdded = SDL_GameControllerAddMappingsFromFile("gamecontrollerdb.txt");
 
+    // Load gamecontrollerdb.txt if it exists.
     if (mappingsAdded > 0) {
         LOG("SDL2: Loaded %d mappings from external 'gamecontrollerdb.txt'.", mappingsAdded);
     }
-	else { // Fallback to embedded database
-        LOG("SDL2: External mapping file not found. Using embedded database.");
+    else {
+        LOG("SDL2: External mapping file not found. Falling back to embedded resource.");
 
-        int totalEmbedded = 0;
-        for (int i = 0; EMBEDDED_MAPPINGS_PARTS[i] != nullptr; i++) {
-            SDL_RWops* rw = SDL_RWFromConstMem(EMBEDDED_MAPPINGS_PARTS[i], (int)strlen(EMBEDDED_MAPPINGS_PARTS[i]));
-            int chunkAdded = SDL_GameControllerAddMappingsFromRW(rw, 1);
-            if (chunkAdded > 0) totalEmbedded += chunkAdded;
-        }
+        HMODULE hModule = NULL;
+        GetModuleHandleExA(
+            GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+            (LPCSTR)&SDL2_Initialize,
+            &hModule
+        );
 
-        if (totalEmbedded > 0) {
-            LOG("SDL2: Loaded %d mappings from Embedded Database.", totalEmbedded);
+        HRSRC hResInfo = FindResourceA(hModule, MAKEINTRESOURCEA(IDR_TEXTFILE1), "TEXTFILE");
+
+        if (hResInfo != NULL) {
+            HGLOBAL hResData = LoadResource(hModule, hResInfo);
+            void* data = LockResource(hResData);
+            DWORD size = SizeofResource(hModule, hResInfo);
+
+            if (data != NULL && size > 0) {
+                SDL_RWops* rw = SDL_RWFromConstMem(data, size);
+                int embeddedMappings = SDL_GameControllerAddMappingsFromRW(rw, 1);
+
+                if (embeddedMappings > 0) {
+                    LOG("SDL2: Loaded %d mappings from Embedded Resource.", embeddedMappings);
+                }
+                else {
+                    LOG("SDL2 Error: Failed to load embedded mappings: %s", SDL_GetError());
+                }
+            }
         }
         else {
-            LOG("SDL2 Error: Failed to load embedded mappings: %s", SDL_GetError());
+            LOG("SDL2 Error: Could not find the embedded resource in the DLL.");
         }
     }
 
@@ -73,48 +97,95 @@ void SDL2_Cleanup() {
     SDL_Quit();
 }
 
-void AttemptConnect() {
-    // Check connection
+void AttemptInitialConnect() {
+    if (g_GameController) return;
+
+    g_GameController = OpenControllerByVirtualIndex(controllerID);
+
+	// To keep track of the specific used controller.
     if (g_GameController) {
-        if (!SDL_GameControllerGetAttached(g_GameController)) {
-            SDL_GameControllerClose(g_GameController);
-            g_GameController = nullptr;
-            LOG("SDL2: Controller Disconnected.");
+        SDL_Joystick* joy = SDL_GameControllerGetJoystick(g_GameController);
+        g_JoyID = SDL_JoystickInstanceID(joy);
+
+        // Serial Number (USB port changes)
+        const char* serial = SDL_JoystickGetSerial(joy);
+        if (serial) {
+            g_JoySerialNum = serial;
         }
-    }
 
-    // If disconnected
-    if (!g_GameController) {
-        static ULONGLONG lastLogTime = 0;
-        ULONGLONG currentTime = GetTickCount64();
-        bool shouldLog = (currentTime - lastLogTime > 3000);
-
-        SDL_PumpEvents();
-
-        g_GameController = OpenControllerByVirtualIndex(controllerID);
-
-        if (g_GameController) {
-            LOG("SDL2: Connected to Slot %d: %s", controllerID, SDL_GameControllerName(g_GameController));
+        // OS Device Path (Fallback, port-dependent)
+        const char* path = SDL_JoystickPath(joy);
+        if (path) {
+            g_JoyHardwarePath = path;
         }
-        else if (shouldLog) {
-            LOG("SDL2: Searching for controller in Slot %d... (Total Devices: %d)", controllerID, SDL_NumJoysticks());
-            lastLogTime = currentTime;
-        }
+        LOG("SDL2: Using %s",
+            SDL_GameControllerName(g_GameController));
+
+        LOG("SDL2: Joystick Serial: [%s]",
+            g_JoySerialNum.empty() ? "NONE" : g_JoySerialNum.c_str());
+        LOG("SDL2: Joystick Path: [%s]",
+            g_JoyHardwarePath.empty() ? "NONE" : g_JoyHardwarePath.c_str());
+            
     }
 }
 
 bool SDL2_GetState(CustomControllerState& outState) {
     SDL_Event event;
+
     while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_CONTROLLERDEVICEADDED || event.type == SDL_CONTROLLERDEVICEREMOVED) {
-            if (g_GameController && !SDL_GameControllerGetAttached(g_GameController)) {
+        if (event.type == SDL_CONTROLLERDEVICEADDED) {
+            int deviceIndex = event.cdevice.which;
+
+            if (!g_GameController) {
+                // If never successfully connected before, try controllerID
+                if (g_JoySerialNum.empty() && g_JoyHardwarePath.empty()) {
+                    AttemptInitialConnect();
+                }
+                else {
+                    SDL_GameController* tempController = SDL_GameControllerOpen(deviceIndex);
+
+                    if (tempController) {
+                        SDL_Joystick* joy = SDL_GameControllerGetJoystick(tempController);
+
+                        const char* newSerial = SDL_JoystickGetSerial(joy);
+                        const char* newPath = SDL_JoystickPath(joy);
+
+                        bool isMatch = false;
+
+                        // The priority is the serial numbers match.
+                        if (!g_JoySerialNum.empty() && newSerial != nullptr) {
+                            isMatch = (g_JoySerialNum == newSerial);
+                        }
+                        // If no serial is available. Check the USB path match.
+                        else if (!g_JoyHardwarePath.empty() && newPath != nullptr) {
+                            isMatch = (g_JoyHardwarePath == newPath);
+                        }
+
+                        // Keep it if it's the matched controller. 
+                        if (isMatch) {
+                            g_GameController = tempController;
+                            g_JoyID = SDL_JoystickInstanceID(joy);
+                            LOG("SDL2: Controller is successfully reclaimed!");
+                        }
+                        else {
+                            // Not the matched controller
+                            SDL_GameControllerClose(tempController);
+                        }
+                    }
+                }
+            }
+        }
+        else if (event.type == SDL_CONTROLLERDEVICEREMOVED) {
+            // Disconnect if the device removed.
+            if (g_GameController && event.cdevice.which == g_JoyID) {
                 SDL_GameControllerClose(g_GameController);
                 g_GameController = nullptr;
+                g_JoyID = -1;
+
+                LOG("SDL2: Controller is disconnected. Waiting for original hardware...");
             }
         }
     }
-
-    AttemptConnect();
 
     if (!g_GameController) return false;
 

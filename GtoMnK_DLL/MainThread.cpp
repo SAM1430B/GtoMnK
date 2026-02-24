@@ -139,11 +139,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     }
 
     // Initialize Input API
-    if (g_GamepadMethod == GamepadMethod::SDL2) {
-        SDL2_Initialize();
+    if (g_GamepadMethod == GamepadMethod::XInput) {
+        XInput_Initialize();
     }
     else {
-        XInput_Initialize();
+        SDL2_Initialize();
+        
     }
 
     ULONGLONG menuToggleTimer = 0;
@@ -180,10 +181,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         bool isConnected = false;
 
         switch (g_GamepadMethod) {
+        case GamepadMethod::XInput:
+            isConnected = XInput_GetState(state);
+            break;
         case GamepadMethod::SDL2:
             isConnected = SDL2_GetState(state);
             break;
-        case GamepadMethod::XInput:
         default:
             isConnected = XInput_GetState(state);
             break;

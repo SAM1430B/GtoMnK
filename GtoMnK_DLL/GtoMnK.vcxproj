@@ -368,12 +368,11 @@ robocopy "$(ProjectDir)Documents" "$(SolutionDir)$(Configuration)\Config"</Comma
     <ClInclude Include="Mouse.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="RawInput.h" />
-    <ClInclude Include="SDL2_gamecontrollerdb.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="SDL2_Gamepad.h" />
     <ClInclude Include="XInput_Gamepad.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SDL2_gamecontrollerdb.cpp" />
     <ClCompile Include="SDL2_Gamepad.cpp" />
     <ClCompile Include="XInput_Gamepad.cpp" />
     <ClInclude Include="EnableOpenXinput.h" />
@@ -409,11 +408,13 @@ robocopy "$(ProjectDir)Documents" "$(SolutionDir)$(Configuration)\Config"</Comma
   </ItemGroup>
   <ItemGroup>
     <Text Include="Documents\GtoMnK_Keys.txt" />
+    <Text Include="Resources\gamecontrollerdb.txt" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Documents\GtoMnK_Config.png" />
   </ItemGroup>
   <ItemGroup>
+    <ResourceCompile Include="SDL_Resource.rc" />
     <ResourceCompile Include="Version.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

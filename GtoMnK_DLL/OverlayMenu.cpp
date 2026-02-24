@@ -103,6 +103,7 @@ namespace GtoMnK {
         if (state.buttons[CUSTOM_ID_START] || state.buttons[CUSTOM_ID_B]) {
             EnableDisableMenu(false);
             input = true;
+			Sleep(250); // TODO: Add button release wait loop here instead of just sleeping.
 
             // Hide the Overlay Menu
             // Note: Wait loop removed as we are passive now. Logic handled in MainThread.
@@ -401,6 +402,7 @@ namespace GtoMnK {
                 }), 0, 0, 0);
 
             m_isReady = true;
+			LOG("Overlay Menu Window created successfully.");
 
             MSG msg;
             ZeroMemory(&msg, sizeof(msg));

@@ -21,8 +21,22 @@ KeyboardButtonFilter
 class RawInputFilter : public GtoMnK::MessageFilterBase<RawInputFilterID, WM_INPUT> {
 public:
     static bool Filter(unsigned int message, unsigned int* lparam, unsigned int* wparam, intptr_t hwnd) {
+        // GtoMnK RawInput Signature
         if ((*lparam & 0xFF000000) == 0xAB000000) {
             return true;
+        }
+
+        // Allow SDL/DI Controller Input
+        char className[256];
+        if (GetClassNameA((HWND)hwnd, className, sizeof(className))) {
+		    // SDL2 window classes and DirectInput helper classes. We want to allow RawInput messages to these windows so that SDL2 and DirectInput can function properly alongside GtoMnK's RawInput.
+		    if (strcmp(className, "Message") == 0 || // SDL2's RawInput window class.
+                strcmp(className, "SDL_HIDAPI_DEVICE_DETECTION") == 0 ||
+                strcmp(className, "SDL_app") == 0 ||
+                strcmp(className, "SDLHelperWindowInputCatcher") == 0) {
+
+                return true;
+            }
         }
         return false;
     }
