@@ -285,31 +285,48 @@ namespace GtoMnK {
                 return parsedActions;
             }
 
-            std::stringstream ss(fullString);
-            std::string part;
-            while (std::getline(ss, part, '+')) {
-                if (part.empty()) continue;
+            std::vector<std::string> tokens;
+            std::string currentToken;
+            int parenDepth = 0;
 
+            for (char c : fullString) {
+                if (c == '(') {
+                    parenDepth++;
+                }
+                else if (c == ')') {
+                    parenDepth--;
+                }
+                else if (c == '+' && parenDepth == 0) {
+                    if (!currentToken.empty()) {
+                        tokens.push_back(currentToken);
+                        currentToken.clear();
+                    }
+                    continue;
+                }
+                currentToken += c;
+            }
+            if (!currentToken.empty()) {
+                tokens.push_back(currentToken);
+            }
+
+            for (const std::string& token : tokens) {
                 Action newAction;
+                std::string cleanActionString = "";
 
-                size_t firstDigitPos = 0;
-                bool foundDigit = false;
-                for (size_t i = 0; i < part.length(); ++i) {
-                    if (part[i] == '*') {
+                for (char c : token) {
+                    if (c == '*') {
                         newAction.holdDurationMs += 500;
                     }
-                    else if (part[i] == '^') {
+                    else if (c == '^') {
                         newAction.onRelease = true;
                     }
-                    else if (isdigit(part[i]) || part[i] == '-') {
-                        firstDigitPos = i;
-                        foundDigit = true;
-                        break;
+                    else if (c != '(' && c != ')') {
+                        cleanActionString += c;
                     }
                 }
 
-                if (foundDigit) {
-                    newAction.actionString = part.substr(firstDigitPos);
+                if (!cleanActionString.empty()) {
+                    newAction.actionString = cleanActionString;
                     parsedActions.push_back(newAction);
                 }
             }
@@ -329,7 +346,7 @@ namespace GtoMnK {
                 : DispatchAction_PostMessage;
 
             static ULONGLONG lastLeftClickTime = 0;
-            if (g_EnableMouseDoubleClick && press) {
+            if (g_EnableMouseDoubleClick && press && actionString.find('+') == std::string::npos) {
                 ULONGLONG currentTime = GetTickCount64();
 
                 // Left Click (-1) -> Double (-8)
@@ -411,7 +428,7 @@ namespace GtoMnK {
         }
 
 		// For PostMessage method
-        void SendAction(int screenX, int screenY) {
+        void SendMouseMoveAbsolute(int screenX, int screenY) {
             if (g_InputMethod != InputMethod::PostMessage) return;
             if (!hwnd) return;
             WPARAM wParam = BuildWParam();
@@ -421,7 +438,7 @@ namespace GtoMnK {
         }
 
 		// For RawInput method
-        void SendActionDelta(int deltaX, int deltaY) {
+        void SendMouseMoveDelta(int deltaX, int deltaY) {
             if (g_InputMethod != InputMethod::RawInput) return;
 
             RAWINPUT ri = {};

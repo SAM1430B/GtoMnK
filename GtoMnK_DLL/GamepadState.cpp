@@ -7,69 +7,105 @@
 // For Controller Button States
 const size_t NO_ACTION = static_cast<size_t>(-1);
 
-POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
-    // Make sure the deadzone is not 0
-    double c = (radial_deadzone < 0.01) ? 0.01 : radial_deadzone;
-    const double s = axial_deadzone;
-    const double m = max_threshold;
-    const double b = curve_slope;
-    const double a = curve_exponent;
-    const double t = look_accel_multiplier;
+int g_Fn1_ButtonID = -1;
+int g_Fn2_ButtonID = -1;
+bool g_Fn1_State = false;
+bool g_Fn2_State = false;
 
-    double base_sensitivity = sensitivity;
+static int g_ButtonLayer[256] = { 0 };
+static bool g_ButtonLastState[256] = { false };
+
+POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
+    const double smoothing_factor = 0.35;
+
+    static double smoothX = 0.0;
+    static double smoothY = 0.0;
+    static double mouseDeltaAccumulatorX = 0.0;
+    static double mouseDeltaAccumulatorY = 0.0;
+    static bool firstRun = true;
 
     double safe_multiplier = (sensitivity_multiplier <= 0.001) ? 1.0 : sensitivity_multiplier;
 
-    static double mouseDeltaAccumulatorX = 0.0;
-    static double mouseDeltaAccumulatorY = 0.0;
+    double rawNormX = static_cast<double>(stickX) / 32767.0;
+    double rawNormY = static_cast<double>(stickY) / 32767.0;
 
-    double normX = static_cast<double>(stickX) / 32767.0;
-    double normY = static_cast<double>(stickY) / 32767.0;
-
-    if (std::abs(normX) < s) normX = 0.0;
-    if (std::abs(normY) < s) normY = 0.0;
-
-    double magnitude = std::sqrt(normX * normX + normY * normY);
-    if (magnitude <= c) return { 0, 0 };
-    if (magnitude > 1.0) magnitude = 1.0;
-
-    double effectiveRange = 1.0 - c;
-    if (effectiveRange < 1e-6) effectiveRange = 1.0;
-
-    double x = (magnitude - c) / effectiveRange;
-
-    double finalCurveValue = 0.0;
-    double accelBoundary = 1.0 - m;
-    accelBoundary = (std::max)(0.0, (std::min)(1.0, accelBoundary));
-
-    if (x <= accelBoundary) {
-        finalCurveValue = b * x + (1.0 - b) * std::pow(x, a);
+    if (firstRun) {
+        smoothX = rawNormX;
+        smoothY = rawNormY;
+        firstRun = false;
     }
     else {
-        double kneeValue = b * accelBoundary + (1.0 - b) * std::pow(accelBoundary, a);
-
-        double rampWidth = 1.0 - accelBoundary;
-
-        if (rampWidth <= 1e-6) {
-            finalCurveValue = t;
-        }
-        else {
-            double rampProgress = (x - accelBoundary) / rampWidth;
-            finalCurveValue = kneeValue + (t - kneeValue) * rampProgress;
-        }
+        smoothX = smoothX + smoothing_factor * (rawNormX - smoothX);
+        smoothY = smoothY + smoothing_factor * (rawNormY - smoothY);
     }
 
-    double finalSpeedX = base_sensitivity * safe_multiplier * (1.0f + horizontal_sensitivity);
-    double finalSpeedY = base_sensitivity * safe_multiplier * (1.0f + vertical_sensitivity);
+    double normX = smoothX;
+    double normY = smoothY;
+
+    double magnitude = std::sqrt(normX * normX + normY * normY);
+
+    if (magnitude < 1e-6 || magnitude < radial_deadzone) {
+        if (magnitude < 1e-6) {
+            smoothX = 0.0;
+            smoothY = 0.0;
+        }
+        return { 0, 0 };
+    }
+
+    if (magnitude > 1.0) magnitude = 1.0;
 
     double dirX = normX / magnitude;
     double dirY = normY / magnitude;
 
-    double finalMouseDeltaX = dirX * finalCurveValue * finalSpeedX;
-    double finalMouseDeltaY = dirY * finalCurveValue * finalSpeedY;
+    if (std::abs(dirX) < axial_deadzone) {
+        dirX = 0.0;
+        dirY = (dirY > 0) ? 1.0 : -1.0;
+    }
+    else if (std::abs(dirY) < axial_deadzone) {
+        dirY = 0.0;
+        dirX = (dirX > 0) ? 1.0 : -1.0;
+    }
 
-    mouseDeltaAccumulatorX += finalMouseDeltaX;
-    mouseDeltaAccumulatorY += finalMouseDeltaY;
+    double effectiveRange = 1.0 - radial_deadzone;
+    if (effectiveRange < 1e-6) effectiveRange = 1.0;
+
+    double x = (magnitude - radial_deadzone) / effectiveRange;
+    x = (std::max)(0.0, (std::min)(1.0, x));
+
+    double finalCurveValue = 0.0;
+    double accelBoundary = 1.0 - max_threshold;
+    accelBoundary = (std::max)(0.0, (std::min)(1.0, accelBoundary));
+
+    if (x <= accelBoundary) {
+        finalCurveValue = curve_slope * x + (1.0 - curve_slope) * std::pow(x, curve_exponent);
+    }
+    else {
+        double kneeValue = curve_slope * accelBoundary + (1.0 - curve_slope) * std::pow(accelBoundary, curve_exponent);
+        double rampWidth = 1.0 - accelBoundary;
+
+        if (rampWidth <= 1e-6) {
+            finalCurveValue = look_accel_multiplier;
+        }
+        else {
+            double rampProgress = (x - accelBoundary) / rampWidth;
+            finalCurveValue = kneeValue + (look_accel_multiplier - kneeValue) * rampProgress;
+        }
+    }
+
+    double finalSpeedX = sensitivity * (1.0 + horizontal_sensitivity) * safe_multiplier;
+    double finalSpeedY = sensitivity * (1.0 + vertical_sensitivity) * safe_multiplier;
+
+    double targetDeltaX = dirX * finalCurveValue * finalSpeedX;
+    double targetDeltaY = dirY * finalCurveValue * finalSpeedY;
+
+    if (std::isnan(targetDeltaX) || std::isnan(targetDeltaY)) {
+        mouseDeltaAccumulatorX = 0;
+        mouseDeltaAccumulatorY = 0;
+        return { 0, 0 };
+    }
+
+    mouseDeltaAccumulatorX += targetDeltaX;
+    mouseDeltaAccumulatorY += targetDeltaY;
 
     LONG integerDeltaX = static_cast<LONG>(mouseDeltaAccumulatorX);
     LONG integerDeltaY = static_cast<LONG>(mouseDeltaAccumulatorY);
@@ -86,7 +122,26 @@ bool IsTriggerPressed(BYTE triggerValue) {
 }
 
 void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
-    ButtonState& bs = buttonStates[buttonFlag];
+    if (buttonFlag == g_Fn1_ButtonID) {
+        g_Fn1_State = isCurrentlyPressed;
+        return;
+    }
+    if (buttonFlag == g_Fn2_ButtonID) {
+        g_Fn2_State = isCurrentlyPressed;
+        return;
+    }
+
+    if (isCurrentlyPressed && !g_ButtonLastState[buttonFlag]) {
+        if (g_Fn2_State) g_ButtonLayer[buttonFlag] = 200;
+        else if (g_Fn1_State) g_ButtonLayer[buttonFlag] = 100;
+        else g_ButtonLayer[buttonFlag] = 0;
+    }
+
+    g_ButtonLastState[buttonFlag] = isCurrentlyPressed;
+
+    UINT effectiveFlag = buttonFlag + g_ButtonLayer[buttonFlag];
+
+    ButtonState& bs = buttonStates[effectiveFlag];
 
     // On Press
     if (!bs.isPhysicallyPressed && isCurrentlyPressed) {

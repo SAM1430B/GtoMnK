@@ -203,6 +203,15 @@ namespace GtoMnK
 
             //TODO: is this ok? (might eat cpu)
             Sleep(drawingEnabled ? 12 : 500);
+
+            // Make the Pointer window on top of the game window.
+            tick = (tick + 1) % 200;
+
+            if (tick == 0)
+            {
+                HWND zOrderValue = createdWindowIsOwned ? HWND_TOP : HWND_TOPMOST;
+                SetWindowPos(pointerWindow, zOrderValue, 0, 0, 0, 0, SWP_NOREDRAW | SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+            }
         }
     }
 
