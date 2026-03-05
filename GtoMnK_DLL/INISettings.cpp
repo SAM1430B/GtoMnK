@@ -3,6 +3,7 @@
 #include "Logging.h"
 #include "InputState.h" 
 #include "Input.h"
+#include "GamepadState.h"
 
 extern HMODULE g_hModule;
 
@@ -85,6 +86,9 @@ std::string getShortenedPath_Manual(const std::string& fullPath)
 
     return "...\\" + shortened;
 }
+
+void ParseKey(const char* section, const char* key, const char* defaultVal, UINT baseId, int offset, const char* iniPath);
+void LoadButtonLayer(const char* section, int offset, bool isBaseLayer, const char* iniPath);
 
 void LoadIniSettings() {
 
@@ -187,71 +191,72 @@ void LoadIniSettings() {
     GetPrivateProfileStringA("StickToMouse", "Curve_Slope", "0.16", buffer, sizeof(buffer), iniPath.c_str()); curve_slope = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Curve_Exponent", "1.85", buffer, sizeof(buffer), iniPath.c_str()); curve_exponent = std::stof(buffer);
 
-    // [KeyMapping] Section
+    // [KeyMapping]
     g_EnableMouseDoubleClick = GetPrivateProfileIntA("KeyMapping", "EnableMouseDoubleClick", 0, iniPath.c_str()) == 1;
     GetPrivateProfileStringA("KeyMapping", "TriggerThreshold", "40", buffer, sizeof(buffer), iniPath.c_str()); g_TriggerThreshold = std::stof(buffer);
     GetPrivateProfileStringA("KeyMapping", "StickAsButtonDeadzone", "0.25", buffer, sizeof(buffer), iniPath.c_str()); stick_as_button_deadzone = std::stof(buffer);
+    
+    g_Fn1_ButtonID = -1; g_Fn2_ButtonID = -1;
 
-    GetPrivateProfileStringA("KeyMapping", "A", "13", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_A].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "B", "0", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_B].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "X", "42", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_X].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "Y", "0", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_Y].actions = Input::ParseActionString(buffer);
+    LoadButtonLayer("KeyMapping", 0, true, iniPath.c_str());
+    // [Fn1]
+    LoadButtonLayer("Fn1", 100, false, iniPath.c_str());
+    // [Fn2]
+    LoadButtonLayer("Fn2", 200, false, iniPath.c_str());
+
+}
+
+void ParseKey(const char* section, const char* key, const char* defaultVal, UINT baseId, int offset, const char* iniPath) {
+    char buffer[256];
+    GetPrivateProfileStringA(section, key, defaultVal, buffer, sizeof(buffer), iniPath);
+    std::string val = buffer;
+
+    // Check for Fn1 / Fn2 in the base layer only
+    if (offset == 0) {
+        if (val == "Fn1" || val == "fn1") { g_Fn1_ButtonID = baseId; return; }
+        if (val == "Fn2" || val == "fn2") { g_Fn2_ButtonID = baseId; return; }
+    }
+    buttonStates[baseId + offset].actions = Input::ParseActionString(val);
+}
+
+void LoadButtonLayer(const char* section, int offset, bool isBaseLayer, const char* iniPath) {
+	// Face Buttons
+    ParseKey(section, "A", isBaseLayer ? "13" : "0", CUSTOM_ID_A, offset, iniPath);
+    ParseKey(section, "B", isBaseLayer ? "0" : "0", CUSTOM_ID_B, offset, iniPath);
+    ParseKey(section, "X", isBaseLayer ? "42" : "0", CUSTOM_ID_X, offset, iniPath);
+    ParseKey(section, "Y", isBaseLayer ? "0" : "0", CUSTOM_ID_Y, offset, iniPath);
 
     // Triggers
-    GetPrivateProfileStringA("KeyMapping", "LT", "-2", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_LT].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "RT", "-1", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_RT].actions = Input::ParseActionString(buffer);
+    ParseKey(section, "LT", isBaseLayer ? "-2" : "0", CUSTOM_ID_LT, offset, iniPath);
+    ParseKey(section, "RT", isBaseLayer ? "-1" : "0", CUSTOM_ID_RT, offset, iniPath);
 
     // Shoulder Buttons
-    GetPrivateProfileStringA("KeyMapping", "RB", "0", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_RB].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "LB", "0", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_LB].actions = Input::ParseActionString(buffer);
+    ParseKey(section, "RB", isBaseLayer ? "0" : "0", CUSTOM_ID_RB, offset, iniPath);
+    ParseKey(section, "LB", isBaseLayer ? "0" : "0", CUSTOM_ID_LB, offset, iniPath);
 
     // D-Pad
-    GetPrivateProfileStringA("KeyMapping", "D_UP", "14", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_DPAD_UP].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "D_DOWN", "15", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_DPAD_DOWN].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "D_LEFT", "16", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_DPAD_LEFT].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "D_RIGHT", "17", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_DPAD_RIGHT].actions = Input::ParseActionString(buffer);
+    ParseKey(section, "D_UP", isBaseLayer ? "14" : "0", CUSTOM_ID_DPAD_UP, offset, iniPath);
+    ParseKey(section, "D_DOWN", isBaseLayer ? "15" : "0", CUSTOM_ID_DPAD_DOWN, offset, iniPath);
+    ParseKey(section, "D_LEFT", isBaseLayer ? "16" : "0", CUSTOM_ID_DPAD_LEFT, offset, iniPath);
+    ParseKey(section, "D_RIGHT", isBaseLayer ? "17" : "0", CUSTOM_ID_DPAD_RIGHT, offset, iniPath);
 
     // Start & Back
-    GetPrivateProfileStringA("KeyMapping", "Start", "1", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_START].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "Back", "3", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_BACK].actions = Input::ParseActionString(buffer);
+    ParseKey(section, "Start", isBaseLayer ? "1" : "0", CUSTOM_ID_START, offset, iniPath);
+    ParseKey(section, "Back", isBaseLayer ? "3" : "0", CUSTOM_ID_BACK, offset, iniPath);
 
     // Stick Buttons
-    GetPrivateProfileStringA("KeyMapping", "RSB", "0", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_RSB].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "LSB", "4", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_LSB].actions = Input::ParseActionString(buffer);
+    ParseKey(section, "RSB", isBaseLayer ? "0" : "0", CUSTOM_ID_RSB, offset, iniPath);
+    ParseKey(section, "LSB", isBaseLayer ? "4" : "0", CUSTOM_ID_LSB, offset, iniPath);
 
     // Left Stick
-    GetPrivateProfileStringA("KeyMapping", "LSU", "47", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_LSU].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "LSD", "43", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_LSD].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "LSL", "25", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_LSL].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "LSR", "28", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_LSR].actions = Input::ParseActionString(buffer);
+    ParseKey(section, "LSU", isBaseLayer ? "47" : "0", CUSTOM_ID_LSU, offset, iniPath);
+    ParseKey(section, "LSD", isBaseLayer ? "43" : "0", CUSTOM_ID_LSD, offset, iniPath);
+    ParseKey(section, "LSL", isBaseLayer ? "25" : "0", CUSTOM_ID_LSL, offset, iniPath);
+    ParseKey(section, "LSR", isBaseLayer ? "28" : "0", CUSTOM_ID_LSR, offset, iniPath);
 
     // Right Stick
-    GetPrivateProfileStringA("KeyMapping", "RSU", "0", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_RSU].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "RSD", "0", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_RSD].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "RSL", "0", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_RSL].actions = Input::ParseActionString(buffer);
-    GetPrivateProfileStringA("KeyMapping", "RSR", "0", buffer, sizeof(buffer), iniPath.c_str());
-    buttonStates[CUSTOM_ID_RSR].actions = Input::ParseActionString(buffer);
+    ParseKey(section, "RSU", isBaseLayer ? "0" : "0", CUSTOM_ID_RSU, offset, iniPath);
+    ParseKey(section, "RSD", isBaseLayer ? "0" : "0", CUSTOM_ID_RSD, offset, iniPath);
+    ParseKey(section, "RSL", isBaseLayer ? "0" : "0", CUSTOM_ID_RSL, offset, iniPath);
+    ParseKey(section, "RSR", isBaseLayer ? "0" : "0", CUSTOM_ID_RSR, offset, iniPath);
 }

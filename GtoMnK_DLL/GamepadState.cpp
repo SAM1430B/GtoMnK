@@ -7,16 +7,13 @@
 // For Controller Button States
 const size_t NO_ACTION = static_cast<size_t>(-1);
 
-POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
-    // Make sure the deadzone is not 0
-    double c = (radial_deadzone < 0.01) ? 0.01 : radial_deadzone;
-    const double s = axial_deadzone;
-    const double m = max_threshold;
-    const double b = curve_slope;
-    const double a = curve_exponent;
-    const double t = look_accel_multiplier;
+int g_Fn1_ButtonID = -1;
+int g_Fn2_ButtonID = -1;
+bool g_Fn1_State = false;
+bool g_Fn2_State = false;
 
-    double base_sensitivity = sensitivity;
+static int g_ButtonLayer[256] = { 0 };
+static bool g_ButtonLastState[256] = { false };
 
     double safe_multiplier = (sensitivity_multiplier <= 0.001) ? 1.0 : sensitivity_multiplier;
 
@@ -86,7 +83,26 @@ bool IsTriggerPressed(BYTE triggerValue) {
 }
 
 void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
-    ButtonState& bs = buttonStates[buttonFlag];
+    if (buttonFlag == g_Fn1_ButtonID) {
+        g_Fn1_State = isCurrentlyPressed;
+        return;
+    }
+    if (buttonFlag == g_Fn2_ButtonID) {
+        g_Fn2_State = isCurrentlyPressed;
+        return;
+    }
+
+    if (isCurrentlyPressed && !g_ButtonLastState[buttonFlag]) {
+        if (g_Fn2_State) g_ButtonLayer[buttonFlag] = 200;
+        else if (g_Fn1_State) g_ButtonLayer[buttonFlag] = 100;
+        else g_ButtonLayer[buttonFlag] = 0;
+    }
+
+    g_ButtonLastState[buttonFlag] = isCurrentlyPressed;
+
+    UINT effectiveFlag = buttonFlag + g_ButtonLayer[buttonFlag];
+
+    ButtonState& bs = buttonStates[effectiveFlag];
 
     // On Press
     if (!bs.isPhysicallyPressed && isCurrentlyPressed) {
