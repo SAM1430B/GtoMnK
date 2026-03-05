@@ -411,7 +411,7 @@ namespace GtoMnK {
         }
 
 		// For PostMessage method
-        void SendAction(int screenX, int screenY) {
+        void SendMouseMoveAbsolute(int screenX, int screenY) {
             if (g_InputMethod != InputMethod::PostMessage) return;
             if (!hwnd) return;
             WPARAM wParam = BuildWParam();
@@ -421,7 +421,7 @@ namespace GtoMnK {
         }
 
 		// For RawInput method
-        void SendActionDelta(int deltaX, int deltaY) {
+        void SendMouseMoveDelta(int deltaX, int deltaY) {
             if (g_InputMethod != InputMethod::RawInput) return;
 
             RAWINPUT ri = {};

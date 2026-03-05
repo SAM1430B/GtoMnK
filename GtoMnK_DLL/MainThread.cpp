@@ -313,12 +313,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                         if (currentTime - lastMoveTime > MOVE_UPDATE_INTERVAL) {
                             lastMoveTime = currentTime;
                             if (g_InputMethod == InputMethod::RawInput) {
-                                Input::SendActionDelta(delta.x, delta.y);
+                                Input::SendMouseMoveDelta(delta.x, delta.y);
                             }
                             else {
                                 POINT screenPos = { (LONG)Mouse::Xf, (LONG)Mouse::Yf };
                                 ClientToScreen(hwnd, &screenPos);
-                                Input::SendAction(screenPos.x, screenPos.y);
+                                Input::SendMouseMoveAbsolute(screenPos.x, screenPos.y);
                             }
                         }
                     }
