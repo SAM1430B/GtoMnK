@@ -15,6 +15,7 @@
 */
 
 #include "dinput8.h"
+#include "..\INISettings\INISettings.h"
 
 HRESULT m_IDirectInput8A::QueryInterface(REFIID riid, LPVOID * ppvObj)
 {
@@ -68,7 +69,51 @@ HRESULT m_IDirectInput8A::CreateDevice(REFGUID rguid, LPDIRECTINPUTDEVICE8A *lpl
 
 HRESULT m_IDirectInput8A::EnumDevices(DWORD dwDevType, LPDIENUMDEVICESCALLBACKA lpCallback, LPVOID pvRef, DWORD dwFlags)
 {
-	return ProxyInterface->EnumDevices(dwDevType, lpCallback, pvRef, dwFlags);
+	if (!g_NoJoyEnabled)
+	{
+		return ProxyInterface->EnumDevices(dwDevType, lpCallback, pvRef, dwFlags);
+	}
+
+	void* retAddr = _ReturnAddress();
+	HMODULE hCaller = NULL;
+	GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCSTR)retAddr, &hCaller);
+
+#ifdef _WIN64
+	HMODULE hGtoMnK = GetModuleHandleA("GtoMnK64.dll");
+#else
+	HMODULE hGtoMnK = GetModuleHandleA("GtoMnK32.dll");
+#endif
+
+	// Pass-through without filtering if GtoMnK is the caller, or if no callback is provided
+	if ((hCaller != NULL && hCaller == hGtoMnK) || !lpCallback)
+	{
+		return ProxyInterface->EnumDevices(dwDevType, lpCallback, pvRef, dwFlags);
+	}
+
+	// Filter devices for the Game
+	struct EnumDeviceContextA
+	{
+		LPVOID pvRef;
+		LPDIENUMDEVICESCALLBACKA lpCallback;
+
+		static BOOL CALLBACK EnumDeviceCallback(LPCDIDEVICEINSTANCEA lpddi, LPVOID pvRef)
+		{
+			EnumDeviceContextA* self = (EnumDeviceContextA*)pvRef;
+
+			auto type = lpddi->dwDevType & 0x1F;
+			if (type == DI8DEVTYPE_MOUSE || type == DI8DEVTYPE_KEYBOARD)
+			{
+				return self->lpCallback(lpddi, self->pvRef);
+			}
+
+			return DIENUM_CONTINUE; // Hide joystick/gamepad
+		}
+	} CallbackContext;
+
+	CallbackContext.pvRef = pvRef;
+	CallbackContext.lpCallback = lpCallback;
+
+	return ProxyInterface->EnumDevices(dwDevType, EnumDeviceContextA::EnumDeviceCallback, &CallbackContext, dwFlags);
 }
 
 HRESULT m_IDirectInput8A::GetDeviceStatus(REFGUID rguidInstance)

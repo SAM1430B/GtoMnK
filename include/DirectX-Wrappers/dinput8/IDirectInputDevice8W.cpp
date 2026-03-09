@@ -15,6 +15,7 @@
 */
 
 #include "dinput8.h"
+#include "..\INISettings\INISettings.h"
 
 HRESULT m_IDirectInputDevice8W::QueryInterface(REFIID riid, LPVOID* ppvObj)
 {
@@ -106,6 +107,10 @@ HRESULT m_IDirectInputDevice8W::SetEventNotification(HANDLE hEvent)
 
 HRESULT m_IDirectInputDevice8W::SetCooperativeLevel(HWND hwnd, DWORD dwFlags)
 {
+	if (g_CooperativeLevelUnlockerEnabled)
+	{
+		return DI_OK;
+	}
 	return ProxyInterface->SetCooperativeLevel(hwnd, dwFlags);
 }
 

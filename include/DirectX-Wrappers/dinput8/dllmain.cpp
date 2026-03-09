@@ -16,6 +16,7 @@
 
 #include "dinput8.h"
 #include "ChainLoad.h"
+#include "..\INISettings\INISettings.h"
 
 std::ofstream Log::LOG("dinput8.log");
 AddressLookupTable<void> ProxyAddressLookupTable = AddressLookupTable<void>();
@@ -34,6 +35,9 @@ bool WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 	switch (dwReason)
 	{
 	case DLL_PROCESS_ATTACH:
+
+		INISettings::Load(hModule);
+
 		// Load dll
 		char path[MAX_PATH];
 		if (GetFileAttributesA("dinput8.Chained.dll") != INVALID_FILE_ATTRIBUTES)
