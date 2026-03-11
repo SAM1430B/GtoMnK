@@ -9,6 +9,9 @@ struct ButtonState {
     bool pressActionFired = false;
     std::vector<Action> actions;
     std::string heldActionString = "0";
+
+    ULONGLONG pendingReleaseTime = 0;
+    std::string pendingReleaseAction = "";
 };
 
 extern HMODULE g_hModule;

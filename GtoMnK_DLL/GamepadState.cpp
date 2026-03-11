@@ -141,14 +141,20 @@ void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
     g_ButtonLastState[buttonFlag] = isCurrentlyPressed;
 
     UINT effectiveFlag = buttonFlag + g_ButtonLayer[buttonFlag];
-
     ButtonState& bs = buttonStates[effectiveFlag];
+
+    if (!bs.pendingReleaseAction.empty()) {
+        if (GetTickCount64() >= bs.pendingReleaseTime) {
+            Input::SendAction(bs.pendingReleaseAction, false);
+            bs.pendingReleaseAction.clear();
+        }
+    }
 
     // On Press
     if (!bs.isPhysicallyPressed && isCurrentlyPressed) {
         bs.isPhysicallyPressed = true;
         bs.pressTime = GetTickCount64();
-        bs.activeActionIndex = NO_ACTION;
+        bs.activeActionIndex = static_cast<size_t>(-1);
         bs.pressActionFired = false;
         bs.heldActionString = "0";
 
@@ -168,13 +174,13 @@ void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
     // While Held
     if (bs.isPhysicallyPressed && isCurrentlyPressed) {
         ULONGLONG holdTime = GetTickCount64() - bs.pressTime;
-        size_t newActionIndex = NO_ACTION;
+        size_t newActionIndex = static_cast<size_t>(-1);
         for (size_t i = 0; i < bs.actions.size(); ++i) {
             if (holdTime >= bs.actions[i].holdDurationMs) {
                 newActionIndex = i;
             }
         }
-        if (newActionIndex != NO_ACTION && newActionIndex != bs.activeActionIndex) {
+        if (newActionIndex != static_cast<size_t>(-1) && newActionIndex != bs.activeActionIndex) {
             if (!bs.heldActionString.empty() && bs.heldActionString != "0") {
                 Input::SendAction(bs.heldActionString, false);
             }
@@ -195,7 +201,7 @@ void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
     if (bs.isPhysicallyPressed && !isCurrentlyPressed) {
         bs.isPhysicallyPressed = false;
 
-        size_t finalActionIndex = NO_ACTION;
+        size_t finalActionIndex = static_cast<size_t>(-1);
         ULONGLONG finalHoldTime = GetTickCount64() - bs.pressTime;
         for (size_t i = 0; i < bs.actions.size(); ++i) {
             if (finalHoldTime >= bs.actions[i].holdDurationMs) {
@@ -203,19 +209,19 @@ void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
             }
         }
 
-        if (finalActionIndex != NO_ACTION && bs.actions[finalActionIndex].onRelease) {
+        if (finalActionIndex != static_cast<size_t>(-1) && bs.actions[finalActionIndex].onRelease) {
             const Action& finalAction = bs.actions[finalActionIndex];
 
             Input::SendAction(finalAction.actionString, true);
-            Sleep(20);
-            Input::SendAction(finalAction.actionString, false);
+            bs.pendingReleaseAction = finalAction.actionString;
+            bs.pendingReleaseTime = GetTickCount64() + 20;
         }
 
         if (!bs.heldActionString.empty() && bs.heldActionString != "0") {
             Input::SendAction(bs.heldActionString, false);
         }
 
-        bs.activeActionIndex = NO_ACTION;
+        bs.activeActionIndex = static_cast<size_t>(-1);
         bs.pressActionFired = false;
         bs.heldActionString = "0";
         return;
