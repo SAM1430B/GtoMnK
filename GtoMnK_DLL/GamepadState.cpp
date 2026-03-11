@@ -3,7 +3,7 @@
 #include "INISettings.h"
 #include "InputState.h"
 #include "Input.h"
-#include <map>
+#include <unordered_map>
 
 // For Controller Button States
 const size_t NO_ACTION = static_cast<size_t>(-1);
@@ -13,8 +13,8 @@ int g_Fn2_ButtonID = -1;
 bool g_Fn1_State = false;
 bool g_Fn2_State = false;
 
-static std::map<UINT, int> g_ButtonLayer;
-static std::map<UINT, bool> g_ButtonLastState;
+static std::unordered_map<UINT, int> g_ButtonLayer;
+static std::unordered_map<UINT, bool> g_ButtonLastState;
 
 POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
     const double smoothing_factor = 0.35;
