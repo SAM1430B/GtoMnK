@@ -4,7 +4,7 @@ It works by making your controller pretend to be a mouse and keyboard. All you n
 
 ### Usage:
 GtoMnK reads its configuration settings from the [`GtoMnK.ini`](https://github.com/SAM1430B/GtoMnK/blob/master/GtoMnK_DLL/INI/GtoMnK.ini) file and maps controller buttons using [key codes](https://github.com/SAM1430B/GtoMnK/blob/master/GtoMnK_DLL/Documents/GtoMnK_Keys.txt).
-So you need to copy `GtoMnK32.dll`, `EasyHook32.dll`, `GtoMnK.ini` and one of the `Loader.x32` files to the game executable. And do same process for x64 version.
+So you need to copy `GtoMnK32.dll`, `GtoMnK.ini` and one of the `Loader.x32` files to the game executable. And do same process for x64 version.
 
 > [!WARNING]
 > Games that have Anti-Cheat are more likely to detect the DLL as a cheat tool.
