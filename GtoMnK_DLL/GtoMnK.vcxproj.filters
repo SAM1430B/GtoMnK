@@ -55,6 +55,9 @@
     <ClCompile Include="XInput_Gamepad.cpp">
       <Filter>Files\Gamepad\XInput_Gamepad</Filter>
     </ClCompile>
+    <ClCompile Include="GtoMnKMutex.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -129,6 +132,9 @@
     <ClInclude Include="XInput_Gamepad.h">
       <Filter>Files\Gamepad\XInput_Gamepad</Filter>
     </ClInclude>
+    <ClInclude Include="GtoMnKMutex.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Files">
@@ -157,6 +163,9 @@
     </Filter>
     <Filter Include="Files\Gamepad\XInput_Gamepad">
       <UniqueIdentifier>{efcdc56e-a776-45a4-a33c-dde643b10761}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Misc">
+      <UniqueIdentifier>{1b8f79fd-f31a-4c1e-a2de-5b0fb3dc763b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

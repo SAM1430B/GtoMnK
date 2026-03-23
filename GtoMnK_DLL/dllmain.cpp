@@ -9,6 +9,7 @@
 #include "RawInput.h"
 #include <easyhook.h>
 #include "MainThread.h"
+#include "GtoMnKMutex.h"
 
 using namespace GtoMnK;
 
@@ -30,6 +31,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
     switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH: {
+
+        if (!GtoMnK::CreateSingleInstanceMutex()) {
+            return FALSE;
+        }
+
         g_hModule = hModule;
         DisableThreadLibraryCalls(hModule);
 
@@ -65,6 +71,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         }
 
         SHUTDOWN_LOGGER();
+
+        GtoMnK::ReleaseSingleInstanceMutex();
+
         break;
     }
     }
