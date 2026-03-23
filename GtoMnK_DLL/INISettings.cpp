@@ -17,7 +17,7 @@ int controllerID = 0;
 GamepadMethod g_GamepadMethod = GamepadMethod::SDL2;
 float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, sensitivity_multiplier, horizontal_sensitivity, vertical_sensitivity, look_accel_multiplier;
 float stick_as_button_deadzone;
-float g_TriggerThreshold = 175;
+float g_TriggerThreshold = 40;
 
 // For Initialization and Thread state
 int startUpDelay = 0;
@@ -182,12 +182,12 @@ void LoadIniSettings() {
     righthanded = GetPrivateProfileIntA("StickToMouse", "Righthanded", 2, iniPath.c_str());
     GetPrivateProfileStringA("StickToMouse", "Sensitivity", "5.00", buffer, sizeof(buffer), iniPath.c_str()); sensitivity = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Sensitivity_Multiplier", "2.40", buffer, sizeof(buffer), iniPath.c_str()); sensitivity_multiplier = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Horizontal_Sensitivity", "0.0", buffer, sizeof(buffer), iniPath.c_str()); horizontal_sensitivity = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Vertical_Sensitivity", "0.58", buffer, sizeof(buffer), iniPath.c_str()); vertical_sensitivity = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Horizontal_Sensitivity", "0.00", buffer, sizeof(buffer), iniPath.c_str()); horizontal_sensitivity = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Vertical_Sensitivity", "0.00", buffer, sizeof(buffer), iniPath.c_str()); vertical_sensitivity = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Max_Threshold", "0.045", buffer, sizeof(buffer), iniPath.c_str()); max_threshold = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Radial_Deadzone", "0.1", buffer, sizeof(buffer), iniPath.c_str()); radial_deadzone = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Radial_Deadzone", "0.15", buffer, sizeof(buffer), iniPath.c_str()); radial_deadzone = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Axial_Deadzone", "0.0", buffer, sizeof(buffer), iniPath.c_str()); axial_deadzone = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Look_Accel_Multiplier", "1.40", buffer, sizeof(buffer), iniPath.c_str()); look_accel_multiplier = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Look_Accel_Multiplier", "1.15", buffer, sizeof(buffer), iniPath.c_str()); look_accel_multiplier = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Curve_Slope", "0.16", buffer, sizeof(buffer), iniPath.c_str()); curve_slope = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Curve_Exponent", "1.85", buffer, sizeof(buffer), iniPath.c_str()); curve_exponent = std::stof(buffer);
 

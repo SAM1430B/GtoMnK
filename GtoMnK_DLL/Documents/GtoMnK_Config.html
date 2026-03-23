@@ -10,6 +10,7 @@
             --text-color: #e0e0e0;
             --accent: #007acc;
             --danger: #d32f2f;
+            --success: #4CAF50;
             --border: #333;
             --active: rgba(0, 175, 80, 0.8);
             --recording: rgba(255, 152, 0, 0.8);
@@ -62,6 +63,7 @@
         .mode-toolbar {
             display: flex;
             justify-content: center;
+            align-items: center;
             gap: 15px;
             margin-bottom: 20px;
             background: #202020;
@@ -90,12 +92,26 @@
                 color: white;
             }
 
-            .mode-option input[type="radio"] {
+            .mode-option input[type="radio"],
+            .mode-option input[type="checkbox"] {
                 accent-color: var(--accent);
                 cursor: pointer;
                 width: 16px;
                 height: 16px;
             }
+
+        .layer-toolbar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            background: #1a1a1a;
+            padding: 8px 20px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            z-index: 50;
+        }
 
         .image-container {
             position: relative;
@@ -173,6 +189,38 @@
             border-radius: 50%;
         }
 
+        #modifier-banner {
+            display: none;
+            background-color: #ff9800;
+            color: #111;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            width: 80%;
+            animation: fadeIn 0.3s;
+            z-index: 60;
+        }
+
+            #modifier-banner button {
+                background-color: #d32f2f;
+                color: white;
+                border: none;
+                padding: 5px 15px;
+                margin-top: 10px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-weight: bold;
+                width: auto;
+                font-size: 14px;
+            }
+
+                #modifier-banner button:hover {
+                    background-color: #b71c1c;
+                }
+
         .setting-row {
             display: flex;
             justify-content: space-between;
@@ -200,13 +248,6 @@
             padding: 5px;
             border-radius: 4px;
             width: 100px;
-        }
-
-        input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            accent-color: var(--accent);
-            cursor: pointer;
         }
 
         h2 {
@@ -292,16 +333,25 @@
 
             button.download-btn {
                 background-color: var(--accent);
-                flex: 3;
+                flex: 2;
             }
 
                 button.download-btn:hover {
                     background-color: #005fa3;
                 }
 
+            button.upload-btn {
+                background-color: var(--success);
+                flex: 1;
+            }
+
+                button.upload-btn:hover {
+                    background-color: #388E3C;
+                }
+
             button.reset-btn {
                 background-color: var(--danger);
-                flex: 1;
+                flex: 0 0 120px;
             }
 
                 button.reset-btn:hover {
@@ -348,6 +398,11 @@
             <h2>Settings</h2>
 
             <div class="setting-row">
+                <label>Game Name</label>
+                <input type="text" id="GameName" title="Name of the game for this config" value="" style="width: 150px;">
+            </div>
+
+            <div class="setting-row">
                 <label>Input Method</label>
                 <select id="InputMethod" title="PostMessage (Recommended)&#10;RawInput (Compatible with most of the old games)">
                     <option value="0">PostMessage</option>
@@ -370,37 +425,25 @@
             <div id="sens-options" class="hidden-content">
                 <div class="note-row"><p><strong>NOTE:</strong> It's recommended to set the lowest sensitivity in the game for the smoothest mouse movement.</p></div>
                 <div class="setting-row"><label title="Sensitivity Multiplier. 1.0 uses global Sensitivity.">Sensitivity Multiplier</label><input type="text" id="Sensitivity_Multiplier" title="Further scales the base sensitivity.&#10;Higher values make the cursor move faster." value="2.40"></div>
-                <div class="setting-row"><label title="Horizontal Sensitivity. 0.0 uses global Sensitivity.">Horiz. Sens.</label><input type="text" id="Horizontal_Sensitivity" title="Horizontal Sensitivity.&#10;Range: -1.0 (-100%) to 1.0 (100%)." value="0.0"></div>
-                <div class="setting-row"><label title="Vertical Sensitivity. 0.0 uses global Sensitivity.">Vert. Sens.</label><input type="text" id="Vertical_Sensitivity" title="Vertical Sensitivity.&#10;Range: -1.0 (-100%) to 1.0 (100%)." value="-0.58"></div>
+                <div class="setting-row"><label title="Horizontal Sensitivity. 0.0 uses global Sensitivity.">Horiz. Sens.</label><input type="text" id="Horizontal_Sensitivity" title="Horizontal Sensitivity.&#10;Range: -1.0 (-100%) to 1.0 (100%)." value="0.00"></div>
+                <div class="setting-row"><label title="Vertical Sensitivity. 0.0 uses global Sensitivity.">Vert. Sens.</label><input type="text" id="Vertical_Sensitivity" title="Vertical Sensitivity.&#10;Range: -1.0 (-100%) to 1.0 (100%)." value="0.00"></div>
                 <div class="setting-row"><label>Max Threshold</label><input type="text" id="Max_Threshold" title="An outer deadzone. Allows the mouse to reach max speed before the stick is fully pushed.&#10;Range: 0.0 to 0.15 (15%)." value="0.045"></div>
-                <div class="setting-row"><label title="Look Accel Multiplier. 1.0 uses global Sensitivity.">Look_Accel_Multiplier.</label><input type="text" id="Look_Accel_Multiplier" title="Boosts speed when stick is near the edge.&#10;Value = 1.0: No boost. Value > 1.0: Boosts speed." value="1.40"></div>
+                <div class="setting-row"><label title="Look Accel Multiplier. 1.0 uses global Sensitivity.">Look_Accel_Multiplier.</label><input type="text" id="Look_Accel_Multiplier" title="Boosts speed when stick is near the edge.&#10;Value = 1.0: No boost. Value > 1.0: Boosts speed." value="1.15"></div>
                 <div class="setting-row"><label>Curve Slope</label><input type="text" id="Curve_Slope" title="The initial, linear part of the movement..&#10;Higher value = more linear." value="0.16"></div>
                 <div class="setting-row"><label>Curve Exponent</label><input type="text" id="Curve_Exponent" title="How sharply the speed ramps up.&#10;Higher value = more acceleration." value="1.85"></div>
-
-                <div style="margin-top: 15px; font-size: 0.9em; text-align: center;">
-                    <a href="https://www.desmos.com/calculator/zqyusvabap" target="_blank" style="color: var(--accent); text-decoration: none; font-weight: bold;">
-                        Visualize the DeadZone and Response Curve ↗
-                    </a>
-                </div>
             </div>
 
             <div class="setting-row">
                 <label>Radial Deadzone</label>
                 <div class="input-group">
                     <div class="arrow-btn" onclick="toggleSection(this, 'deadzone-options')" title="Advanced Deadzone Options">▼</div>
-                    <input type="text" id="Radial_Deadzone" title="The circular deadzone with no guiding.&#10;Range: 0.0 to 1.0 (100%)." value="0.1">
+                    <input type="text" id="Radial_Deadzone" title="The circular deadzone with no guiding.&#10;Range: 0.0 to 1.0 (100%)." value="0.15">
                 </div>
             </div>
             <div id="deadzone-options" class="hidden-content">
                 <div class="setting-row"><label>Axial Deadzone</label><input type="text" id="Axial_Deadzone" title="The Square-shaped deadzone with cardinal guiding.&#10;Range: 0.0 to 1.0 (100%)." value="0.0"></div>
                 <div class="setting-row"><label title="Deadzone for using sticks as digital buttons">StickAsBtn Deadzone</label><input type="text" id="StickAsButtonDeadzone" title="Thumbstick As Button Deadzone.&#10;Range: 0.0 to 1.0 (100%)." value="0.25"></div>
                 <div class="setting-row"><label title="0-255 Threshold for triggers">Trigger Threshold</label><input type="text" id="TriggerThreshold" title="Range: 0 (hair trigger) to 255 (must be pulled all the way)." value="40"></div>
-
-                <div style="margin-top: 15px; font-size: 0.9em; text-align: center;">
-                    <a href="https://www.desmos.com/calculator/zqyusvabap" target="_blank" style="color: var(--accent); text-decoration: none; font-weight: bold;">
-                        Visualize the DeadZone and Response Curve ↗
-                    </a>
-                </div>
             </div>
 
             <div class="setting-row">
@@ -439,15 +482,41 @@
         </div>
 
         <div class="controller-wrapper">
+
+            <div id="modifier-banner">
+                Select a button on the controller below to assign as the <span id="pending-mod-name" style="color: white; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;"></span> modifier.
+                <br>
+                <button onclick="cancelModifier()">Cancel</button>
+            </div>
+
+            <div class="layer-toolbar">
+                <label class="mode-option" style="font-weight: bold; color: white;">
+                    <input type="radio" name="layerSwitch" value="Basic" checked onchange="switchLayer('Basic')"> Basic
+                </label>
+                <div style="width: 1px; height: 16px; background: #555; margin: 0 5px;"></div>
+                <label class="mode-option" style="font-weight: bold; color: white;">
+                    <input type="radio" name="layerSwitch" value="Fn1" onchange="switchLayer('Fn1')"> Fn1
+                </label>
+                <div style="width: 1px; height: 16px; background: #555; margin: 0 5px;"></div>
+                <label class="mode-option" style="font-weight: bold; color: white;">
+                    <input type="radio" name="layerSwitch" value="Fn2" onchange="switchLayer('Fn2')"> Fn2
+                </label>
+            </div>
+
             <div class="mode-toolbar">
-                <label class="mode-option" title="Standard single key binding">
-                    <input type="radio" name="bindMode" value="0" checked> Normal
+                <label class="mode-option" title="Standard single action binding">
+                    <input type="radio" name="bindMode" value="0" checked onchange="updateBindUI()"> Normal
                 </label>
-                <label class="mode-option" title="1st Key: On Release | 2nd Key: On Hold">
-                    <input type="radio" name="bindMode" value="1"> Release / Hold
+                <label class="mode-option" title="1st Action: On Release | 2nd Action: On Hold">
+                    <input type="radio" name="bindMode" value="1" onchange="updateBindUI()"> Release / Hold
                 </label>
-                <label class="mode-option" title="Both keys pressed simultaneously">
-                    <input type="radio" name="bindMode" value="2"> Compound
+                <div style="width: 1px; height: 20px; background: #555; margin: 0 5px;"></div>
+
+                <label class="mode-option" id="lblComp1" title="Require multiple keys">
+                    <input type="checkbox" id="useCompound1"> <span id="txtComp1">+ Compound</span>
+                </label>
+                <label class="mode-option" id="lblComp2" title="Require multiple keys for Hold" style="display: none;">
+                    <input type="checkbox" id="useCompound2"> <span>+ Comp. Hold</span>
                 </label>
             </div>
 
@@ -460,7 +529,9 @@
     </div>
 
     <div class="button-row">
+        <input type="file" id="ini-upload" accept=".ini" style="display: none;" onchange="handleFileUpload(event)">
         <button class="download-btn" onclick="generateINI()">Download GtoMnK.ini</button>
+        <button class="upload-btn" onclick="document.getElementById('ini-upload').click()">Import INI</button>
         <button class="reset-btn" onclick="resetToDefaults()">Reset</button>
     </div>
 
@@ -508,7 +579,7 @@
         const xinputButtons = [
             { id: "A", idx: 0, val: "13" }, { id: "B", idx: 1, val: "0" },
             { id: "X", idx: 2, val: "42" }, { id: "Y", idx: 3, val: "0" },
-            { id: "LB", idx: 4, val: "0" }, { id: "RB", idx: 5, val: "0" },
+            { id: "LB", idx: 4, val: "Fn2" }, { id: "RB", idx: 5, val: "Fn1" },
             { id: "LT", idx: 6, val: "-2" }, { id: "RT", idx: 7, val: "-1" },
             { id: "Back", idx: 8, val: "3" }, { id: "Start", idx: 9, val: "1" },
             { id: "LSB", idx: 10, val: "4" }, { id: "RSB", idx: 11, val: "0" },
@@ -572,13 +643,93 @@
             "\\": "Backslash", "`": "Backquote"
         };
 
+        let activeLayer = 'Basic';
+        let pendingModifier = null;
         let currentRecordingId = null;
         let previousValue = null;
         let previousLabel = null;
         let gamepadIndex = null;
 
         let recordingStep = 0;
-        let firstKeyCaptured = null;
+        let capturedKeys = [];
+        let recordingPrompts = [];
+
+        // LAYER SWITCHER
+        function switchLayer(layer) {
+            if (currentRecordingId) finishRecording(document.getElementById(`btn-${currentRecordingId}`));
+            cancelModifier();
+
+            if (layer === 'Fn1' || layer === 'Fn2') {
+                let hasModifier = false;
+                document.querySelectorAll('.btn-overlay').forEach(el => {
+                    if (el.dataset.valBasic === layer) hasModifier = true;
+                });
+
+                if (!hasModifier) {
+                    pendingModifier = layer;
+                    document.getElementById('pending-mod-name').innerText = layer;
+                    document.getElementById('modifier-banner').style.display = 'block';
+
+                    document.querySelector('input[name="layerSwitch"][value="Basic"]').checked = true;
+                    activeLayer = 'Basic';
+                    updateButtonDisplays('Basic');
+                    updateUIState();
+                    return;
+                }
+            }
+
+            activeLayer = layer;
+            updateButtonDisplays(layer);
+            updateUIState();
+        }
+
+        function updateButtonDisplays(layer) {
+            document.querySelectorAll('.btn-overlay').forEach(el => {
+                let val, txt;
+                if (layer === 'Basic') { val = el.dataset.valBasic; txt = el.dataset.txtBasic; }
+                else if (layer === 'Fn1') { val = el.dataset.valFn1; txt = el.dataset.txtFn1; }
+                else if (layer === 'Fn2') { val = el.dataset.valFn2; txt = el.dataset.txtFn2; }
+
+                el.dataset.value = val;
+                el.innerText = txt;
+                el.title = txt;
+            });
+        }
+
+        function cancelModifier() {
+            pendingModifier = null;
+            document.getElementById('modifier-banner').style.display = 'none';
+        }
+
+        function assignModifier(btnId, modifier) {
+            const el = document.getElementById(`btn-${btnId}`);
+
+            document.querySelectorAll('.btn-overlay').forEach(otherEl => {
+                if (otherEl.dataset.valBasic === modifier) {
+                    otherEl.dataset.valBasic = "0";
+                    otherEl.dataset.txtBasic = "None";
+                    if (activeLayer === 'Basic') {
+                        otherEl.dataset.value = "0";
+                        otherEl.innerText = "None";
+                    }
+                }
+            });
+
+            el.dataset.valBasic = modifier;
+            el.dataset.txtBasic = modifier;
+
+            if (activeLayer === 'Basic') {
+                el.dataset.value = modifier;
+                el.innerText = modifier;
+                el.title = modifier;
+            }
+
+            const targetLayer = pendingModifier;
+            cancelModifier();
+
+            document.querySelector(`input[name="layerSwitch"][value="${targetLayer}"]`).checked = true;
+            switchLayer(targetLayer);
+        }
 
         //RENDER BUTTONS
         const container = document.getElementById('overlay-container');
@@ -590,7 +741,6 @@
             div.className = `btn-overlay shape-${pos.s}`;
             div.id = `btn-${btn.id}`;
             div.dataset.idx = btn.idx;
-            div.dataset.value = btn.val;
 
             div.style.top = pos.t + "%";
             div.style.left = pos.l + "%";
@@ -598,14 +748,35 @@
             div.style.height = pos.h + "%";
 
             const displayLabel = (btn.val == "0") ? "None" : getLabel(btn.val);
-            div.innerText = displayLabel;
-            div.title = btn.id;
+            div.dataset.valBasic = btn.val;
+            div.dataset.txtBasic = displayLabel;
+
+            let fnDefault = "0";
+            if (btn.id === 'LSU') fnDefault = "47";
+            if (btn.id === 'LSD') fnDefault = "43";
+            if (btn.id === 'LSL') fnDefault = "25";
+            if (btn.id === 'LSR') fnDefault = "28";
+
+            div.dataset.valFn1 = fnDefault;
+            div.dataset.txtFn1 = (fnDefault == "0") ? "None" : getLabel(fnDefault);
+
+            div.dataset.valFn2 = fnDefault;
+            div.dataset.txtFn2 = (fnDefault == "0") ? "None" : getLabel(fnDefault);
+
+            div.dataset.value = div.dataset.valBasic;
+            div.innerText = div.dataset.txtBasic;
+            div.title = div.dataset.txtBasic;
 
             // Left Click to Record
             div.onclick = (e) => {
                 if (div.classList.contains('disabled')) return;
                 e.stopPropagation();
-                startRecording(btn.id);
+
+                if (pendingModifier) {
+                    assignModifier(btn.id, pendingModifier);
+                } else {
+                    startRecording(btn.id);
+                }
             };
 
             // Middle Click to Flash Red and Reset
@@ -617,10 +788,19 @@
                     e.preventDefault();
                     e.stopPropagation();
 
+                    if (pendingModifier) return;
+
                     div.classList.add('flash-red');
                     setTimeout(() => { div.classList.remove('flash-red'); }, 200);
+
                     div.dataset.value = "0";
                     div.innerText = "None";
+                    div.title = "None";
+
+                    if (activeLayer === 'Basic') { div.dataset.valBasic = "0"; div.dataset.txtBasic = "None"; }
+                    else if (activeLayer === 'Fn1') { div.dataset.valFn1 = "0"; div.dataset.txtFn1 = "None"; }
+                    else if (activeLayer === 'Fn2') { div.dataset.valFn2 = "0"; div.dataset.txtFn2 = "None"; }
+
                     if (currentRecordingId === btn.id) {
                         finishRecording(div);
                     }
@@ -631,6 +811,21 @@
         });
 
         // UI STATE LOGIC
+        function updateBindUI() {
+            const mode = document.querySelector('input[name="bindMode"]:checked').value;
+            const lbl1 = document.getElementById('lblComp1');
+            const txt1 = document.getElementById('txtComp1');
+            const lbl2 = document.getElementById('lblComp2');
+
+            if (mode === "0") {
+                txt1.innerText = "+ Compound";
+                lbl2.style.display = "none";
+            } else {
+                txt1.innerText = "+ Comp. Release";
+                lbl2.style.display = "flex";
+            }
+        }
+
         function updateUIState() {
             const mode = document.getElementById('Mode').value;
             const stickSelect = document.getElementById('Righthanded');
@@ -659,16 +854,22 @@
                     });
                 }
             }
-        }
 
-        // Call on load
-        updateUIState();
+            if (activeLayer === 'Fn1' || activeLayer === 'Fn2') {
+                document.querySelectorAll('.btn-overlay').forEach(el => {
+                    if (el.dataset.valBasic === activeLayer) {
+                        el.classList.add('disabled');
+                        el.innerText = `[${activeLayer}]`; // Add a clear visual label indicating it's the modifier
+                        el.title = `This button acts as the ${activeLayer} trigger.`;
+                    }
+                });
+            }
+        }
 
         function startRecording(btnId) {
             const el = document.getElementById(`btn-${btnId}`);
             if (el.classList.contains('disabled')) return;
 
-            // PRE-FILL INPUT WITH A DOT TO ENABLE BACKSPACE DETECTION ON ANDROID
             const hiddenInput = document.getElementById('virtual-key-input');
             const rect = el.getBoundingClientRect();
             const scrollTop = window.scrollY || document.documentElement.scrollTop;
@@ -696,17 +897,28 @@
             previousLabel = el.innerText;
 
             recordingStep = 0;
-            firstKeyCaptured = null;
+            capturedKeys = [];
+            recordingPrompts = [];
 
             document.querySelectorAll('.btn-overlay').forEach(e => e.classList.remove('recording'));
             el.classList.add('recording');
 
             const mode = document.querySelector('input[name="bindMode"]:checked').value;
+            const comp1 = document.getElementById('useCompound1').checked;
+            const comp2 = document.getElementById('useCompound2').checked;
+
             if (mode === "0") {
-                el.innerText = "?";
+                if (comp1) recordingPrompts.push("Key 1?", "Key 2?");
+                else recordingPrompts.push("?");
             } else {
-                el.innerText = "Key 1?";
+                if (comp1) recordingPrompts.push("Rel Key 1?", "Rel Key 2?");
+                else recordingPrompts.push("Rel Key?");
+
+                if (comp2) recordingPrompts.push("Hold Key 1?", "Hold Key 2?");
+                else recordingPrompts.push("Hold Key?");
             }
+
+            el.innerText = recordingPrompts[0];
         }
 
         function getCodeFromChar(char) {
@@ -720,49 +932,73 @@
         }
 
         function setMapping(code) {
-            if (!currentRecordingId) return;
+            if (!currentRecordingId || code === 0) return;
+
             const el = document.getElementById(`btn-${currentRecordingId}`);
-            const mode = document.querySelector('input[name="bindMode"]:checked').value;
 
-            if (mode === "0") {
-                el.dataset.value = code;
-                if (code == 0) el.innerText = "None";
-                else el.innerText = getLabel(code);
+            capturedKeys.push(code);
+            recordingStep++;
+
+            if (recordingStep < recordingPrompts.length) {
+                el.style.backgroundColor = "rgba(255, 255, 0, 0.5)";
+                setTimeout(() => el.style.backgroundColor = "", 150);
+
+                el.innerText = recordingPrompts[recordingStep];
+
+                const hiddenInput = document.getElementById('virtual-key-input');
+                hiddenInput.value = "."; // Reset for next key
+                hiddenInput.focus();
+            } else {
+                let finalString = "";
+                let displayText = "";
+
+                const mode = document.querySelector('input[name="bindMode"]:checked').value;
+                const comp1 = document.getElementById('useCompound1').checked;
+                const comp2 = document.getElementById('useCompound2').checked;
+
+                if (mode === "0") {
+                    if (comp1) {
+                        finalString = `${capturedKeys[0]}+${capturedKeys[1]}`;
+                        displayText = `${getLabel(capturedKeys[0])}+${getLabel(capturedKeys[1])}`;
+                    } else {
+                        finalString = `${capturedKeys[0]}`;
+                        displayText = `${getLabel(capturedKeys[0])}`;
+                    }
+                } else {
+                    let relStr = "", relDisp = "";
+                    let holdStr = "", holdDisp = "";
+                    let holdIdx = 1;
+
+                    if (comp1) {
+                        relStr = `^(${capturedKeys[0]}+${capturedKeys[1]})`;
+                        relDisp = `${getLabel(capturedKeys[0])}+${getLabel(capturedKeys[1])}`;
+                        holdIdx = 2;
+                    } else {
+                        relStr = `^${capturedKeys[0]}`;
+                        relDisp = `${getLabel(capturedKeys[0])}`;
+                    }
+
+                    if (comp2) {
+                        holdStr = `*(${capturedKeys[holdIdx]}+${capturedKeys[holdIdx + 1]})`;
+                        holdDisp = `${getLabel(capturedKeys[holdIdx])}+${getLabel(capturedKeys[holdIdx + 1])}`;
+                    } else {
+                        holdStr = `*${capturedKeys[holdIdx]}`;
+                        holdDisp = `${getLabel(capturedKeys[holdIdx])}`;
+                    }
+
+                    finalString = `${relStr}+${holdStr}`;
+                    displayText = `${relDisp} / ${holdDisp}`;
+                }
+
+                el.dataset.value = finalString;
+                el.innerText = displayText;
+                el.title = displayText;
+
+                if (activeLayer === 'Basic') { el.dataset.valBasic = finalString; el.dataset.txtBasic = displayText; }
+                else if (activeLayer === 'Fn1') { el.dataset.valFn1 = finalString; el.dataset.txtFn1 = displayText; }
+                else if (activeLayer === 'Fn2') { el.dataset.valFn2 = finalString; el.dataset.txtFn2 = displayText; }
+
                 finishRecording(el);
-            }
-            else {
-                if (code == 0) return;
-
-                if (recordingStep === 0) {
-                    firstKeyCaptured = code;
-                    recordingStep = 1;
-                    el.innerText = "Key 2?";
-                    el.style.backgroundColor = "rgba(255, 255, 0, 0.5)";
-                    setTimeout(() => el.style.backgroundColor = "", 150);
-
-                    const hiddenInput = document.getElementById('virtual-key-input');
-                    hiddenInput.value = "."; // Reset for next key
-                    hiddenInput.focus();
-                }
-                else {
-                    let finalString = "";
-                    let displayText = "";
-                    const label1 = getLabel(firstKeyCaptured);
-                    const label2 = getLabel(code);
-
-                    if (mode === "1") {
-                        finalString = `^${firstKeyCaptured}+*${code}`;
-                        displayText = `${label1}/${label2}`;
-                    }
-                    else if (mode === "2") {
-                        finalString = `${firstKeyCaptured}+${code}`;
-                        displayText = `${label1}+${label2}`;
-                    }
-
-                    el.dataset.value = finalString;
-                    el.innerText = displayText;
-                    finishRecording(el);
-                }
             }
         }
 
@@ -773,7 +1009,8 @@
             previousValue = null;
             previousLabel = null;
             recordingStep = 0;
-            firstKeyCaptured = null;
+            capturedKeys = [];
+            recordingPrompts = [];
             document.getElementById('virtual-key-input').blur();
         }
 
@@ -907,18 +1144,25 @@
             const negEl = document.getElementById(`btn-${negId}`);
             const posEl = document.getElementById(`btn-${posId}`);
 
-            if (neg && !pNeg && negEl && !negEl.classList.contains('disabled')) startRecording(negId);
-            if (pos && !pPos && posEl && !posEl.classList.contains('disabled')) startRecording(posId);
+            if (neg && !pNeg && negEl && !negEl.classList.contains('disabled')) handleControllerPress(negId);
+            if (pos && !pPos && posEl && !posEl.classList.contains('disabled')) handleControllerPress(posId);
 
             if (neg && negEl) negEl.classList.add('active-controller'); else if (negEl) negEl.classList.remove('active-controller');
             if (pos && posEl) posEl.classList.add('active-controller'); else if (posEl) posEl.classList.remove('active-controller');
         }
 
-        function handleControllerPress(id) { startRecording(id); }
+        function handleControllerPress(id) {
+            if (pendingModifier) {
+                assignModifier(id, pendingModifier);
+            } else {
+                startRecording(id);
+            }
+        }
 
         function resetToDefaults() {
             if (!confirm("Reset all your configuration?")) return;
 
+            document.getElementById('GameName').value = "";
             document.getElementById('InputMethod').value = "0";
             document.getElementById('Mode').value = "1";
             document.getElementById('Righthanded').value = "1";
@@ -926,14 +1170,14 @@
 
             document.getElementById('Sensitivity').value = "5.00";
             document.getElementById('Sensitivity_Multiplier').value = "2.40";
-            document.getElementById('Horizontal_Sensitivity').value = "0.0";
-            document.getElementById('Vertical_Sensitivity').value = "0.58";
+            document.getElementById('Horizontal_Sensitivity').value = "0.00";
+            document.getElementById('Vertical_Sensitivity').value = "0.00";
             document.getElementById('Max_Threshold').value = "0.045";
-            document.getElementById('Look_Accel_Multiplier').value = "1.40";
+            document.getElementById('Look_Accel_Multiplier').value = "1.15";
             document.getElementById('Curve_Slope').value = "0.16";
             document.getElementById('Curve_Exponent').value = "1.85";
 
-            document.getElementById('Radial_Deadzone').value = "0.1";
+            document.getElementById('Radial_Deadzone').value = "0.15";
             document.getElementById('Axial_Deadzone').value = "0.0";
             document.getElementById('StickAsButtonDeadzone').value = "0.25";
             document.getElementById('TriggerThreshold').value = "40";
@@ -955,27 +1199,212 @@
             document.getElementById('KeyboardButtonFilter').checked = true;
 
             document.querySelector('input[name="bindMode"][value="0"]').checked = true;
+            document.getElementById('useCompound1').checked = false;
+            document.getElementById('useCompound2').checked = false;
+
+            cancelModifier();
 
             xinputButtons.forEach(btn => {
                 const el = document.getElementById(`btn-${btn.id}`);
-                el.dataset.value = btn.val;
-                el.innerText = (btn.val == "0") ? "None" : getLabel(btn.val);
+                const displayLabel = (btn.val == "0") ? "None" : getLabel(btn.val);
+
+                let fnDefault = "0";
+                if (btn.id === 'LSU') fnDefault = "47";
+                if (btn.id === 'LSD') fnDefault = "43";
+                if (btn.id === 'LSL') fnDefault = "25";
+                if (btn.id === 'LSR') fnDefault = "28";
+
+                el.dataset.valBasic = btn.val;
+                el.dataset.txtBasic = displayLabel;
+
+                el.dataset.valFn1 = fnDefault;
+                el.dataset.txtFn1 = (fnDefault == "0") ? "None" : getLabel(fnDefault);
+
+                el.dataset.valFn2 = fnDefault;
+                el.dataset.txtFn2 = (fnDefault == "0") ? "None" : getLabel(fnDefault);
+
                 el.classList.remove('recording', 'active-controller');
             });
 
+            document.querySelector('input[name="layerSwitch"][value="Basic"]').checked = true;
+            switchLayer('Basic');
+
+            updateBindUI();
             updateUIState();
         }
 
+        // INI IMPORT
+        function parseINI(data) {
+            const regex = {
+                section: /^\s*\[\s*([^\]]*)\s*\]\s*$/,
+                param: /^\s*([^=]+?)\s*=\s*(.*?)\s*$/
+            };
+            const value = {};
+            let lines = data.split(/[\r\n]+/);
+            let section = null;
+            lines.forEach(function (line) {
+                if (regex.section.test(line)) {
+                    let match = line.match(regex.section);
+                    section = match[1];
+                    value[section] = {};
+                } else if (regex.param.test(line)) {
+                    let match = line.match(regex.param);
+                    if (section) {
+                        value[section][match[1]] = match[2];
+                    }
+                }
+            });
+            return value;
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Strict Validation
+            if (file.name !== 'GtoMnK.ini') {
+                alert("The configuration file must be named exactly 'GtoMnK.ini'.");
+                event.target.value = ""; // Reset input so they can try again
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const text = e.target.result;
+                const parsedData = parseINI(text);
+
+                loadINI(parsedData);
+                event.target.value = ""; // Reset input after successful load
+            };
+            reader.readAsText(file);
+        }
+
+        function loadINI(data) {
+            // Helper to safely set elements if they exist in the uploaded INI
+            const setVal = (section, key, elementId) => {
+                if (data[section] && data[section][key] !== undefined) {
+                    const el = document.getElementById(elementId || key);
+                    if (el) {
+                        if (el.type === 'checkbox') el.checked = (data[section][key] === "1");
+                        else el.value = data[section][key];
+                    }
+                }
+            };
+
+            // Basic Info & Settings
+            setVal('Info', 'Name', 'GameName');
+            setVal('API', 'InputMethod');
+
+            // Hooks
+            setVal('Hooks', 'GetCursorposHook');
+            setVal('Hooks', 'SetCursorposHook');
+            setVal('Hooks', 'ClipCursorHook');
+            setVal('Hooks', 'GetKeystateHook');
+            setVal('Hooks', 'GetAsynckeystateHook');
+            setVal('Hooks', 'GetKeyboardstateHook');
+
+            // Filters
+            setVal('MessageFilter', 'RawInputFilter');
+            setVal('MessageFilter', 'MouseMoveFilter');
+            setVal('MessageFilter', 'MouseActivateFilter');
+            setVal('MessageFilter', 'WindowActivateFilter');
+            setVal('MessageFilter', 'WindowActivateAppFilter');
+            setVal('MessageFilter', 'MouseWheelFilter');
+            setVal('MessageFilter', 'MouseButtonFilter');
+            setVal('MessageFilter', 'KeyboardButtonFilter');
+
+            // Sensitivity & Deadzones
+            setVal('Settings', 'Mode');
+            setVal('Settings', 'DrawProtoFakeCursor');
+            setVal('StickToMouse', 'Righthanded');
+            setVal('StickToMouse', 'Sensitivity');
+            setVal('StickToMouse', 'Sensitivity_Multiplier');
+            setVal('StickToMouse', 'Horizontal_Sensitivity');
+            setVal('StickToMouse', 'Vertical_Sensitivity');
+            setVal('StickToMouse', 'Max_Threshold');
+            setVal('StickToMouse', 'Radial_Deadzone');
+            setVal('StickToMouse', 'Axial_Deadzone');
+            setVal('StickToMouse', 'Look_Accel_Multiplier');
+            setVal('StickToMouse', 'Curve_Slope');
+            setVal('StickToMouse', 'Curve_Exponent');
+
+            // Other mappings
+            setVal('KeyMapping', 'StickAsButtonDeadzone');
+            setVal('KeyMapping', 'TriggerThreshold');
+
+            // Process Buttons Across Layers
+            Object.keys(positions).forEach(id => {
+                const el = document.getElementById(`btn-${id}`);
+                if (!el) return;
+
+                // Basic Layer
+                if (data['KeyMapping'] && data['KeyMapping'][id] !== undefined) {
+                    const val = data['KeyMapping'][id];
+                    el.dataset.valBasic = val;
+                    el.dataset.txtBasic = val === "0" ? "None" : (val === "Fn1" || val === "Fn2" ? val : getLabel(val));
+                }
+
+                // Fn1 Layer
+                if (data['Fn1'] && data['Fn1'][id] !== undefined) {
+                    const val = data['Fn1'][id];
+                    el.dataset.valFn1 = val;
+                    el.dataset.txtFn1 = val === "0" ? "None" : getLabel(val);
+                }
+
+                // Fn2 Layer
+                if (data['Fn2'] && data['Fn2'][id] !== undefined) {
+                    const val = data['Fn2'][id];
+                    el.dataset.valFn2 = val;
+                    el.dataset.txtFn2 = val === "0" ? "None" : getLabel(val);
+                }
+            });
+
+            // Force visual refresh to Basic layer after import
+            document.querySelector('input[name="layerSwitch"][value="Basic"]').checked = true;
+            switchLayer('Basic');
+            updateBindUI();
+            updateUIState();
+        }
+
+        // INI EXPORT
         function generateINI() {
             const getSet = (id) => {
                 const el = document.getElementById(id);
                 if (!el) return "0";
                 if (el.type === 'checkbox') return el.checked ? 1 : 0;
                 return el.value;
-            };
-            const getVal = (id) => document.getElementById(`btn-${id}`).dataset.value;
+            }
 
-            const iniContent = `[API]
+            const getLayerVal = (id, layer) => {
+                const el = document.getElementById(`btn-${id}`);
+                if (!el) return "0";
+                if (layer === 'Basic') return el.dataset.valBasic;
+                if (layer === 'Fn1') return el.dataset.valFn1;
+                if (layer === 'Fn2') return el.dataset.valFn2;
+                return "0";
+            }
+
+            const buttonGroups = [
+                ["A", "B", "X", "Y"],
+                ["D_UP", "D_DOWN", "D_LEFT", "D_RIGHT"],
+                ["RB", "LB", "RSB", "LSB"],
+                ["RT", "LT"],
+                ["LSU", "LSD", "LSL", "LSR"],
+                ["RSU", "RSD", "RSL", "RSR"],
+                ["Start", "Back"]
+            ];
+
+            const buildSection = (layer) => {
+                return buttonGroups.map(group =>
+                    group.map(id => `${id}=${getLayerVal(id, layer)}`).join('\n')
+                ).join('\n\n');
+            };
+
+            const iniContent = `[Info]
+Name=${getSet('GameName')}
+Ver=1.3.0
+
+[API]
 InputMethod=${getSet('InputMethod')}
 GamepadMethod=0
 EnableOpenXinput=0
@@ -1032,36 +1461,13 @@ EnableMouseDoubleClick=0
 StickAsButtonDeadzone=${getSet('StickAsButtonDeadzone')}
 TriggerThreshold=${getSet('TriggerThreshold')}
 
-A=${getVal('A')}
-B=${getVal('B')}
-X=${getVal('X')}
-Y=${getVal('Y')}
+${buildSection('Basic')}
 
-RB=${getVal('RB')}
-LB=${getVal('LB')}
-RSB=${getVal('RSB')}
-LSB=${getVal('LSB')}
+[Fn1]
+${buildSection('Fn1')}
 
-D_UP=${getVal('D_UP')}
-D_DOWN=${getVal('D_DOWN')}
-D_LEFT=${getVal('D_LEFT')}
-D_RIGHT=${getVal('D_RIGHT')}
-
-LSU=${getVal('LSU')}
-LSD=${getVal('LSD')}
-LSL=${getVal('LSL')}
-LSR=${getVal('LSR')}
-
-RSU=${getVal('RSU')}
-RSD=${getVal('RSD')}
-RSL=${getVal('RSL')}
-RSR=${getVal('RSR')}
-
-Start=${getVal('Start')}
-Back=${getVal('Back')}
-
-LT=${getVal('LT')}
-RT=${getVal('RT')}
+[Fn2]
+${buildSection('Fn2')}
 `;
             const blob = new Blob([iniContent], { type: 'text/plain' });
             const url = window.URL.createObjectURL(blob);
@@ -1071,6 +1477,10 @@ RT=${getVal('RT')}
             a.click();
             window.URL.revokeObjectURL(url);
         }
+
+        // Initialize UI State
+        updateBindUI();
+        updateUIState();
     </script>
 </body>
 </html>
