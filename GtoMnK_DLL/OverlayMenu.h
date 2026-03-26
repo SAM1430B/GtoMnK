@@ -19,6 +19,7 @@ namespace GtoMnK {
     class OverlayMenu {
     public:
         static OverlayMenu state;
+        HWND menuWindow = nullptr;
 
         void Initialise();
         void EnableDisableMenu(bool enable);
@@ -37,7 +38,6 @@ namespace GtoMnK {
         void DrawUI();
         bool IsOptionVisible(int index);
 
-        HWND menuWindow = nullptr;
         HDC hdc = nullptr;
         HBRUSH transparencyBrush = nullptr;
         HBRUSH backgroundBrush = nullptr;

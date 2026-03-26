@@ -10,6 +10,8 @@ namespace GtoMnK {
 
         void InjectFakeRawInput(const RAWINPUT& fakeInput);
 
+        void RecoverMissedRegistration();
+
         const int RAWINPUT_BUFFER_SIZE = 20;
         extern RAWINPUT g_inputBuffer[RAWINPUT_BUFFER_SIZE];
 

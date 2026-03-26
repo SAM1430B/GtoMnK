@@ -4,6 +4,8 @@
 #include "Logging.h"
 #include "Mouse.h"
 #include "Keyboard.h"
+#include "FakeCursor.h"
+#include "OverlayMenu.h"
 
 // Thanks to ProtoInput.
 
@@ -25,11 +27,20 @@ UINT WINAPI GtoMnK::RawInputHooks::GetRawInputDataHook(HRAWINPUT hRawInput, UINT
         }
 
         RAWINPUT* storedData = &GtoMnK::RawInput::g_inputBuffer[bufferIndex];
-        memcpy(pData, storedData, sizeof(RAWINPUT));
-        return sizeof(RAWINPUT);
-
+        
+        if (uiCommand == RID_HEADER) {
+            if (pData == NULL) { *pcbSize = sizeof(RAWINPUTHEADER); return 0; }
+            memcpy(pData, &storedData->header, sizeof(RAWINPUTHEADER));
+            return sizeof(RAWINPUTHEADER);
+        }
+        else if (uiCommand == RID_INPUT) {
+            if (pData == NULL) { *pcbSize = sizeof(RAWINPUT); return 0; }
+            memcpy(pData, storedData, sizeof(RAWINPUT));
+            return *pcbSize;
+        }
+        return (UINT)-1;
     }
-    
+
     return TrueGetRawInputData(hRawInput, uiCommand, pData, pcbSize, cbSizeHeader);
 }
 
@@ -44,6 +55,11 @@ BOOL WINAPI GtoMnK::RawInputHooks::RegisterRawInputDevicesHook(PCRAWINPUTDEVICE 
             HWND targetHwnd = pRawInputDevices[i].hwndTarget;
 
             if (targetHwnd != NULL && targetHwnd != GtoMnK::RawInput::g_rawInputHwnd) {
+                if (targetHwnd == GtoMnK::FakeCursor::GetPointerWindow() ||
+                    targetHwnd == GtoMnK::OverlayMenu::state.menuWindow) {
+                    continue;
+                }
+
                 auto& windows = GtoMnK::RawInput::g_forwardingWindows;
                 if (std::find(windows.begin(), windows.end(), targetHwnd) == windows.end()) {
                     LOG("Captured new game window HWND: 0x%p", targetHwnd);

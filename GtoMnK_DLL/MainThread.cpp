@@ -169,6 +169,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                 break;
             }
             LOG("Acquired new window handle: 0x%p", hwnd);
+
+            /*if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hyberd) {
+                LOG("Window changed! Re-running RawInput recovery...");
+                RawInput::RecoverMissedRegistration();
+            }*/
         }
 
         RECT rect;

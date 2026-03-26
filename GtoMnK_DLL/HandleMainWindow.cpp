@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "HandleMainWindow.h"
 #include "FakeCursor.h" 
+#include "RawInput.h"
+#include "OverlayMenu.h"
 
 HWND GetMainWindowHandle(DWORD targetPID, const char* requiredName, const char* requiredClass, DWORD timeoutMS) {
     struct HandleData {
@@ -24,6 +26,8 @@ HWND GetMainWindowHandle(DWORD targetPID, const char* requiredName, const char* 
 
             if (!IsWindowVisible(hWnd)) return TRUE;
             if (hWnd == GtoMnK::FakeCursor::GetPointerWindow()) return TRUE;
+            if (hWnd == GtoMnK::RawInput::g_rawInputHwnd) return TRUE;
+			if (hWnd == GtoMnK::OverlayMenu::state.menuWindow) return TRUE;
 
             bool usingStrictFilters = (pData->reqName && pData->reqName[0]) ||
                 (pData->reqClass && pData->reqClass[0]);

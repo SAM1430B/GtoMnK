@@ -3,6 +3,8 @@
 #include "RawInputHooks.h"
 #include "MainThread.h"
 #include "Logging.h"
+#include "FakeCursor.h"
+#include "OverlayMenu.h"
 
 extern int createdWindowIsOwned;
 
@@ -51,7 +53,13 @@ namespace GtoMnK {
 
             const LPARAM magicLParam = (bufferCounter) | 0xAB000000;
 
-            for (const auto& hwnd : g_forwardingWindows) {
+            bool sentToMainGameWindow = false;
+            for (const auto& targetHwnd : g_forwardingWindows) {
+                PostMessageW(targetHwnd, WM_INPUT, 0, magicLParam);
+                if (hwnd != nullptr && targetHwnd == hwnd) sentToMainGameWindow = true;
+            }
+            // Fallback
+            if (!sentToMainGameWindow && hwnd != nullptr) {
                 PostMessageW(hwnd, WM_INPUT, 0, magicLParam);
             }
         }
@@ -134,9 +142,9 @@ namespace GtoMnK {
 
                     HWND target = device.hwndTarget;
 
-                    // If target is NULL, it means "Focus Window", so we rely on our Foreground check.
-                    // But if it is NOT NULL, it is the specific window (likely hidden) the game wants.
                     if (target != NULL) {
+
+                        if (target == GtoMnK::FakeCursor::GetPointerWindow() || target == GtoMnK::OverlayMenu::state.menuWindow) continue;
 
                         bool known = false;
                         for (auto w : g_forwardingWindows) {
