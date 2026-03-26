@@ -34,7 +34,7 @@ int mode = 1;
 int responsetime = 4;
 
 // For the Hooks
-InputMethod g_InputMethod = InputMethod::PostMessage;
+InputMethod g_InputMethod = InputMethod::Hybrid;
 int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setCursorHook, setRectHook;
 
 // For MessageFilterHook
@@ -119,14 +119,25 @@ void LoadIniSettings() {
     GetPrivateProfileStringA("FindWindow", "ClassName", NULL, iniClassName, sizeof(iniClassName), iniPath.c_str());
 
     // [API]
-    int inputMethod = GetPrivateProfileIntA("API", "InputMethod", 0, iniPath.c_str());
-    if (inputMethod == 1) {
+    int inputMethod = GetPrivateProfileIntA("API", "InputMethod", 2, iniPath.c_str());
+    if (inputMethod == 0) {
+		g_InputMethod = InputMethod::PostMessage;
+    }
+    else if (inputMethod == 1) {
         g_InputMethod = InputMethod::RawInput;
     }
     else {
-        g_InputMethod = InputMethod::PostMessage;
+        g_InputMethod = InputMethod::Hybrid;
     }
-    LOG("Using Input Method: %s", (g_InputMethod == InputMethod::RawInput) ? "RawInput" : "PostMessage");
+
+    const char* methodName = "Hybrid";
+    if (g_InputMethod == InputMethod::RawInput) {
+        methodName = "RawInput";
+    }
+    else if (g_InputMethod == InputMethod::PostMessage) {
+        methodName = "PostMessage";
+    }
+    LOG("Using Input Method: %s", methodName);
 
     int gamepadMethod = GetPrivateProfileIntA("API", "GamepadMethod", 0, iniPath.c_str());
     if (gamepadMethod == 1) {

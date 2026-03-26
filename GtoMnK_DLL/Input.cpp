@@ -341,9 +341,14 @@ namespace GtoMnK {
         void SendAction(const std::string& actionString, bool press) {
             if (actionString.empty() || actionString == "0") return;
 
-            void (*dispatcher)(int, bool) = (g_InputMethod == InputMethod::RawInput)
-                ? DispatchAction_RawInput
-                : DispatchAction_PostMessage;
+            auto dispatcher = [](int code, bool p) {
+                if (g_InputMethod == InputMethod::PostMessage || g_InputMethod == InputMethod::Hybrid) {
+                    DispatchAction_PostMessage(code, p);
+                }
+                if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hybrid) {
+                    DispatchAction_RawInput(code, p);
+                }
+                };
 
             static ULONGLONG lastLeftClickTime = 0;
             if (g_EnableMouseDoubleClick && press && actionString.find('+') == std::string::npos) {
@@ -429,7 +434,7 @@ namespace GtoMnK {
 
 		// For PostMessage method
         void SendMouseMoveAbsolute(int screenX, int screenY) {
-            if (g_InputMethod != InputMethod::PostMessage) return;
+            if (g_InputMethod != InputMethod::PostMessage && g_InputMethod != InputMethod::Hybrid) return;
             if (!hwnd) return;
             WPARAM wParam = BuildWParam();
             POINT clientPos = { screenX, screenY };
@@ -439,7 +444,7 @@ namespace GtoMnK {
 
 		// For RawInput method
         void SendMouseMoveDelta(int deltaX, int deltaY) {
-            if (g_InputMethod != InputMethod::RawInput) return;
+            if (g_InputMethod != InputMethod::RawInput && g_InputMethod != InputMethod::Hybrid) return;
 
             RAWINPUT ri = {};
             ri.header.dwType = RIM_TYPEMOUSE;

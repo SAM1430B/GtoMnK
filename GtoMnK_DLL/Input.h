@@ -5,7 +5,8 @@ namespace GtoMnK {
 
     enum class InputMethod {
         PostMessage,
-        RawInput
+        RawInput,
+        Hybrid
     };
 
     namespace Input {

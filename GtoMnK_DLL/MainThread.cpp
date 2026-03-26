@@ -123,7 +123,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     Hooks::SetupHooks();
     hooksinited = true;
 
-    if (g_InputMethod == InputMethod::RawInput) {
+    if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hybrid) {
         RawInput::Initialize();
     }
 
@@ -312,10 +312,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                         ULONGLONG currentTime = GetTickCount64();
                         if (currentTime - lastMoveTime > MOVE_UPDATE_INTERVAL) {
                             lastMoveTime = currentTime;
-                            if (g_InputMethod == InputMethod::RawInput) {
+                            if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hybrid) {
                                 Input::SendMouseMoveDelta(delta.x, delta.y);
                             }
-                            else {
+                            if (g_InputMethod == InputMethod::PostMessage || g_InputMethod == InputMethod::Hybrid) {
                                 POINT screenPos = { (LONG)Mouse::Xf, (LONG)Mouse::Yf };
                                 ClientToScreen(hwnd, &screenPos);
                                 Input::SendMouseMoveAbsolute(screenPos.x, screenPos.y);

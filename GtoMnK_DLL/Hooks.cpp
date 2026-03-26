@@ -55,7 +55,7 @@ namespace GtoMnK {
         NTSTATUS result;
 
 		// RawInput hooks
-        if (g_InputMethod == InputMethod::RawInput) {
+        if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hybrid) {
             LOG("Installing hooks for RawInput mode...");
 
             RawInputHooks::TrueGetRawInputData = (UINT(WINAPI*)(HRAWINPUT, UINT, LPVOID, PUINT, UINT))GetProcAddress(hUser32, "GetRawInputData");
@@ -153,7 +153,7 @@ namespace GtoMnK {
         LOG("Activating installed hooks...");
         ULONG threadIdList[] = { 0 };
 
-        if (g_InputMethod == InputMethod::RawInput) {
+        if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hybrid) {
             LhSetExclusiveACL(threadIdList, 1, &g_getRawInputDataHook);
             LhSetExclusiveACL(threadIdList, 1, &g_registerRawInputDevicesHook);
         }

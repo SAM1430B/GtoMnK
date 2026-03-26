@@ -404,9 +404,10 @@
 
             <div class="setting-row">
                 <label>Input Method</label>
-                <select id="InputMethod" title="PostMessage (Recommended)&#10;RawInput (Compatible with most of the old games)">
+                <select id="InputMethod" title="Hybrid (Uses both recommended)&#10;PostMessage (Compatible with most of the modern games)&#10;RawInput (Compatible with most of the old games)">
                     <option value="0">PostMessage</option>
                     <option value="1">RawInput</option>
+                    <option value="2" selected>Hybrid</option>
                 </select>
             </div>
 
@@ -1163,7 +1164,7 @@
             if (!confirm("Reset all your configuration?")) return;
 
             document.getElementById('GameName').value = "";
-            document.getElementById('InputMethod').value = "0";
+            document.getElementById('InputMethod').value = "2";
             document.getElementById('Mode').value = "1";
             document.getElementById('Righthanded').value = "1";
             document.getElementById('DrawProtoFakeCursor').checked = false;

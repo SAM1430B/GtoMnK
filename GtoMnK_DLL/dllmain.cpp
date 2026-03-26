@@ -60,7 +60,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 LOG("Running as master. Performing full cleanup...");
                 Hooks::RemoveHooks();
                 LOG("Hooks removed.");
-                if (g_InputMethod == InputMethod::RawInput) {
+                if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hybrid) {
                     RawInput::Shutdown();
                     LOG("RawInput system shut down.");
                 }
