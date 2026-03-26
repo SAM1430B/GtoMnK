@@ -22,12 +22,7 @@ namespace GtoMnK {
             return (short)0x8001;
         }
 
-        //Recursion safety
-        ULONG threadIdList[] = { 0 };
-        LhSetGlobalExclusiveACL(threadIdList, 1);
-        SHORT result = GetAsyncKeyState(vKey);
-        LhSetGlobalInclusiveACL(threadIdList, 1);
-        return result;
+        return GetAsyncKeyState(vKey);
     }
 
     SHORT WINAPI Keyboard::GetKeyStateHook(int nVirtKey) {
@@ -35,12 +30,7 @@ namespace GtoMnK {
             return (short)0x8000;
         }
 
-        //Recursion safety
-        ULONG threadIdList[] = { 0 };
-        LhSetGlobalExclusiveACL(threadIdList, 1);
-        SHORT result = GetKeyState(nVirtKey);
-        LhSetGlobalInclusiveACL(threadIdList, 1);
-        return result;
+        return GetKeyState(nVirtKey);
     }
 
     BOOL WINAPI Keyboard::GetKeyboardStateHook(PBYTE lpKeyState) {
@@ -48,11 +38,7 @@ namespace GtoMnK {
             return FALSE;
         }
 
-        //Recursion safety
-        ULONG threadIdList[] = { 0 };
-        LhSetGlobalExclusiveACL(threadIdList, 1);
         BOOL result = GetKeyboardState(lpKeyState);
-        LhSetGlobalInclusiveACL(threadIdList, 1);
 
         if (!result) return FALSE;
 

@@ -15,12 +15,6 @@ namespace GtoMnK
 	{
 		FakeCursor::SetCursorVisibility(bShow == TRUE);
 		
-		//Recursion safety
-		ULONG threadIdList[] = { 0 };
-		LhSetGlobalExclusiveACL(threadIdList, 1);
-		int result = ShowCursor(bShow);
-		LhSetGlobalInclusiveACL(threadIdList, 1);
-
 		return bShow == TRUE ? 0 : -1;
 	}
 
@@ -44,12 +38,7 @@ namespace GtoMnK
 		if (hCursor != nullptr)
 			FakeCursor::SetCursorHandle(hCursor); // Custom cursor image
 
-		//Recursion safety
-		ULONG threadIdList[] = { 0 };
-		LhSetGlobalExclusiveACL(threadIdList, 1);
-		HCURSOR result = SetCursor(hCursor);
-		LhSetGlobalInclusiveACL(threadIdList, 1);
-		return result;
+		return hCursor;
 	}
 
 	BOOL WINAPI CursorVisibilityHook::Hook_SetSystemCursor(HCURSOR hCursor, DWORD id)
@@ -62,12 +51,7 @@ namespace GtoMnK
 				FakeCursor::SetCursorHandle(hCursor); // Custom cursor image
 		}
 
-		//Recursion safety
-		ULONG threadIdList[] = { 0 };
-		LhSetGlobalExclusiveACL(threadIdList, 1);
-		BOOL originalResult = SetSystemCursor(hCursor, id);
-		LhSetGlobalInclusiveACL(threadIdList, 1);
-		return originalResult;
+		return TRUE;
 	}
 
 }
