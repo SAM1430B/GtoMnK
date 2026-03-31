@@ -372,6 +372,12 @@ namespace GtoMnK {
         wc.lpszClassName = L"GtoMnK_Overlay_Window";
         wc.style = CS_OWNDC | CS_NOCLOSE;
 
+        HWND parentWindow;
+        if (createdWindowIsOwned)
+            parentWindow = hwnd;
+        else
+            parentWindow = nullptr;
+
         if (!RegisterClassW(&wc)) {
             LOG("Failed to register Overlay Menu window class!");
             return;
@@ -385,7 +391,7 @@ namespace GtoMnK {
                 L"OverlayMenu",
                 WS_POPUP,
                 0, 0, 800, 600,
-                hwnd, // The game window as the owner `GW_OWNER`
+                parentWindow, // Is it `GW_OWNER`?
                 nullptr, hInstance, nullptr);
 
             SetLayeredWindowAttributes(menuWindow, transparencyKey, 0, LWA_COLORKEY);
