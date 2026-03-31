@@ -64,6 +64,10 @@ extern bool g_filterMouseWheel;
 extern bool g_filterMouseButton;
 extern bool g_filterKeyboardButton;
 
+// For Gamepad Masking
+extern bool enableXInputMask;
+extern bool enableSDL2Mask;
+
 // General Settings
 extern int startUpDelay;
 extern bool recheckHWND;

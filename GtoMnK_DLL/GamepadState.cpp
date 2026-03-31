@@ -232,3 +232,28 @@ void ProcessTrigger(UINT triggerID, BYTE triggerValue) {
     bool isPressed = IsTriggerPressed(triggerValue);
     ProcessButton(triggerID, isPressed);
 }
+
+// This functions used for enableXInputMask and enableSDL2Mask to check if the button is mapped to an action (not "0") in ini file.
+bool IsButtonMapped(UINT buttonFlag) {
+    if (g_Fn1_ButtonID != -1 && buttonFlag == static_cast<UINT>(g_Fn1_ButtonID)) return true;
+    if (g_Fn2_ButtonID != -1 && buttonFlag == static_cast<UINT>(g_Fn2_ButtonID)) return true;
+
+    UINT effectiveFlag = buttonFlag;
+
+    if (g_ButtonLastState[buttonFlag]) {
+        effectiveFlag += g_ButtonLayer[buttonFlag];
+    }
+    else {
+        if (g_Fn2_State) effectiveFlag += 200;
+        else if (g_Fn1_State) effectiveFlag += 100;
+    }
+
+    auto it = buttonStates.find(effectiveFlag);
+    if (it != buttonStates.end()) {
+        const ButtonState& bs = it->second;
+        if (!bs.actions.empty() && bs.actions[0].actionString != "0") {
+            return true;
+        }
+    }
+    return false;
+}

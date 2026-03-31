@@ -8,6 +8,11 @@
 #include "RawInputHooks.h"
 #include "CursorVisibilityHooks.h"
 #include "MessageFilterHooks.h"
+#include <Xinput.h>
+#include <SDL.h>
+#include "Xinput_Gamepad.h"
+#include "SDL2_Gamepad.h"
+#include "INISettings.h"
 
 // External global variables from dllmain.cpp
 extern int leftrect, toprect, rightrect, bottomrect;
@@ -16,6 +21,8 @@ extern int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, 
 extern GtoMnK::InputMethod g_InputMethod;
 extern int drawProtoFakeCursor;
 extern bool g_filterRawInput, g_filterMouseMove, g_filterMouseActivate, g_filterWindowActivate, g_filterWindowActivateApp, g_filterMouseWheel, g_filterMouseButton, g_filterKeyboardButton;
+
+extern bool enableXInputMask, enableSDL2Mask;
 
 // For RawInput
 HOOK_TRACE_INFO g_getRawInputDataHook = { NULL };
@@ -41,6 +48,11 @@ HOOK_TRACE_INFO g_HookGetMessageAHandle = { NULL };
 HOOK_TRACE_INFO g_HookGetMessageWHandle = { NULL };
 HOOK_TRACE_INFO g_HookPeekMessageAHandle = { NULL };
 HOOK_TRACE_INFO g_HookPeekMessageWHandle = { NULL };
+
+// For Gamepad Masking Hooks
+HOOK_TRACE_INFO g_xinputGetStateHookHandle = { NULL };
+HOOK_TRACE_INFO g_sdlGetButtonHookHandle = { NULL };
+HOOK_TRACE_INFO g_sdlGetAxisHookHandle = { NULL };
 
 namespace GtoMnK {
 
@@ -149,6 +161,49 @@ namespace GtoMnK {
             result = LhInstallHook(GetProcAddress(hUser32, "AdjustWindowRect"), AdjustWindowRectHook, NULL, &g_adjustWindowRectHookHandle);
             if (FAILED(result)) LOG("Failed to install hook for AdjustWindowRect: %S", RtlGetLastErrorString());
         }
+		// XInput Hook Masking
+        if (enableXInputMask && g_GamepadMethod == GamepadMethod::XInput) {
+            LOG("Installing XInput Gamepad Masking Hook...");
+
+            HMODULE hXInput = GetModuleHandleA("xinput1_3.dll");
+            if (!hXInput) hXInput = GetModuleHandleA("xinput1_4.dll");
+            if (!hXInput) hXInput = GetModuleHandleA("xinput9_1_0.dll");
+
+            if (hXInput) {
+                TrueXInputGetState = (XInputGetState_t)GetProcAddress(hXInput, "XInputGetState");
+                if (TrueXInputGetState) {
+                    LOG("Installing XInputGetState hook...");
+                    result = LhInstallHook(TrueXInputGetState, Hook_XInputGetState, NULL, &g_xinputGetStateHookHandle);
+                    if (FAILED(result)) LOG("Failed to install hook for XInputGetState: %S", RtlGetLastErrorString());
+                }
+            }
+            else {
+                LOG("No XInput module found loaded in the game.");
+            }
+        }
+		// SDL2 Hook Masking
+        if (enableSDL2Mask && g_GamepadMethod == GamepadMethod::SDL2) {
+            LOG("Installing SDL2 Gamepad Hooks...");
+            HMODULE hSDL2 = GetModuleHandleA("SDL2.dll");
+            if (hSDL2) {
+                TrueSDLGetButton = (SDL_GameControllerGetButton_t)GetProcAddress(hSDL2, "SDL_GameControllerGetButton");
+                if (TrueSDLGetButton) {
+                    LOG("Installing SDL_GameControllerGetButton hook...");
+                    result = LhInstallHook(TrueSDLGetButton, Hook_SDL_GameControllerGetButton, NULL, &g_sdlGetButtonHookHandle);
+                    if (FAILED(result)) LOG("Failed to install hook for SDL_GameControllerGetButton: %S", RtlGetLastErrorString());
+                }
+
+                TrueSDLGetAxis = (SDL_GameControllerGetAxis_t)GetProcAddress(hSDL2, "SDL_GameControllerGetAxis");
+                if (TrueSDLGetAxis) {
+                    LOG("Installing SDL_GameControllerGetAxis hook...");
+                    result = LhInstallHook(TrueSDLGetAxis, Hook_SDL_GameControllerGetAxis, NULL, &g_sdlGetAxisHookHandle);
+                    if (FAILED(result)) LOG("Failed to install hook for SDL_GameControllerGetAxis: %S", RtlGetLastErrorString());
+                }
+            }
+            else {
+                LOG("No SDL2 module found loaded in the game.");
+            }
+        }
 
         LOG("Activating installed hooks...");
         ULONG threadIdList[] = { 0 };
@@ -178,6 +233,16 @@ namespace GtoMnK {
             LhSetExclusiveACL(threadIdList, 1, &g_HookGetMessageWHandle);
             LhSetExclusiveACL(threadIdList, 1, &g_HookPeekMessageAHandle);
             LhSetExclusiveACL(threadIdList, 1, &g_HookPeekMessageWHandle);
+        }
+        if (enableXInputMask && g_GamepadMethod == GamepadMethod::XInput && g_xinputGetStateHookHandle.Link != NULL) {
+            LhSetExclusiveACL(threadIdList, 1, &g_xinputGetStateHookHandle);
+        }
+        if (enableSDL2Mask && g_GamepadMethod == GamepadMethod::SDL2) {
+            if (g_sdlGetButtonHookHandle.Link != NULL)
+                LhSetExclusiveACL(threadIdList, 1, &g_sdlGetButtonHookHandle);
+
+            if (g_sdlGetAxisHookHandle.Link != NULL)
+                LhSetExclusiveACL(threadIdList, 1, &g_sdlGetAxisHookHandle);
         }
         LOG("All selected hooks are now enabled.");
     }

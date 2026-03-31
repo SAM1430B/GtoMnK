@@ -47,6 +47,10 @@ bool g_filterMouseWheel = false;
 bool g_filterMouseButton = false;
 bool g_filterKeyboardButton = false;
 
+// For Gamepad Masking
+bool enableXInputMask = false;
+bool enableSDL2Mask = false;
+
 // For finding the game window
 char iniWindowName[256] = { 0 };
 char iniClassName[256] = { 0 };
@@ -149,6 +153,8 @@ void LoadIniSettings() {
 	LOG("Using Gamepad Method: %s", (g_GamepadMethod == GamepadMethod::SDL2) ? "SDL2" : "XInput");
 
     g_EnableOpenXinput = GetPrivateProfileIntA("API", "EnableOpenXinput", 0, iniPath.c_str()) == 1;
+    enableXInputMask = GetPrivateProfileIntA("API", "EnableXInputMask", 0, iniPath.c_str()) == 1;
+    enableSDL2Mask = GetPrivateProfileIntA("API", "EnableSDL2Mask", 0, iniPath.c_str()) == 1;
 
     // [Hooks]
     getCursorPosHook = GetPrivateProfileIntA("Hooks", "GetCursorposHook", 1, iniPath.c_str());
