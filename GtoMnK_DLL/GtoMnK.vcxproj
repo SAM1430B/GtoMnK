@@ -196,7 +196,7 @@ libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     <PostBuildEvent>
       <Command>echo Copying...
 copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"
-robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x32" "$(TargetDir)Loader.x32" /E /MIR
+robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x$(PlatformArchitecture)" "$(TargetDir)Loader.x$(PlatformArchitecture)" /E /MIR
 exit /b 0</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -235,7 +235,7 @@ libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <Command>echo Copying...
 copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"
 robocopy "$(ProjectDir)Documents" ""$(SolutionDir)$(Configuration)\Config"
-robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x32" "$(TargetDir)Loader.x32"
+robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x$(PlatformArchitecture)" "$(TargetDir)Loader.x$(PlatformArchitecture)"
 exit /b 0</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -305,7 +305,9 @@ libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying...
-copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"</Command>
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"
+robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x$(PlatformArchitecture)" "$(TargetDir)Loader.x$(PlatformArchitecture)" /E /MIR
+exit /b 0</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
@@ -342,7 +344,9 @@ libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     <PostBuildEvent>
       <Command>echo Copying...
 copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"
-robocopy "$(ProjectDir)Documents" "$(SolutionDir)$(Configuration)\Config"</Command>
+robocopy "$(ProjectDir)Documents" "$(SolutionDir)$(Configuration)\Config"
+robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x$(PlatformArchitecture)" "$(TargetDir)Loader.x$(PlatformArchitecture)"
+exit /b 0</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

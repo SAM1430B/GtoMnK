@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37111.16 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ddraw", "ddraw\ddraw.vcxproj", "{4C1BAB9B-316B-41D2-AC2B-18013DCE7D53}"
 EndProject
@@ -18,35 +18,58 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
 		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{4C1BAB9B-316B-41D2-AC2B-18013DCE7D53}.Debug|Win32.ActiveCfg = Debug|Win32
 		{4C1BAB9B-316B-41D2-AC2B-18013DCE7D53}.Debug|Win32.Build.0 = Debug|Win32
+		{4C1BAB9B-316B-41D2-AC2B-18013DCE7D53}.Debug|x64.ActiveCfg = Debug|Win32
 		{4C1BAB9B-316B-41D2-AC2B-18013DCE7D53}.Release|Win32.ActiveCfg = Release|Win32
 		{4C1BAB9B-316B-41D2-AC2B-18013DCE7D53}.Release|Win32.Build.0 = Release|Win32
+		{4C1BAB9B-316B-41D2-AC2B-18013DCE7D53}.Release|x64.ActiveCfg = Release|Win32
 		{7541E660-DC77-4AAF-B9C3-2310723EB1AC}.Debug|Win32.ActiveCfg = Debug|Win32
 		{7541E660-DC77-4AAF-B9C3-2310723EB1AC}.Debug|Win32.Build.0 = Debug|Win32
+		{7541E660-DC77-4AAF-B9C3-2310723EB1AC}.Debug|x64.ActiveCfg = Debug|x64
+		{7541E660-DC77-4AAF-B9C3-2310723EB1AC}.Debug|x64.Build.0 = Debug|x64
 		{7541E660-DC77-4AAF-B9C3-2310723EB1AC}.Release|Win32.ActiveCfg = Release|Win32
 		{7541E660-DC77-4AAF-B9C3-2310723EB1AC}.Release|Win32.Build.0 = Release|Win32
+		{7541E660-DC77-4AAF-B9C3-2310723EB1AC}.Release|x64.ActiveCfg = Release|x64
+		{7541E660-DC77-4AAF-B9C3-2310723EB1AC}.Release|x64.Build.0 = Release|x64
 		{5117B33A-8FA9-4074-A340-8E4E11C9568D}.Debug|Win32.ActiveCfg = Debug|Win32
 		{5117B33A-8FA9-4074-A340-8E4E11C9568D}.Debug|Win32.Build.0 = Debug|Win32
+		{5117B33A-8FA9-4074-A340-8E4E11C9568D}.Debug|x64.ActiveCfg = Debug|Win32
 		{5117B33A-8FA9-4074-A340-8E4E11C9568D}.Release|Win32.ActiveCfg = Release|Win32
 		{5117B33A-8FA9-4074-A340-8E4E11C9568D}.Release|Win32.Build.0 = Release|Win32
+		{5117B33A-8FA9-4074-A340-8E4E11C9568D}.Release|x64.ActiveCfg = Debug|Win32
 		{457D22C0-E3D3-4BF7-BD01-144A085C7B75}.Debug|Win32.ActiveCfg = Debug|Win32
 		{457D22C0-E3D3-4BF7-BD01-144A085C7B75}.Debug|Win32.Build.0 = Debug|Win32
+		{457D22C0-E3D3-4BF7-BD01-144A085C7B75}.Debug|x64.ActiveCfg = Debug|x64
+		{457D22C0-E3D3-4BF7-BD01-144A085C7B75}.Debug|x64.Build.0 = Debug|x64
 		{457D22C0-E3D3-4BF7-BD01-144A085C7B75}.Release|Win32.ActiveCfg = Release|Win32
 		{457D22C0-E3D3-4BF7-BD01-144A085C7B75}.Release|Win32.Build.0 = Release|Win32
+		{457D22C0-E3D3-4BF7-BD01-144A085C7B75}.Release|x64.ActiveCfg = Release|x64
+		{457D22C0-E3D3-4BF7-BD01-144A085C7B75}.Release|x64.Build.0 = Release|x64
 		{0C32F7D5-4261-4E29-BBCB-93364B10A7BC}.Debug|Win32.ActiveCfg = Debug|Win32
 		{0C32F7D5-4261-4E29-BBCB-93364B10A7BC}.Debug|Win32.Build.0 = Debug|Win32
+		{0C32F7D5-4261-4E29-BBCB-93364B10A7BC}.Debug|x64.ActiveCfg = Debug|Win32
 		{0C32F7D5-4261-4E29-BBCB-93364B10A7BC}.Release|Win32.ActiveCfg = Release|Win32
 		{0C32F7D5-4261-4E29-BBCB-93364B10A7BC}.Release|Win32.Build.0 = Release|Win32
+		{0C32F7D5-4261-4E29-BBCB-93364B10A7BC}.Release|x64.ActiveCfg = Release|Win32
 		{C68F48DD-0B73-4C69-9CEB-D8F3E1369D97}.Debug|Win32.ActiveCfg = Debug|Win32
 		{C68F48DD-0B73-4C69-9CEB-D8F3E1369D97}.Debug|Win32.Build.0 = Debug|Win32
+		{C68F48DD-0B73-4C69-9CEB-D8F3E1369D97}.Debug|x64.ActiveCfg = Debug|x64
+		{C68F48DD-0B73-4C69-9CEB-D8F3E1369D97}.Debug|x64.Build.0 = Debug|x64
 		{C68F48DD-0B73-4C69-9CEB-D8F3E1369D97}.Release|Win32.ActiveCfg = Release|Win32
 		{C68F48DD-0B73-4C69-9CEB-D8F3E1369D97}.Release|Win32.Build.0 = Release|Win32
+		{C68F48DD-0B73-4C69-9CEB-D8F3E1369D97}.Release|x64.ActiveCfg = Release|x64
+		{C68F48DD-0B73-4C69-9CEB-D8F3E1369D97}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5D42A0FC-CC01-44EC-8DF4-EE396EC424C5}
 	EndGlobalSection
 EndGlobal
