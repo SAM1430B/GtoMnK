@@ -41,7 +41,7 @@
     <ProjectGuid>{7D4180C0-FA00-4ED3-9D09-458942FC45FF}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>XInput</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>OpenXinput</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
