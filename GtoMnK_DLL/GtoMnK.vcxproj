@@ -376,7 +376,9 @@ robocopy "$(ProjectDir)Documents" "$(SolutionDir)$(Configuration)\Config"</Comma
   <ItemGroup>
     <ClCompile Include="GtoMnKMutex.cpp" />
     <ClCompile Include="SDL2_Gamepad.cpp" />
+    <ClCompile Include="SDL2_GamepadHooks.cpp" />
     <ClCompile Include="XInput_Gamepad.cpp" />
+    <ClCompile Include="XInput_GamepadHooks.cpp" />
     <ClInclude Include="EnableOpenXinput.h" />
     <ClCompile Include="GamepadState.cpp" />
     <ClCompile Include="HandleMainWindow.cpp" />

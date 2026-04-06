@@ -58,6 +58,12 @@
     <ClCompile Include="GtoMnKMutex.cpp">
       <Filter>Misc</Filter>
     </ClCompile>
+    <ClCompile Include="SDL2_GamepadHooks.cpp">
+      <Filter>Files\Gamepad\SDL_Gamepad</Filter>
+    </ClCompile>
+    <ClCompile Include="XInput_GamepadHooks.cpp">
+      <Filter>Files\Gamepad\XInput_Gamepad</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

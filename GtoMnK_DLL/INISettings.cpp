@@ -124,32 +124,18 @@ void LoadIniSettings() {
 
     // [API]
     int inputMethod = GetPrivateProfileIntA("API", "InputMethod", 2, iniPath.c_str());
-    if (inputMethod == 0) {
-		g_InputMethod = InputMethod::PostMessage;
-    }
-    else if (inputMethod == 1) {
-        g_InputMethod = InputMethod::RawInput;
-    }
-    else {
-        g_InputMethod = InputMethod::Hybrid;
-    }
+    if (inputMethod == 0) {g_InputMethod = InputMethod::PostMessage;}
+    else if (inputMethod == 1) {g_InputMethod = InputMethod::RawInput;}
+    else {g_InputMethod = InputMethod::Hybrid;}
 
     const char* methodName = "Hybrid";
-    if (g_InputMethod == InputMethod::RawInput) {
-        methodName = "RawInput";
-    }
-    else if (g_InputMethod == InputMethod::PostMessage) {
-        methodName = "PostMessage";
-    }
+    if (g_InputMethod == InputMethod::RawInput) {methodName = "RawInput";}
+    else if (g_InputMethod == InputMethod::PostMessage) {methodName = "PostMessage";}
     LOG("Using Input Method: %s", methodName);
 
     int gamepadMethod = GetPrivateProfileIntA("API", "GamepadMethod", 0, iniPath.c_str());
-    if (gamepadMethod == 1) {
-        g_GamepadMethod = GamepadMethod::SDL2;
-    }
-    else {
-        g_GamepadMethod = GamepadMethod::XInput;
-    }
+    if (gamepadMethod == 1) {g_GamepadMethod = GamepadMethod::SDL2;}
+    else {g_GamepadMethod = GamepadMethod::XInput;}
 	LOG("Using Gamepad Method: %s", (g_GamepadMethod == GamepadMethod::SDL2) ? "SDL2" : "XInput");
 
     g_EnableOpenXinput = GetPrivateProfileIntA("API", "EnableOpenXinput", 0, iniPath.c_str()) == 1;

@@ -339,7 +339,7 @@ namespace GtoMnK {
         }
 
         void SendAction(const std::string& actionString, bool press) {
-            if (actionString.empty() || actionString == "0") return;
+            if (actionString.empty() || actionString == "0" || actionString == "-0") return;
 
             auto dispatcher = [](int code, bool p) {
                 if (g_InputMethod == InputMethod::PostMessage || g_InputMethod == InputMethod::Hybrid) {
