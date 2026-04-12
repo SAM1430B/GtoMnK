@@ -11,6 +11,9 @@ extern HMODULE g_hModule;
 std::map<UINT, ButtonState> buttonStates;
 bool g_EnableMouseDoubleClick = false;
 int righthanded;
+bool g_DisableMouse_Base = false;
+bool g_DisableMouse_Fn1 = false;
+bool g_DisableMouse_Fn2 = false;
 
 // For Controller Setting
 int controllerID = 0;
@@ -48,8 +51,8 @@ bool g_filterMouseButton = false;
 bool g_filterKeyboardButton = false;
 
 // For Gamepad Masking
-bool enableXInputMask = false;
-bool enableSDL2Mask = false;
+bool enableXInputMaskHook = false;
+bool enableSDL2MaskHook = false;
 
 // For finding the game window
 char iniWindowName[256] = { 0 };
@@ -139,8 +142,8 @@ void LoadIniSettings() {
 	LOG("Using Gamepad Method: %s", (g_GamepadMethod == GamepadMethod::SDL2) ? "SDL2" : "XInput");
 
     g_EnableOpenXinput = GetPrivateProfileIntA("API", "EnableOpenXinput", 0, iniPath.c_str()) == 1;
-    enableXInputMask = GetPrivateProfileIntA("API", "EnableXInputMask", 0, iniPath.c_str()) == 1;
-    enableSDL2Mask = GetPrivateProfileIntA("API", "EnableSDL2Mask", 0, iniPath.c_str()) == 1;
+    enableXInputMaskHook = GetPrivateProfileIntA("API", "EnableXInputMaskHook", 0, iniPath.c_str()) == 1;
+    enableSDL2MaskHook = GetPrivateProfileIntA("API", "EnableSDL2MaskHook", 0, iniPath.c_str()) == 1;
 
     // [Hooks]
     getCursorPosHook = GetPrivateProfileIntA("Hooks", "GetCursorposHook", 1, iniPath.c_str());
@@ -198,14 +201,17 @@ void LoadIniSettings() {
     g_EnableMouseDoubleClick = GetPrivateProfileIntA("KeyMapping", "EnableMouseDoubleClick", 0, iniPath.c_str()) == 1;
     GetPrivateProfileStringA("KeyMapping", "TriggerThreshold", "40", buffer, sizeof(buffer), iniPath.c_str()); g_TriggerThreshold = std::stof(buffer);
     GetPrivateProfileStringA("KeyMapping", "StickAsButtonDeadzone", "0.25", buffer, sizeof(buffer), iniPath.c_str()); stick_as_button_deadzone = std::stof(buffer);
+    g_DisableMouse_Base = GetPrivateProfileIntA("KeyMapping", "DisableMouse", 0, iniPath.c_str()) == 1;
     
     g_Fn1_ButtonID = -1; g_Fn2_ButtonID = -1;
 
     LoadButtonLayer("KeyMapping", 0, true, iniPath.c_str());
     // [Fn1]
     LoadButtonLayer("Fn1", 100, false, iniPath.c_str());
+    g_DisableMouse_Fn1 = GetPrivateProfileIntA("Fn1", "DisableMouse", 0, iniPath.c_str()) == 1;
     // [Fn2]
     LoadButtonLayer("Fn2", 200, false, iniPath.c_str());
+    g_DisableMouse_Fn2 = GetPrivateProfileIntA("Fn2", "DisableMouse", 0, iniPath.c_str()) == 1;
 
 }
 

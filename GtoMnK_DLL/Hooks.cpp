@@ -22,7 +22,7 @@ extern GtoMnK::InputMethod g_InputMethod;
 extern int drawProtoFakeCursor;
 extern bool g_filterRawInput, g_filterMouseMove, g_filterMouseActivate, g_filterWindowActivate, g_filterWindowActivateApp, g_filterMouseWheel, g_filterMouseButton, g_filterKeyboardButton;
 
-extern bool enableXInputMask, enableSDL2Mask;
+extern bool enableXInputMaskHook, enableSDL2MaskHook;
 
 // For RawInput
 HOOK_TRACE_INFO g_getRawInputDataHook = { NULL };
@@ -162,7 +162,7 @@ namespace GtoMnK {
             if (FAILED(result)) LOG("Failed to install hook for AdjustWindowRect: %S", RtlGetLastErrorString());
         }
 		// XInput Hook Masking
-        if (enableXInputMask) {
+        if (enableXInputMaskHook) {
             LOG("Installing XInput Gamepad Masking Hook...");
 
             HMODULE hXInput = GetModuleHandleA("xinput1_3.dll");
@@ -182,7 +182,7 @@ namespace GtoMnK {
             }
         }
 		// SDL2 Hook Masking
-        if (enableSDL2Mask) {
+        if (enableSDL2MaskHook) {
             LOG("Installing SDL2 Gamepad Hooks...");
             HMODULE hSDL2 = GetModuleHandleA("SDL2.dll");
             if (hSDL2) {
@@ -193,7 +193,7 @@ namespace GtoMnK {
                     if (FAILED(result)) LOG("Failed to install hook for SDL_GameControllerGetButtonMask: %S", RtlGetLastErrorString());
                 }
 
-                TrueSDLGetAxis = (SDL_GameControllerGetAxis_t)GetProcAddress(hSDL2, "SDL_GameControllerGetAxisMask");
+                TrueSDLGetAxis = (SDL_GameControllerGetAxis_t)GetProcAddress(hSDL2, "SDL_GameControllerGetAxis");
                 if (TrueSDLGetAxis) {
                     LOG("Installing SDL_GameControllerGetAxis hook...");
                     result = LhInstallHook(TrueSDLGetAxis, Hook_SDL_GameControllerGetAxisMask, NULL, &g_sdlGetAxisMaskHookHandle);
@@ -234,16 +234,16 @@ namespace GtoMnK {
             LhSetExclusiveACL(threadIdList, 1, &g_HookPeekMessageAHandle);
             LhSetExclusiveACL(threadIdList, 1, &g_HookPeekMessageWHandle);
         }
-        if (enableXInputMask && g_xinputGetStateMaskHookHandle.Link != NULL) {
+        if (enableXInputMaskHook && g_xinputGetStateMaskHookHandle.Link != NULL) {
             LhSetExclusiveACL(threadIdList, 1, &g_xinputGetStateMaskHookHandle);
         }
-        if (enableSDL2Mask) {
+        if (enableSDL2MaskHook) {
             if (g_sdlGetButtonMaskHookHandle.Link != NULL)
                 LhSetExclusiveACL(threadIdList, 1, &g_sdlGetButtonMaskHookHandle);
 
             if (g_sdlGetAxisMaskHookHandle.Link != NULL)
                 LhSetExclusiveACL(threadIdList, 1, &g_sdlGetAxisMaskHookHandle);
-        }
+            }
         LOG("All selected hooks are now enabled.");
     }
 

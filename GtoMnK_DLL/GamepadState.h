@@ -16,6 +16,7 @@ extern int g_Fn1_ButtonID;
 extern int g_Fn2_ButtonID;
 
 POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY);
+bool IsMouseDisabledForCurrentLayer();
 bool IsTriggerPressed(BYTE triggerValue);
 void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed);
 void ProcessTrigger(UINT triggerID, BYTE triggerValue);

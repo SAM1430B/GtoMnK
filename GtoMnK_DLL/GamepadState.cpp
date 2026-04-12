@@ -117,6 +117,13 @@ POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
     return { integerDeltaX, -integerDeltaY };
 }
 
+bool IsMouseDisabledForCurrentLayer() {
+	// Disable ThumbstickMouseMove for a specific layer.
+    if (g_Fn2_State) return g_DisableMouse_Fn2;
+    if (g_Fn1_State) return g_DisableMouse_Fn1;
+    return g_DisableMouse_Base;
+}
+
 // 0-255 lower value is more sensitive
 bool IsTriggerPressed(BYTE triggerValue) {
     return triggerValue > g_TriggerThreshold;
@@ -233,7 +240,7 @@ void ProcessTrigger(UINT triggerID, BYTE triggerValue) {
     ProcessButton(triggerID, isPressed);
 }
 
-// This functions used for enableXInputMask and enableSDL2Mask to check if the button is mapped to an action (not "0") in ini file.
+// This functions used for enableXInputMaskHook and enableSDL2MaskHook to check if the button is mapped to an action (not "0") in ini file.
 bool IsButtonMapped(UINT buttonFlag) {
     if (g_Fn1_ButtonID != -1 && buttonFlag == static_cast<UINT>(g_Fn1_ButtonID)) return true;
     if (g_Fn2_ButtonID != -1 && buttonFlag == static_cast<UINT>(g_Fn2_ButtonID)) return true;

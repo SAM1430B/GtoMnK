@@ -33,7 +33,7 @@ bool XInput_GetState(CustomControllerState& outState) {
 
     DWORD result;
 
-    if (enableXInputMask && TrueXInputGetState != nullptr && !g_EnableOpenXinput) {
+    if (enableXInputMaskHook && TrueXInputGetState != nullptr && !g_EnableOpenXinput) {
         result = TrueXInputGetState(controllerID, &state);
     }
     else {

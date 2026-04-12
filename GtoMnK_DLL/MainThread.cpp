@@ -300,7 +300,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                 }
 
                 // Mouse Movement
-                if (mode == 1 && onoroff) {
+                if (mode == 1 && onoroff && !IsMouseDisabledForCurrentLayer()) {
                     SHORT thumbX = (righthanded == 1) ? state.ThumbRX : state.ThumbLX;
                     SHORT thumbY = (righthanded == 1) ? state.ThumbRY : state.ThumbLY;
                     POINT delta = ThumbstickMouseMove(thumbX, thumbY);

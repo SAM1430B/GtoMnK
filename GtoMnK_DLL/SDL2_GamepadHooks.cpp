@@ -3,11 +3,17 @@
 #include "SDL2_Gamepad.h"
 #include "GamepadState.h"
 #include "INISettings.h"
+#include "OverlayMenu.h"
 
 extern SDL_GameController* g_GameController;
 
 Uint8 SDLCALL Hook_SDL_GameControllerGetButtonMask(SDL_GameController* gamecontroller, SDL_GameControllerButton button) {
     g_GameController = gamecontroller;
+
+	// Disable the Native SDL2 buttons when the overlay menu is open.
+    if (!disableOverlayOptions && OverlayMenu::state.isMenuOpen) {
+        return 0;
+    }
 
     UINT customID = 0;
     switch (button) {
@@ -27,7 +33,7 @@ Uint8 SDLCALL Hook_SDL_GameControllerGetButtonMask(SDL_GameController* gamecontr
     case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: customID = CUSTOM_ID_DPAD_RIGHT; break;
     }
 
-    if (enableSDL2Mask && customID != 0 && IsButtonMapped(customID)) {
+    if (enableSDL2MaskHook && customID != 0 && IsButtonMapped(customID)) {
         return 0;
     }
 
@@ -38,9 +44,14 @@ Uint8 SDLCALL Hook_SDL_GameControllerGetButtonMask(SDL_GameController* gamecontr
 Sint16 SDLCALL Hook_SDL_GameControllerGetAxisMask(SDL_GameController* gamecontroller, SDL_GameControllerAxis axis) {
     g_GameController = gamecontroller;
 
+	// Disable the Native SDL2 axes when the overlay menu is open.
+    if (!disableOverlayOptions && OverlayMenu::state.isMenuOpen) {
+        return 0;
+    }
+
     bool mapped = false;
 
-    if (mode == 1) {
+    if (mode == 1 && !IsMouseDisabledForCurrentLayer()) {
         if (righthanded == 1 && (axis == SDL_CONTROLLER_AXIS_RIGHTX || axis == SDL_CONTROLLER_AXIS_RIGHTY)) {
             mapped = true; // Hide Right Stick
         }
@@ -56,7 +67,7 @@ Sint16 SDLCALL Hook_SDL_GameControllerGetAxisMask(SDL_GameController* gamecontro
     if (axis == SDL_CONTROLLER_AXIS_RIGHTX && (IsButtonMapped(CUSTOM_ID_RSL) || IsButtonMapped(CUSTOM_ID_RSR))) mapped = true;
     if (axis == SDL_CONTROLLER_AXIS_RIGHTY && (IsButtonMapped(CUSTOM_ID_RSU) || IsButtonMapped(CUSTOM_ID_RSD))) mapped = true;
 
-    if (enableSDL2Mask && mapped) {
+    if (enableSDL2MaskHook && mapped) {
         return 0;
     }
 

@@ -65,8 +65,8 @@ extern bool g_filterMouseButton;
 extern bool g_filterKeyboardButton;
 
 // For Gamepad Masking
-extern bool enableXInputMask;
-extern bool enableSDL2Mask;
+extern bool enableXInputMaskHook;
+extern bool enableSDL2MaskHook;
 
 // General Settings
 extern int startUpDelay;
@@ -84,6 +84,7 @@ extern int responsetime;
 // StickToMouse
 extern int righthanded;
 extern float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, sensitivity_multiplier, horizontal_sensitivity, vertical_sensitivity, look_accel_multiplier;
+extern bool g_DisableMouse_Base, g_DisableMouse_Fn1, g_DisableMouse_Fn2;
 
 // KeyMapping
 extern bool g_EnableMouseDoubleClick;
