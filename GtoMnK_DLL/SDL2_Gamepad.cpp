@@ -17,6 +17,14 @@ SDL_GameControllerGetAxis_t TrueSDLGetAxis = nullptr;
 
 bool g_IsParasiticMode = false;
 
+typedef int(SDLCALL* SDL_NumJoysticks_t)(void);
+typedef SDL_bool(SDLCALL* SDL_IsGameController_t)(int);
+typedef SDL_GameController* (SDLCALL* SDL_GameControllerOpen_t)(int);
+
+SDL_NumJoysticks_t TrueSDLNumJoysticks = nullptr;
+SDL_IsGameController_t TrueSDLIsGameController = nullptr;
+SDL_GameControllerOpen_t TrueSDLGameControllerOpen = nullptr;
+
 void SDL2_Initialize() {
     LOG("Initializing SDL2...");
 
@@ -24,6 +32,12 @@ void SDL2_Initialize() {
     if (hGameSDL2 != NULL) {
         LOG("Game uses SDL2.dll. Entering Passive/Parasitic Mode.");
         g_IsParasiticMode = true;
+
+        TrueSDLGetButton = (SDL_GameControllerGetButton_t)GetProcAddress(hGameSDL2, "SDL_GameControllerGetButton");
+        TrueSDLGetAxis = (SDL_GameControllerGetAxis_t)GetProcAddress(hGameSDL2, "SDL_GameControllerGetAxis");
+        TrueSDLNumJoysticks = (SDL_NumJoysticks_t)GetProcAddress(hGameSDL2, "SDL_NumJoysticks");
+        TrueSDLIsGameController = (SDL_IsGameController_t)GetProcAddress(hGameSDL2, "SDL_IsGameController");
+        TrueSDLGameControllerOpen = (SDL_GameControllerOpen_t)GetProcAddress(hGameSDL2, "SDL_GameControllerOpen");
         return;
     }
 
@@ -33,15 +47,14 @@ void SDL2_Initialize() {
     SDL_SetHint(SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS, "0");
     SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
 
-    //SDL_SetHint(SDL_HINT_JOYSTICK_RAWINPUT, "1");
+    SDL_SetHint(SDL_HINT_JOYSTICK_RAWINPUT, "1");
     //SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_XBOX, "1");
     //SDL_SetHint(SDL_HINT_XINPUT_ENABLED, "0");
 
     //SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH, "1");
 
-    SDL_SetHint(SDL_HINT_JOYSTICK_THREAD, "1");
-    if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) < 0) {
-        LOG("Static SDL2 Init Failed: %s", SDL_GetError());
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) < 0) {
+        LOG("SDL2 Init Failed: %s", SDL_GetError());
         return;
     }
 
@@ -66,84 +79,142 @@ void SDL2_Initialize() {
             }
         }
     }
-    LOG("Static SDL2 Initialized.");
+    LOG("SDL2 Initialized.");
 }
 
 void SDL2_Cleanup() {
-    if (g_IsParasiticMode) {
+    if (g_GameController && !g_IsParasiticMode) {
+        SDL_GameControllerClose(g_GameController);
         g_GameController = nullptr;
     }
-    else {
-        if (g_GameController) {
-            SDL_GameControllerClose(g_GameController);
-            g_GameController = nullptr;
+    if (!g_IsParasiticMode) {
+        SDL_Quit();
+    }
+}
+
+// Opens the SDL_GameController at the given virtual index (skipping non-gamepad devices).
+SDL_GameController* OpenControllerByVirtualIndex(int virtualIndex) {
+    int joyCount = SDL_NumJoysticks();
+    int foundGamepads = 0;
+
+    for (int i = 0; i < joyCount; ++i) {
+        if (!SDL_IsGameController(i)) continue;
+
+        if (foundGamepads == virtualIndex) {
+            return SDL_GameControllerOpen(i);
         }
-        SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC);
+        foundGamepads++;
+    }
+    return nullptr;
+}
+
+void AttemptInitialConnect() {
+    if (g_GameController) return;
+
+    g_GameController = OpenControllerByVirtualIndex(controllerID);
+
+    // To keep track of the specific used controller.
+    if (g_GameController) {
+        SDL_Joystick* joy = SDL_GameControllerGetJoystick(g_GameController);
+        g_JoyID = SDL_JoystickInstanceID(joy);
+
+        // Serial Number (USB port changes)
+        const char* serial = SDL_JoystickGetSerial(joy);
+        if (serial) {
+            g_JoySerialNum = serial;
+        }
+
+        // OS Device Path (Fallback, port-dependent)
+        const char* path = SDL_JoystickPath(joy);
+        if (path) {
+            g_JoyHardwarePath = path;
+        }
+        LOG("SDL2: Using %s",
+            SDL_GameControllerName(g_GameController));
+
+        LOG("SDL2: Joystick Serial: [%s]",
+            g_JoySerialNum.empty() ? "NONE" : g_JoySerialNum.c_str());
+        LOG("SDL2: Joystick Path: [%s]",
+            g_JoyHardwarePath.empty() ? "NONE" : g_JoyHardwarePath.c_str());
+
     }
 }
 
 // Memory-Safe Readers
 Uint8 SafeReadButton(SDL_GameController* gc, SDL_GameControllerButton button) {
-    if (g_IsParasiticMode && TrueSDLGetButton != nullptr) {
-        return TrueSDLGetButton(gc, button); // Read from Game's DLL
-    }
-    return SDL_GameControllerGetButton(gc, button); // Read from GtoMnK Static lib
+    if (g_IsParasiticMode && TrueSDLGetButton != nullptr) return TrueSDLGetButton(gc, button);
+    return SDL_GameControllerGetButton ? SDL_GameControllerGetButton(gc, button) : 0;
 }
 
 Sint16 SafeReadAxis(SDL_GameController* gc, SDL_GameControllerAxis axis) {
-    if (g_IsParasiticMode && TrueSDLGetAxis != nullptr) {
-        return TrueSDLGetAxis(gc, axis); // Read from Game's DLL
-    }
-    return SDL_GameControllerGetAxis(gc, axis); // Read from GtoMnK Static lib
+    if (g_IsParasiticMode && TrueSDLGetAxis != nullptr) return TrueSDLGetAxis(gc, axis);
+    return SDL_GameControllerGetAxis ? SDL_GameControllerGetAxis(gc, axis) : 0;
 }
 
 bool SDL2_GetState(CustomControllerState& outState) {
     if (g_IsParasiticMode) {
-        if (!g_GameController || !TrueSDLGetButton || !TrueSDLGetAxis) return false;
+        if (!g_GameController && TrueSDLNumJoysticks && TrueSDLIsGameController && TrueSDLGameControllerOpen) {
+            int joyCount = TrueSDLNumJoysticks();
+            for (int i = 0; i < joyCount; ++i) {
+                if (TrueSDLIsGameController(i)) {
+                    g_GameController = TrueSDLGameControllerOpen(i);
+                    if (g_GameController) break;
+                }
+            }
+        }
     }
     else {
-        if (g_GameController && SDL_GameControllerGetAttached(g_GameController) == SDL_FALSE) {
-            SDL_GameControllerClose(g_GameController);
-            g_GameController = nullptr;
-            g_JoyID = -1;
-        }
+        SDL_Event event;
 
-        if (!g_GameController) {
-            static ULONGLONG lastConnectAttempt = 0;
-            if (GetTickCount64() - lastConnectAttempt > 1000) {
-                lastConnectAttempt = GetTickCount64();
-                int joyCount = SDL_NumJoysticks();
-                for (int i = 0; i < joyCount; ++i) {
-                    if (SDL_IsGameController(i)) {
-                        SDL_GameController* tempController = SDL_GameControllerOpen(i);
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_CONTROLLERDEVICEADDED) {
+                int deviceIndex = event.cdevice.which;
+
+                if (!g_GameController) {
+                    // If never successfully connected before, try controllerID
+                    if (g_JoySerialNum.empty() && g_JoyHardwarePath.empty()) {
+                        AttemptInitialConnect();
+                    }
+                    else {
+                        SDL_GameController* tempController = SDL_GameControllerOpen(deviceIndex);
+
                         if (tempController) {
                             SDL_Joystick* joy = SDL_GameControllerGetJoystick(tempController);
                             const char* newSerial = SDL_JoystickGetSerial(joy);
                             const char* newPath = SDL_JoystickPath(joy);
                             bool isMatch = false;
 
-                            if (g_JoySerialNum.empty() && g_JoyHardwarePath.empty()) {
-                                if (i == controllerID) isMatch = true;
+                            // The priority is the serial numbers match.
+                            if (!g_JoySerialNum.empty() && newSerial != nullptr) {
+                                isMatch = (g_JoySerialNum == newSerial);
                             }
-                            else {
-                                if (!g_JoySerialNum.empty() && newSerial != nullptr) isMatch = (g_JoySerialNum == newSerial);
-                                else if (!g_JoyHardwarePath.empty() && newPath != nullptr) isMatch = (g_JoyHardwarePath == newPath);
+                            // If no serial is available. Check the USB path match.
+                            else if (!g_JoyHardwarePath.empty() && newPath != nullptr) {
+                                isMatch = (g_JoyHardwarePath == newPath);
                             }
 
+                            // Keep it if it's the matched controller. 
                             if (isMatch) {
                                 g_GameController = tempController;
                                 g_JoyID = SDL_JoystickInstanceID(joy);
-                                if (g_JoySerialNum.empty() && g_JoyHardwarePath.empty()) {
-                                    if (newSerial) g_JoySerialNum = newSerial;
-                                    if (newPath) g_JoyHardwarePath = newPath;
-                                }
-                                break;
+                                LOG("SDL2: Controller is successfully reclaimed!");
                             }
                             else {
+                                // Not the matched controller
                                 SDL_GameControllerClose(tempController);
                             }
                         }
                     }
+                }
+            }
+            else if (event.type == SDL_CONTROLLERDEVICEREMOVED) {
+                // Disconnect if the device removed.
+                if (g_GameController && event.cdevice.which == g_JoyID) {
+                    SDL_GameControllerClose(g_GameController);
+                    g_GameController = nullptr;
+                    g_JoyID = -1;
+
+                    LOG("SDL2: Controller is disconnected. Waiting for original hardware...");
                 }
             }
         }
@@ -186,6 +257,6 @@ bool SDL2_GetState(CustomControllerState& outState) {
     outState.ThumbLY = (SHORT)leftY;
     outState.ThumbRX = SafeReadAxis(g_GameController, SDL_CONTROLLER_AXIS_RIGHTX);
     outState.ThumbRY = (SHORT)rightY;
-
+        
     return true;
 }
