@@ -259,6 +259,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                 ProcessTrigger(CUSTOM_ID_LT, state.LeftTrigger);
                 ProcessTrigger(CUSTOM_ID_RT, state.RightTrigger);
 
+				// Touchpad Button
+                ProcessButton(CUSTOM_ID_TOUCHPAD_BUTTON, state.buttons[CUSTOM_ID_TOUCHPAD_BUTTON]);
+
                 // Analog Sticks (as buttons)
                 // Left Thumbsticks
                 if (onoroff && (mode == 0 || (mode == 1 && righthanded == 1))) {
@@ -279,7 +282,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                     ProcessButton(CUSTOM_ID_LSL, isLSL);
                     ProcessButton(CUSTOM_ID_LSR, isLSR);
                 }
-				// Right Thumbsticks
+                // Right Thumbsticks
                 if (onoroff && (mode == 0 || (mode == 1 && righthanded == 0))) {
                     float normRX = static_cast<float>(state.ThumbRX) / 32767.0f;
                     float normRY = static_cast<float>(state.ThumbRY) / 32767.0f;
@@ -304,6 +307,16 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                     SHORT thumbX = (righthanded == 1) ? state.ThumbRX : state.ThumbLX;
                     SHORT thumbY = (righthanded == 1) ? state.ThumbRY : state.ThumbLY;
                     POINT delta = ThumbstickMouseMove(thumbX, thumbY);
+
+                    POINT touchDelta = { 0, 0 };
+					// Touchpad used only in SDL2 mode since XInput doesn't support it.
+                    if (g_GamepadMethod == GamepadMethod::SDL2 && !disable_touchpad_mouse) {
+                        touchDelta = TouchpadMouseMove(state.TouchpadX, state.TouchpadY, state.TouchpadActive);
+                    }
+
+                    delta.x += touchDelta.x;
+                    delta.y += touchDelta.y;
+
                     if (delta.x != 0 || delta.y != 0) {
                         Mouse::Xf += delta.x; Mouse::Yf += delta.y;
                         Mouse::Xf = std::max((LONG)rect.left, std::min((LONG)Mouse::Xf, (LONG)rect.right - 1));

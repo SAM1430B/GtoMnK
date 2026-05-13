@@ -75,5 +75,13 @@ bool XInput_GetState(CustomControllerState& outState) {
     outState.ThumbRX = state.Gamepad.sThumbRX;
     outState.ThumbRY = state.Gamepad.sThumbRY;
 
+	// Touchpad
+    // Nullify the data since XInput doesn't support it
+    outState.buttons[CUSTOM_ID_TOUCHPAD_BUTTON] = false;
+
+    outState.TouchpadActive = false;
+    outState.TouchpadX = 0.0f;
+    outState.TouchpadY = 0.0f;
+
     return true;
 }

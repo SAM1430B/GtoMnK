@@ -16,6 +16,74 @@ bool g_Fn2_State = false;
 static std::unordered_map<UINT, int> g_ButtonLayer;
 static std::unordered_map<UINT, bool> g_ButtonLastState;
 
+POINT TouchpadMouseMove(float touchX, float touchY, bool isActive) {
+    static float lastTouchX = 0.0f;
+    static float lastTouchY = 0.0f;
+    static bool wasActive = false;
+
+    static double smoothedDeltaX = 0.0;
+    static double smoothedDeltaY = 0.0;
+
+    static double mouseDeltaAccumulatorX = 0.0;
+    static double mouseDeltaAccumulatorY = 0.0;
+
+    // Smoothing Factor
+    // 0.0 to 1.0. Lower = smoother but more delayed. Higher = more responsive but jittery.
+    // 0.35 to 0.5 is usually the "sweet spot" for touchpads.
+    const double smoothing_factor = 0.4;
+
+    // Reset smoothing when finger lifts
+    if (!isActive) {
+        wasActive = false;
+        smoothedDeltaX = 0.0;
+        smoothedDeltaY = 0.0;
+        return { 0, 0 };
+    }
+
+    if (!wasActive) {
+        lastTouchX = touchX;
+        lastTouchY = touchY;
+        smoothedDeltaX = 0.0;
+        smoothedDeltaY = 0.0;
+        wasActive = true;
+        return { 0, 0 };
+    }
+
+    float rawDeltaX = touchX - lastTouchX;
+    float rawDeltaY = touchY - lastTouchY;
+
+    lastTouchX = touchX;
+    lastTouchY = touchY;
+
+    // Micro-Deadzone
+    // Ignore hardware capacitive noise (usually < 0.0001) when resting your finger.
+    if (std::abs(rawDeltaX) < touchpad_deadzone) rawDeltaX = 0.0f;
+    if (std::abs(rawDeltaY) < touchpad_deadzone) rawDeltaY = 0.0f;
+
+    // EMA Smoothing
+    // Blend the new raw delta into the existing smoothed delta
+    double safe_smoothing = std::max(0.0f, std::min(0.99f, touchpad_smoothing));
+    smoothedDeltaX = smoothedDeltaX + safe_smoothing * (rawDeltaX - smoothedDeltaX);
+    smoothedDeltaY = smoothedDeltaY + safe_smoothing * (rawDeltaY - smoothedDeltaY);
+
+    double finalSpeedX = touchpad_sensitivity * (1.0 + touchpad_horizontal_sensitivity);
+    double finalSpeedY = touchpad_sensitivity * (1.0 + touchpad_vertical_sensitivity);
+
+    double targetDeltaX = smoothedDeltaX * finalSpeedX;
+    double targetDeltaY = smoothedDeltaY * finalSpeedY;
+
+    mouseDeltaAccumulatorX += targetDeltaX;
+    mouseDeltaAccumulatorY += targetDeltaY;
+
+    LONG integerDeltaX = static_cast<LONG>(mouseDeltaAccumulatorX);
+    LONG integerDeltaY = static_cast<LONG>(mouseDeltaAccumulatorY);
+
+    mouseDeltaAccumulatorX -= integerDeltaX;
+    mouseDeltaAccumulatorY -= integerDeltaY;
+
+    return { integerDeltaX, integerDeltaY };
+}
+
 POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
     const double smoothing_factor = 0.35;
 

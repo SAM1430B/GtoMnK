@@ -14,6 +14,8 @@ std::string g_JoyHardwarePath = "";
 // Pointers to the GAME'S dynamic SDL2.dll functions
 SDL_GameControllerGetButton_t TrueSDLGetButton = nullptr;
 SDL_GameControllerGetAxis_t TrueSDLGetAxis = nullptr;
+SDL_GameControllerGetNumTouchpads_t TrueSDLGetNumTouchpads = nullptr;
+SDL_GameControllerGetTouchpadFinger_t TrueSDLGetTouchpadFinger = nullptr;
 
 bool g_IsParasiticMode = false;
 
@@ -35,9 +37,15 @@ void SDL2_Initialize() {
 
         TrueSDLGetButton = (SDL_GameControllerGetButton_t)GetProcAddress(hGameSDL2, "SDL_GameControllerGetButton");
         TrueSDLGetAxis = (SDL_GameControllerGetAxis_t)GetProcAddress(hGameSDL2, "SDL_GameControllerGetAxis");
+        TrueSDLGetNumTouchpads = (SDL_GameControllerGetNumTouchpads_t)GetProcAddress(hGameSDL2, "SDL_GameControllerGetNumTouchpads");
+        TrueSDLGetTouchpadFinger = (SDL_GameControllerGetTouchpadFinger_t)GetProcAddress(hGameSDL2, "SDL_GameControllerGetTouchpadFinger");
         TrueSDLNumJoysticks = (SDL_NumJoysticks_t)GetProcAddress(hGameSDL2, "SDL_NumJoysticks");
         TrueSDLIsGameController = (SDL_IsGameController_t)GetProcAddress(hGameSDL2, "SDL_IsGameController");
         TrueSDLGameControllerOpen = (SDL_GameControllerOpen_t)GetProcAddress(hGameSDL2, "SDL_GameControllerOpen");
+
+        if (!TrueSDLGetNumTouchpads || !TrueSDLGetTouchpadFinger) {
+            LOG("WARNING: The game's SDL2.dll is too old and doesn't support Touchpads.");
+        }
         return;
     }
 
@@ -52,6 +60,8 @@ void SDL2_Initialize() {
     //SDL_SetHint(SDL_HINT_XINPUT_ENABLED, "0");
 
     //SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH, "1");
+    //SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4, "1");
+    //SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5, "1");
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) < 0) {
         LOG("SDL2 Init Failed: %s", SDL_GetError());
@@ -149,6 +159,16 @@ Uint8 SafeReadButton(SDL_GameController* gc, SDL_GameControllerButton button) {
 Sint16 SafeReadAxis(SDL_GameController* gc, SDL_GameControllerAxis axis) {
     if (g_IsParasiticMode && TrueSDLGetAxis != nullptr) return TrueSDLGetAxis(gc, axis);
     return SDL_GameControllerGetAxis ? SDL_GameControllerGetAxis(gc, axis) : 0;
+}
+
+int SafeReadNumTouchpads(SDL_GameController* gc) {
+    if (g_IsParasiticMode && TrueSDLGetNumTouchpads != nullptr) return TrueSDLGetNumTouchpads(gc);
+    return SDL_GameControllerGetNumTouchpads ? SDL_GameControllerGetNumTouchpads(gc) : 0;
+}
+
+int SafeReadTouchpadFinger(SDL_GameController* gc, int touchpad, int finger, Uint8* state, float* x, float* y, float* pressure) {
+    if (g_IsParasiticMode && TrueSDLGetTouchpadFinger != nullptr) return TrueSDLGetTouchpadFinger(gc, touchpad, finger, state, x, y, pressure);
+    return SDL_GameControllerGetTouchpadFinger ? SDL_GameControllerGetTouchpadFinger(gc, touchpad, finger, state, x, y, pressure) : -1;
 }
 
 bool SDL2_GetState(CustomControllerState& outState) {
@@ -257,6 +277,26 @@ bool SDL2_GetState(CustomControllerState& outState) {
     outState.ThumbLY = (SHORT)leftY;
     outState.ThumbRX = SafeReadAxis(g_GameController, SDL_CONTROLLER_AXIS_RIGHTX);
     outState.ThumbRY = (SHORT)rightY;
-        
+
+	// Touchpad
+    outState.buttons[CUSTOM_ID_TOUCHPAD_BUTTON] = SafeReadButton(g_GameController, SDL_CONTROLLER_BUTTON_TOUCHPAD);
+
+    outState.TouchpadActive = false;
+    outState.TouchpadX = 0.0f;
+    outState.TouchpadY = 0.0f;
+
+    if (SafeReadNumTouchpads(g_GameController) > 0) {
+        Uint8 touchState;
+        float x, y, pressure;
+
+        if (SafeReadTouchpadFinger(g_GameController, 0, 0, &touchState, &x, &y, &pressure) == 0) {
+            if (touchState == SDL_PRESSED || pressure > 0.0f) {
+                outState.TouchpadActive = true;
+                outState.TouchpadX = x;
+                outState.TouchpadY = y;
+            }
+        }
+    }
+
     return true;
 }

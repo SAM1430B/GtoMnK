@@ -53,6 +53,7 @@ HOOK_TRACE_INFO g_HookPeekMessageWHandle = { NULL };
 HOOK_TRACE_INFO g_xinputGetStateMaskHookHandle = { NULL };
 HOOK_TRACE_INFO g_sdlGetButtonMaskHookHandle = { NULL };
 HOOK_TRACE_INFO g_sdlGetAxisMaskHookHandle = { NULL };
+HOOK_TRACE_INFO g_sdlGetNumTouchpadsHookHandle = { NULL };
 
 namespace GtoMnK {
 
@@ -199,6 +200,17 @@ namespace GtoMnK {
                     result = LhInstallHook(TrueSDLGetAxis, Hook_SDL_GameControllerGetAxisMask, NULL, &g_sdlGetAxisMaskHookHandle);
                     if (FAILED(result)) LOG("Failed to install hook for SDL_GameControllerGetAxisMask: %S", RtlGetLastErrorString());
                 }
+                TrueSDLGetNumTouchpads = (SDL_GameControllerGetNumTouchpads_t)GetProcAddress(hSDL2, "SDL_GameControllerGetNumTouchpads");
+                if (TrueSDLGetNumTouchpads) {
+                    LOG("Installing SDL_GameControllerGetNumTouchpads hook...");
+                    result = LhInstallHook(TrueSDLGetNumTouchpads, Hook_SDL_GameControllerGetNumTouchpads, NULL, &g_sdlGetNumTouchpadsHookHandle);
+                    if (FAILED(result)) LOG("Failed to install hook for SDL_GameControllerGetNumTouchpads: %S", RtlGetLastErrorString());
+                }
+                TrueSDLGetTouchpadFinger = (SDL_GameControllerGetTouchpadFinger_t)GetProcAddress(hSDL2, "SDL_GameControllerGetTouchpadFinger");
+
+                if (!TrueSDLGetNumTouchpads || !TrueSDLGetTouchpadFinger) {
+                    LOG("WARNING: The game's SDL2.dll is too old and doesn't support Touchpads.");
+                }
             }
             else {
                 LOG("No SDL2 module found loaded in the game.");
@@ -243,6 +255,9 @@ namespace GtoMnK {
 
             if (g_sdlGetAxisMaskHookHandle.Link != NULL)
                 LhSetExclusiveACL(threadIdList, 1, &g_sdlGetAxisMaskHookHandle);
+
+            if (g_sdlGetNumTouchpadsHookHandle.Link != NULL)
+                LhSetExclusiveACL(threadIdList, 1, &g_sdlGetNumTouchpadsHookHandle);
             }
         LOG("All selected hooks are now enabled.");
     }

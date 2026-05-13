@@ -29,6 +29,7 @@ enum CustomInputID {
     CUSTOM_ID_DPAD_DOWN,
     CUSTOM_ID_DPAD_LEFT,
     CUSTOM_ID_DPAD_RIGHT,
+    CUSTOM_ID_TOUCHPAD_BUTTON,
 
     CUSTOM_ID_LT = 0x10000,
     CUSTOM_ID_RT,
@@ -85,6 +86,10 @@ extern int responsetime;
 extern int righthanded;
 extern float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, sensitivity_multiplier, horizontal_sensitivity, vertical_sensitivity, look_accel_multiplier;
 extern bool g_DisableMouse_Base, g_DisableMouse_Fn1, g_DisableMouse_Fn2;
+
+// TouchToMouse
+extern float touchpad_sensitivity, touchpad_horizontal_sensitivity, touchpad_vertical_sensitivity, touchpad_deadzone, touchpad_smoothing;
+extern bool disable_touchpad_mouse;
 
 // KeyMapping
 extern bool g_EnableMouseDoubleClick;

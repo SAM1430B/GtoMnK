@@ -31,6 +31,7 @@ Uint8 SDLCALL Hook_SDL_GameControllerGetButtonMask(SDL_GameController* gamecontr
     case SDL_CONTROLLER_BUTTON_DPAD_DOWN: customID = CUSTOM_ID_DPAD_DOWN; break;
     case SDL_CONTROLLER_BUTTON_DPAD_LEFT: customID = CUSTOM_ID_DPAD_LEFT; break;
     case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: customID = CUSTOM_ID_DPAD_RIGHT; break;
+    case SDL_CONTROLLER_BUTTON_TOUCHPAD: customID = CUSTOM_ID_TOUCHPAD_BUTTON; break;
     }
 
     if (enableSDL2MaskHook && customID != 0 && IsButtonMapped(customID)) {
@@ -72,5 +73,19 @@ Sint16 SDLCALL Hook_SDL_GameControllerGetAxisMask(SDL_GameController* gamecontro
     }
 
     if (TrueSDLGetAxis) return TrueSDLGetAxis(gamecontroller, axis);
+    return 0;
+}
+
+int SDLCALL Hook_SDL_GameControllerGetNumTouchpads(SDL_GameController* gamecontroller) {
+    g_GameController = gamecontroller;
+
+    // Disable all touchpads when the overlay menu is open.
+    if ((!disableOverlayOptions && OverlayMenu::state.isMenuOpen) || !disable_touchpad_mouse) {
+        return 0;
+    }
+
+    if (TrueSDLGetNumTouchpads) {
+        return TrueSDLGetNumTouchpads(gamecontroller);
+    }
     return 0;
 }
