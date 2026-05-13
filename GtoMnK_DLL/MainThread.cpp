@@ -255,6 +255,14 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                 ProcessButton(CUSTOM_ID_START, state.buttons[CUSTOM_ID_START]);
                 ProcessButton(CUSTOM_ID_BACK, state.buttons[CUSTOM_ID_BACK]);
 
+                // Misc Buttons
+                ProcessButton(CUSTOM_ID_GUIDE, state.buttons[CUSTOM_ID_GUIDE]);
+                ProcessButton(CUSTOM_ID_MISC1, state.buttons[CUSTOM_ID_MISC1]);
+                ProcessButton(CUSTOM_ID_PADDLE1, state.buttons[CUSTOM_ID_PADDLE1]);
+                ProcessButton(CUSTOM_ID_PADDLE2, state.buttons[CUSTOM_ID_PADDLE2]);
+                ProcessButton(CUSTOM_ID_PADDLE3, state.buttons[CUSTOM_ID_PADDLE3]);
+                ProcessButton(CUSTOM_ID_PADDLE4, state.buttons[CUSTOM_ID_PADDLE4]);
+
                 // Triggers
                 ProcessTrigger(CUSTOM_ID_LT, state.LeftTrigger);
                 ProcessTrigger(CUSTOM_ID_RT, state.RightTrigger);

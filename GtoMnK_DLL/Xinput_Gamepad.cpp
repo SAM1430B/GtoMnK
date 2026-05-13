@@ -63,6 +63,15 @@ bool XInput_GetState(CustomControllerState& outState) {
     outState.buttons[CUSTOM_ID_DPAD_LEFT] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_LEFT);
     outState.buttons[CUSTOM_ID_DPAD_RIGHT] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_RIGHT);
 
+	// Misc buttons
+    // Nullify the data since XInput doesn't support it
+    outState.buttons[CUSTOM_ID_GUIDE] = false;
+    outState.buttons[CUSTOM_ID_MISC1] = false;
+    outState.buttons[CUSTOM_ID_PADDLE1] = false;
+    outState.buttons[CUSTOM_ID_PADDLE2] = false;
+    outState.buttons[CUSTOM_ID_PADDLE3] = false;
+    outState.buttons[CUSTOM_ID_PADDLE4] = false;
+
     // Triggers
     outState.LeftTrigger = state.Gamepad.bLeftTrigger;
     outState.RightTrigger = state.Gamepad.bRightTrigger;

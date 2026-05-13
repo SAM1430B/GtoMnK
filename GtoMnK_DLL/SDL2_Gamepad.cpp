@@ -257,6 +257,14 @@ bool SDL2_GetState(CustomControllerState& outState) {
     outState.buttons[CUSTOM_ID_DPAD_LEFT] = SafeReadButton(g_GameController, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
     outState.buttons[CUSTOM_ID_DPAD_RIGHT] = SafeReadButton(g_GameController, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
 
+    // Misc Buttons
+    outState.buttons[CUSTOM_ID_GUIDE] = SafeReadButton(g_GameController, SDL_CONTROLLER_BUTTON_GUIDE);
+    outState.buttons[CUSTOM_ID_MISC1] = SafeReadButton(g_GameController, SDL_CONTROLLER_BUTTON_MISC1);
+    outState.buttons[CUSTOM_ID_PADDLE1] = SafeReadButton(g_GameController, SDL_CONTROLLER_BUTTON_PADDLE1);
+    outState.buttons[CUSTOM_ID_PADDLE2] = SafeReadButton(g_GameController, SDL_CONTROLLER_BUTTON_PADDLE2);
+    outState.buttons[CUSTOM_ID_PADDLE3] = SafeReadButton(g_GameController, SDL_CONTROLLER_BUTTON_PADDLE3);
+    outState.buttons[CUSTOM_ID_PADDLE4] = SafeReadButton(g_GameController, SDL_CONTROLLER_BUTTON_PADDLE4);
+
     // Triggers
     Sint16 leftTrig = SafeReadAxis(g_GameController, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
     Sint16 rightTrig = SafeReadAxis(g_GameController, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);

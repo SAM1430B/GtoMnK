@@ -279,6 +279,14 @@ void LoadButtonLayer(const char* section, int offset, bool isBaseLayer, const ch
     ParseKey(section, "RSL", isBaseLayer ? "0" : "0", CUSTOM_ID_RSL, offset, iniPath);
     ParseKey(section, "RSR", isBaseLayer ? "0" : "0", CUSTOM_ID_RSR, offset, iniPath);
 
+	// Misc Buttons
+    ParseKey(section, "Guide", isBaseLayer ? "0" : "0", CUSTOM_ID_GUIDE, offset, iniPath);
+    ParseKey(section, "Misc1", isBaseLayer ? "0" : "0", CUSTOM_ID_MISC1, offset, iniPath);
+    ParseKey(section, "Paddle1", isBaseLayer ? "0" : "0", CUSTOM_ID_PADDLE1, offset, iniPath);
+    ParseKey(section, "Paddle2", isBaseLayer ? "0" : "0", CUSTOM_ID_PADDLE2, offset, iniPath);
+    ParseKey(section, "Paddle3", isBaseLayer ? "0" : "0", CUSTOM_ID_PADDLE3, offset, iniPath);
+    ParseKey(section, "Paddle4", isBaseLayer ? "0" : "0", CUSTOM_ID_PADDLE4, offset, iniPath);
+
     // Touchpad Button
     ParseKey(section, "Touchpad_Button", isBaseLayer ? "-1" : "0", CUSTOM_ID_TOUCHPAD_BUTTON, offset, iniPath);
 }
