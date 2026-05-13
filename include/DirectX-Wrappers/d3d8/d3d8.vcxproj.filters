@@ -27,8 +27,12 @@
     <ClInclude Include="IDirect3DVertexBuffer8.h" />
     <ClInclude Include="IDirect3DVolume8.h" />
     <ClInclude Include="IDirect3DVolumeTexture8.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="d3d8.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="d3d8.rc" />
   </ItemGroup>
 </Project>

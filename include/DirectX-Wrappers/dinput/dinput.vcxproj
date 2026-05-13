@@ -105,6 +105,7 @@ echo Success: Copied $(TargetFileName) to Loader.x$(PlatformArchitecture)
     <ClInclude Include="IDirectInputDeviceX.h" />
     <ClInclude Include="IDirectInputEffect.h" />
     <ClInclude Include="IDirectInputX.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Versions\IDirectInput2A.h" />
     <ClInclude Include="Versions\IDirectInput2W.h" />
     <ClInclude Include="Versions\IDirectInput7A.h" />
@@ -117,6 +118,9 @@ echo Success: Copied $(TargetFileName) to Loader.x$(PlatformArchitecture)
     <ClInclude Include="Versions\IDirectInputDeviceA.h" />
     <ClInclude Include="Versions\IDirectInputDeviceW.h" />
     <ClInclude Include="Versions\IDirectInputW.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="dinput.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

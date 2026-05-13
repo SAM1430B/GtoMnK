@@ -17,8 +17,12 @@
     <ClInclude Include="IDirectInputDevice8A.h" />
     <ClInclude Include="IDirectInputDevice8W.h" />
     <ClInclude Include="IDirectInputEffect.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dinput8.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="dinput8.rc" />
   </ItemGroup>
 </Project>

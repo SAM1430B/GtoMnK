@@ -85,6 +85,7 @@
     </ClInclude>
     <ClInclude Include="IDirectInputDeviceX.h" />
     <ClInclude Include="IDirectInputX.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dinput.def" />
@@ -93,5 +94,8 @@
     <Filter Include="Versions">
       <UniqueIdentifier>{93adb077-5d9c-4ec9-b097-8bb67d19c378}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="dinput.rc" />
   </ItemGroup>
 </Project>

@@ -178,9 +178,13 @@ echo Success: Copied $(TargetFileName) to Loader.x$(PlatformArchitecture)
     <ClInclude Include="IDirect3DVertexShader9.h" />
     <ClInclude Include="IDirect3DVolume9.h" />
     <ClInclude Include="IDirect3DVolumeTexture9.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="d3d9.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="d3d9.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

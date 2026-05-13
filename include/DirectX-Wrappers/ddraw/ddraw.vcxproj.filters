@@ -205,6 +205,7 @@
     <ClInclude Include="Versions\IDirectDrawSurface7.h">
       <Filter>Versions</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ddraw.def" />
@@ -213,5 +214,8 @@
     <Filter Include="Versions">
       <UniqueIdentifier>{35ebfd3b-f31f-468a-ad7f-f7b31898c7e8}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ddraw.rc" />
   </ItemGroup>
 </Project>

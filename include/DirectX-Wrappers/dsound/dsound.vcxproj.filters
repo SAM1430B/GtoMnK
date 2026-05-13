@@ -47,8 +47,12 @@
     <ClInclude Include="IDirectSoundFXWavesReverb8.h" />
     <ClInclude Include="IDirectSoundNotify8.h" />
     <ClInclude Include="IKsPropertySet.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dsound.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="dsound.rc" />
   </ItemGroup>
 </Project>

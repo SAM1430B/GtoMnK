@@ -146,6 +146,7 @@ echo Success: Copied $(TargetFileName) to Loader.x$(PlatformArchitecture)
     <ClInclude Include="IDirectDrawPalette.h" />
     <ClInclude Include="IDirectDrawSurfaceX.h" />
     <ClInclude Include="IDirectDrawX.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Versions\IDirect3D.h" />
     <ClInclude Include="Versions\IDirect3D2.h" />
     <ClInclude Include="Versions\IDirect3D3.h" />
@@ -177,6 +178,9 @@ echo Success: Copied $(TargetFileName) to Loader.x$(PlatformArchitecture)
   </ItemGroup>
   <ItemGroup>
     <None Include="ddraw.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ddraw.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
