@@ -8,19 +8,23 @@ And is modified for GtoMnK usage. All credits to the original author.
 #include "FakeCursor.h"
 
 extern int ShowProtoCursorWhenImageUpdated;
+extern int DontShowCursorWhenImageUpdated;
 
 namespace GtoMnK
 {
 	int WINAPI CursorVisibilityHook::Hook_ShowCursor(BOOL bShow)
 	{
 		FakeCursor::SetCursorVisibility(bShow == TRUE);
+
+		if (bShow == FALSE) ShowCursor(FALSE);
 		
 		return bShow == TRUE ? 0 : -1;
 	}
 
 	HCURSOR WINAPI CursorVisibilityHook::Hook_SetCursor(HCURSOR hCursor)
 	{
-		if (ShowProtoCursorWhenImageUpdated == 1)
+		// Nucleus app uses `DontShowCursorWhenImageUpdated` as a way to enable/disable it.
+		if (ShowProtoCursorWhenImageUpdated == 1 && DontShowCursorWhenImageUpdated == 0)
 		{
 			// This is the original hook implementation. Required for cursors to show at all on Minecraft, for example
 

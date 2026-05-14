@@ -30,6 +30,7 @@ int drawfakecursor = 0;
 int drawProtoFakeCursor = 0; // From ProtoInput also for the Cursor visibility hooks
 int createdWindowIsOwned = 1;
 int ShowProtoCursorWhenImageUpdated = 1; // From ProtoInput
+int DontShowCursorWhenImageUpdated = 0; // From ProtoInput, used as a way to enable/disable the ShowProtoCursorWhenImageUpdated behavior.
 int mode = 1;
 int responsetime = 4;
 
@@ -179,6 +180,7 @@ void LoadIniSettings() {
     drawfakecursor = GetPrivateProfileIntA("Settings", "drawfakecursor", 0, iniPath.c_str());
     drawProtoFakeCursor = GetPrivateProfileIntA("Settings", "DrawProtoFakeCursor", 0, iniPath.c_str());
     ShowProtoCursorWhenImageUpdated = GetPrivateProfileIntA("Settings", "ShowCursorWhenImageUpdated", 1, iniPath.c_str());
+    DontShowCursorWhenImageUpdated = GetPrivateProfileIntA("Settings", "DontShowCursorWhenImageUpdated", 0, iniPath.c_str());
     if (drawProtoFakeCursor == 1) {
         if (drawfakecursor == 1) {
             LOG("INI Info: Both 'drawfakecursor' and 'drawProtoFakeCursor' are enabled. Prioritizing the ProtoInput cursor.");
