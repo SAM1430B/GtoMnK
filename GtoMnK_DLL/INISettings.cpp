@@ -239,14 +239,6 @@ void LoadButtonLayer(const char* section, int offset, bool isBaseLayer, const ch
     ParseKey(section, "X", isBaseLayer ? "42" : "0", CUSTOM_ID_X, offset, iniPath);
     ParseKey(section, "Y", isBaseLayer ? "0" : "0", CUSTOM_ID_Y, offset, iniPath);
 
-    // Triggers
-    ParseKey(section, "LT", isBaseLayer ? "-2" : "0", CUSTOM_ID_LT, offset, iniPath);
-    ParseKey(section, "RT", isBaseLayer ? "-1" : "0", CUSTOM_ID_RT, offset, iniPath);
-
-    // Shoulder Buttons
-    ParseKey(section, "RB", isBaseLayer ? "0" : "0", CUSTOM_ID_RB, offset, iniPath);
-    ParseKey(section, "LB", isBaseLayer ? "0" : "0", CUSTOM_ID_LB, offset, iniPath);
-
     // D-Pad
     ParseKey(section, "D_UP", isBaseLayer ? "14" : "0", CUSTOM_ID_DPAD_UP, offset, iniPath);
     ParseKey(section, "D_DOWN", isBaseLayer ? "15" : "0", CUSTOM_ID_DPAD_DOWN, offset, iniPath);
@@ -257,17 +249,33 @@ void LoadButtonLayer(const char* section, int offset, bool isBaseLayer, const ch
     ParseKey(section, "Start", isBaseLayer ? "1" : "0", CUSTOM_ID_START, offset, iniPath);
     ParseKey(section, "Back", isBaseLayer ? "3" : "0", CUSTOM_ID_BACK, offset, iniPath);
 
+    // Extended Buttons
+    ParseKey(section, "Guide", isBaseLayer ? "0" : "0", CUSTOM_ID_GUIDE, offset, iniPath);
+    ParseKey(section, "Misc1", isBaseLayer ? "0" : "0", CUSTOM_ID_MISC1, offset, iniPath);
+    ParseKey(section, "Paddle1", isBaseLayer ? "0" : "0", CUSTOM_ID_PADDLE1, offset, iniPath);
+    ParseKey(section, "Paddle2", isBaseLayer ? "0" : "0", CUSTOM_ID_PADDLE2, offset, iniPath);
+    ParseKey(section, "Paddle3", isBaseLayer ? "0" : "0", CUSTOM_ID_PADDLE3, offset, iniPath);
+    ParseKey(section, "Paddle4", isBaseLayer ? "0" : "0", CUSTOM_ID_PADDLE4, offset, iniPath);
+
     // Stick Buttons
     ParseKey(section, "RSB", isBaseLayer ? "0" : "0", CUSTOM_ID_RSB, offset, iniPath);
     ParseKey(section, "LSB", isBaseLayer ? "4" : "0", CUSTOM_ID_LSB, offset, iniPath);
 
-    // Left Stick
+    // Shoulder Buttons
+    ParseKey(section, "RB", isBaseLayer ? "0" : "0", CUSTOM_ID_RB, offset, iniPath);
+    ParseKey(section, "LB", isBaseLayer ? "0" : "0", CUSTOM_ID_LB, offset, iniPath);
+
+    // Triggers
+    ParseKey(section, "LT", isBaseLayer ? "-2" : "0", CUSTOM_ID_LT, offset, iniPath);
+    ParseKey(section, "RT", isBaseLayer ? "-1" : "0", CUSTOM_ID_RT, offset, iniPath);
+
+    // Left Stick As Buttons
     ParseKey(section, "LSU", isBaseLayer ? "47" : "0", CUSTOM_ID_LSU, offset, iniPath);
     ParseKey(section, "LSD", isBaseLayer ? "43" : "0", CUSTOM_ID_LSD, offset, iniPath);
     ParseKey(section, "LSL", isBaseLayer ? "25" : "0", CUSTOM_ID_LSL, offset, iniPath);
     ParseKey(section, "LSR", isBaseLayer ? "28" : "0", CUSTOM_ID_LSR, offset, iniPath);
 
-    // Right Stick
+    // Right Stick As Buttons
     ParseKey(section, "RSU", isBaseLayer ? "0" : "0", CUSTOM_ID_RSU, offset, iniPath);
     ParseKey(section, "RSD", isBaseLayer ? "0" : "0", CUSTOM_ID_RSD, offset, iniPath);
     ParseKey(section, "RSL", isBaseLayer ? "0" : "0", CUSTOM_ID_RSL, offset, iniPath);

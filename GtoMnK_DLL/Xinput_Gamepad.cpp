@@ -34,24 +34,38 @@ bool XInput_GetState(CustomControllerState& outState) {
         return false;
     }
 
-    // Buttons
+	// Face Buttons
     outState.buttons[CUSTOM_ID_A] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_A);
     outState.buttons[CUSTOM_ID_B] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_B);
     outState.buttons[CUSTOM_ID_X] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_X);
     outState.buttons[CUSTOM_ID_Y] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_Y);
 
-    outState.buttons[CUSTOM_ID_LB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_LEFT_SHOULDER);
-    outState.buttons[CUSTOM_ID_RB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_RIGHT_SHOULDER);
-    outState.buttons[CUSTOM_ID_LSB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_LEFT_THUMB);
-    outState.buttons[CUSTOM_ID_RSB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_RIGHT_THUMB);
-
-    outState.buttons[CUSTOM_ID_START] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_START);
-    outState.buttons[CUSTOM_ID_BACK] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_BACK);
-
+	// D-Pad
     outState.buttons[CUSTOM_ID_DPAD_UP] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_UP);
     outState.buttons[CUSTOM_ID_DPAD_DOWN] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_DOWN);
     outState.buttons[CUSTOM_ID_DPAD_LEFT] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_LEFT);
     outState.buttons[CUSTOM_ID_DPAD_RIGHT] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_RIGHT);
+
+    // Start & Back
+    outState.buttons[CUSTOM_ID_START] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_START);
+    outState.buttons[CUSTOM_ID_BACK] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_BACK);
+
+    // Extended Buttons
+	// Extended buttons are not supported in XInput.
+    outState.buttons[CUSTOM_ID_GUIDE] = false;
+    outState.buttons[CUSTOM_ID_MISC1] = false;
+    outState.buttons[CUSTOM_ID_PADDLE1] = false;
+    outState.buttons[CUSTOM_ID_PADDLE2] = false;
+    outState.buttons[CUSTOM_ID_PADDLE3] = false;
+    outState.buttons[CUSTOM_ID_PADDLE4] = false;
+
+    // Stick Buttons
+    outState.buttons[CUSTOM_ID_LSB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_LEFT_THUMB);
+    outState.buttons[CUSTOM_ID_RSB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_RIGHT_THUMB);
+
+	// Shoulder Buttons
+    outState.buttons[CUSTOM_ID_LB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_LEFT_SHOULDER);
+    outState.buttons[CUSTOM_ID_RB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_RIGHT_SHOULDER);
 
     // Triggers
     outState.LeftTrigger = state.Gamepad.bLeftTrigger;

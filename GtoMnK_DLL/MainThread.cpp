@@ -239,21 +239,37 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                 OverlayMenu::state.ProcessInput(state);
             }
             else {
-                // Buttons
+                // Face Buttons
                 ProcessButton(CUSTOM_ID_A, state.buttons[CUSTOM_ID_A]);
                 ProcessButton(CUSTOM_ID_B, state.buttons[CUSTOM_ID_B]);
                 ProcessButton(CUSTOM_ID_X, state.buttons[CUSTOM_ID_X]);
                 ProcessButton(CUSTOM_ID_Y, state.buttons[CUSTOM_ID_Y]);
-                ProcessButton(CUSTOM_ID_RB, state.buttons[CUSTOM_ID_RB]);
-                ProcessButton(CUSTOM_ID_LB, state.buttons[CUSTOM_ID_LB]);
-                ProcessButton(CUSTOM_ID_RSB, state.buttons[CUSTOM_ID_RSB]);
-                ProcessButton(CUSTOM_ID_LSB, state.buttons[CUSTOM_ID_LSB]);
+
+                // D-Pad
                 ProcessButton(CUSTOM_ID_DPAD_UP, state.buttons[CUSTOM_ID_DPAD_UP]);
                 ProcessButton(CUSTOM_ID_DPAD_DOWN, state.buttons[CUSTOM_ID_DPAD_DOWN]);
                 ProcessButton(CUSTOM_ID_DPAD_LEFT, state.buttons[CUSTOM_ID_DPAD_LEFT]);
                 ProcessButton(CUSTOM_ID_DPAD_RIGHT, state.buttons[CUSTOM_ID_DPAD_RIGHT]);
+                
+				// Start & Back
                 ProcessButton(CUSTOM_ID_START, state.buttons[CUSTOM_ID_START]);
                 ProcessButton(CUSTOM_ID_BACK, state.buttons[CUSTOM_ID_BACK]);
+
+                // Extended Buttons
+                ProcessButton(CUSTOM_ID_GUIDE, state.buttons[CUSTOM_ID_GUIDE]);
+                ProcessButton(CUSTOM_ID_MISC1, state.buttons[CUSTOM_ID_MISC1]);
+                ProcessButton(CUSTOM_ID_PADDLE1, state.buttons[CUSTOM_ID_PADDLE1]);
+                ProcessButton(CUSTOM_ID_PADDLE2, state.buttons[CUSTOM_ID_PADDLE2]);
+                ProcessButton(CUSTOM_ID_PADDLE3, state.buttons[CUSTOM_ID_PADDLE3]);
+                ProcessButton(CUSTOM_ID_PADDLE4, state.buttons[CUSTOM_ID_PADDLE4]);
+
+                // Stick Buttons
+                ProcessButton(CUSTOM_ID_RSB, state.buttons[CUSTOM_ID_RSB]);
+                ProcessButton(CUSTOM_ID_LSB, state.buttons[CUSTOM_ID_LSB]);
+
+                // Shoulder Buttons
+                ProcessButton(CUSTOM_ID_RB, state.buttons[CUSTOM_ID_RB]);
+                ProcessButton(CUSTOM_ID_LB, state.buttons[CUSTOM_ID_LB]);
 
                 // Triggers
                 ProcessTrigger(CUSTOM_ID_LT, state.LeftTrigger);

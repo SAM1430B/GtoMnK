@@ -189,25 +189,38 @@ bool SDL2_GetState(CustomControllerState& outState) {
 
     if (!g_GameController) return false;
 
-    // Buttons
+    // Face Buttons
     outState.buttons[CUSTOM_ID_A] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_A);
     outState.buttons[CUSTOM_ID_B] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_B);
     outState.buttons[CUSTOM_ID_X] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_X);
     outState.buttons[CUSTOM_ID_Y] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_Y);
 
-    outState.buttons[CUSTOM_ID_LB] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
-    outState.buttons[CUSTOM_ID_RB] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
-    outState.buttons[CUSTOM_ID_LSB] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_LEFTSTICK);
-    outState.buttons[CUSTOM_ID_RSB] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_RIGHTSTICK);
-
-    outState.buttons[CUSTOM_ID_START] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_START);
-    outState.buttons[CUSTOM_ID_BACK] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_BACK);
-
+    // D-Pad
     outState.buttons[CUSTOM_ID_DPAD_UP] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_DPAD_UP);
     outState.buttons[CUSTOM_ID_DPAD_DOWN] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
     outState.buttons[CUSTOM_ID_DPAD_LEFT] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
     outState.buttons[CUSTOM_ID_DPAD_RIGHT] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
 
+    // Start & Back
+    outState.buttons[CUSTOM_ID_START] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_START);
+    outState.buttons[CUSTOM_ID_BACK] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_BACK);
+
+    // Extended Buttons
+    outState.buttons[CUSTOM_ID_GUIDE] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_GUIDE);
+    outState.buttons[CUSTOM_ID_MISC1] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_MISC1);
+    outState.buttons[CUSTOM_ID_PADDLE1] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_PADDLE1);
+    outState.buttons[CUSTOM_ID_PADDLE2] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_PADDLE2);
+    outState.buttons[CUSTOM_ID_PADDLE3] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_PADDLE3);
+    outState.buttons[CUSTOM_ID_PADDLE4] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_PADDLE4);
+
+    // Stick Buttons
+    outState.buttons[CUSTOM_ID_LSB] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_LEFTSTICK);
+    outState.buttons[CUSTOM_ID_RSB] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_RIGHTSTICK);
+
+    // Shoulder Buttons
+    outState.buttons[CUSTOM_ID_LB] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+    outState.buttons[CUSTOM_ID_RB] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+    
     // Triggers
     Sint16 leftTrig = SDL_GameControllerGetAxis(g_GameController, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
     Sint16 rightTrig = SDL_GameControllerGetAxis(g_GameController, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
@@ -215,19 +228,22 @@ bool SDL2_GetState(CustomControllerState& outState) {
     outState.RightTrigger = (BYTE)(rightTrig >> 7);
 
 	// Fix for SDL2 axis range being -32768 to 32767
+
+    // Left Stick Y Axis
     int leftY = -SDL_GameControllerGetAxis(g_GameController, SDL_CONTROLLER_AXIS_LEFTY);
     if (leftY > 32767) leftY = 32767;
     if (leftY < -32768) leftY = -32768;
 
+	// Right Stick Y Axis
     int rightY = -SDL_GameControllerGetAxis(g_GameController, SDL_CONTROLLER_AXIS_RIGHTY);
     if (rightY > 32767) rightY = 32767;
     if (rightY < -32768) rightY = -32768;
 
-    // Left Stick
+	// Left Stick X Axis
     outState.ThumbLX = SDL_GameControllerGetAxis(g_GameController, SDL_CONTROLLER_AXIS_LEFTX);
     outState.ThumbLY = (SHORT)leftY;
 
-    // Right Stick
+	// Right Stick X Axis
     outState.ThumbRX = SDL_GameControllerGetAxis(g_GameController, SDL_CONTROLLER_AXIS_RIGHTX);
     outState.ThumbRY = (SHORT)rightY;
 
