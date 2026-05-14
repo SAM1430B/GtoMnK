@@ -73,10 +73,10 @@
     </Link>
     <PostBuildEvent>
       <Command>if "$(ConfigurationName)" == "Release" (
-if not exist "$(SolutionDir)Loader.x$(PlatformArchitecture)" mkdir "$(SolutionDir)Loader.x32"
+if not exist "$(SolutionDir)Loader.x$(PlatformArchitecture)" mkdir "$(SolutionDir)Loader.x$(PlatformArchitecture)"
 
 rem Delete the file first:
-if exist "$(SolutionDir)Loader.x$(PlatformArchitecture)\$(TargetFileName)" del /Q "$(SolutionDir)Loader.x32\$(TargetFileName)"
+if exist "$(SolutionDir)Loader.x$(PlatformArchitecture)\$(TargetFileName)" del /Q "$(SolutionDir)Loader.x$(PlatformArchitecture)\$(TargetFileName)"
 
 rem Copy the file:
 xcopy /Y "$(TargetPath)" "$(SolutionDir)Loader.x$(PlatformArchitecture)\"
