@@ -59,6 +59,10 @@ bool XInput_GetState(CustomControllerState& outState) {
     outState.buttons[CUSTOM_ID_PADDLE3] = false;
     outState.buttons[CUSTOM_ID_PADDLE4] = false;
 
+	// Touchpad Button
+	// Touchpad is not supported in XInput.
+    outState.buttons[CUSTOM_ID_TOUCHPAD_BUTTON] = false;
+
     // Stick Buttons
     outState.buttons[CUSTOM_ID_LSB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_LEFT_THUMB);
     outState.buttons[CUSTOM_ID_RSB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_RIGHT_THUMB);
@@ -78,6 +82,13 @@ bool XInput_GetState(CustomControllerState& outState) {
 	// Right Thumbsticks
     outState.ThumbRX = state.Gamepad.sThumbRX;
     outState.ThumbRY = state.Gamepad.sThumbRY;
+
+    // Touchpad
+    // Touchpad is not supported in XInput.
+    outState.TouchpadActive = false;
+    outState.TouchpadX = 0.0f;
+    outState.TouchpadY = 0.0f;
+    outState.TouchpadPressure = 0.0f;
 
     return true;
 }

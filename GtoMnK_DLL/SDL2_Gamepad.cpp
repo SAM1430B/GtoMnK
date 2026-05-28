@@ -213,6 +213,9 @@ bool SDL2_GetState(CustomControllerState& outState) {
     outState.buttons[CUSTOM_ID_PADDLE3] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_PADDLE3);
     outState.buttons[CUSTOM_ID_PADDLE4] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_PADDLE4);
 
+	// Touchpad Button
+    outState.buttons[CUSTOM_ID_TOUCHPAD_BUTTON] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_TOUCHPAD);
+
     // Stick Buttons
     outState.buttons[CUSTOM_ID_LSB] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_LEFTSTICK);
     outState.buttons[CUSTOM_ID_RSB] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_RIGHTSTICK);
@@ -246,6 +249,26 @@ bool SDL2_GetState(CustomControllerState& outState) {
 	// Right Stick X Axis
     outState.ThumbRX = SDL_GameControllerGetAxis(g_GameController, SDL_CONTROLLER_AXIS_RIGHTX);
     outState.ThumbRY = (SHORT)rightY;
+
+	// Touchpad
+    outState.TouchpadActive = false;
+    outState.TouchpadX = 0.0f;
+    outState.TouchpadY = 0.0f;
+    outState.TouchpadPressure = 0.0f;
+
+    if (SDL_GameControllerGetNumTouchpads(g_GameController) > 0) {
+        Uint8 state;
+        float x, y, pressure;
+
+        if (SDL_GameControllerGetTouchpadFinger(g_GameController, 0, 0, &state, &x, &y, &pressure) == 0) {
+            outState.TouchpadActive = (state == SDL_PRESSED);
+            outState.TouchpadX = x;
+            outState.TouchpadY = y;
+
+			// TODO: Add support for touchpad pressure state as buttons.
+            outState.TouchpadPressure = pressure;
+        }
+    }
 
     return true;
 }

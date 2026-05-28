@@ -10,12 +10,19 @@ struct CustomControllerState {
     // Analog values for sticks/triggers
     SHORT ThumbLX, ThumbLY, ThumbRX, ThumbRY;
     BYTE LeftTrigger, RightTrigger;
+
+    // Touchpad state
+    bool TouchpadActive;
+    float TouchpadX, TouchpadY;
+    float TouchpadPressure;
 };
 
 extern int g_Fn1_ButtonID;
 extern int g_Fn2_ButtonID;
 
 POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY);
+POINT TouchpadMouseMove(float touchX, float touchY, bool isActive);
+
 bool IsTriggerPressed(BYTE triggerValue);
 void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed);
 void ProcessTrigger(UINT triggerID, BYTE triggerValue);

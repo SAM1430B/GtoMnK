@@ -18,6 +18,8 @@ GamepadMethod g_GamepadMethod = GamepadMethod::SDL2;
 float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, sensitivity_multiplier, horizontal_sensitivity, vertical_sensitivity, look_accel_multiplier;
 float stick_as_button_deadzone;
 float g_TriggerThreshold = 40;
+float touchpad_sensitivity, touchpad_horizontal_sensitivity, touchpad_vertical_sensitivity, touchpad_deadzone, touchpad_smoothing;
+bool disable_touchpad_mouse;
 
 // For Initialization and Thread state
 int startUpDelay = 0;
@@ -204,6 +206,14 @@ void LoadIniSettings() {
     GetPrivateProfileStringA("StickToMouse", "Curve_Slope", "0.16", buffer, sizeof(buffer), iniPath.c_str()); curve_slope = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Curve_Exponent", "1.85", buffer, sizeof(buffer), iniPath.c_str()); curve_exponent = std::stof(buffer);
 
+    // [TouchToMouse]
+    disable_touchpad_mouse = GetPrivateProfileIntA("TouchToMouse", "DisableTouchpadMouse", 0, iniPath.c_str()) == 1;
+    GetPrivateProfileStringA("TouchToMouse", "Sensitivity", "1500.00", buffer, sizeof(buffer), iniPath.c_str()); touchpad_sensitivity = std::stof(buffer);
+    GetPrivateProfileStringA("TouchToMouse", "Horizontal_Sensitivity", "0.00", buffer, sizeof(buffer), iniPath.c_str()); touchpad_horizontal_sensitivity = std::stof(buffer);
+    GetPrivateProfileStringA("TouchToMouse", "Vertical_Sensitivity", "0.00", buffer, sizeof(buffer), iniPath.c_str()); touchpad_vertical_sensitivity = std::stof(buffer);
+    GetPrivateProfileStringA("TouchToMouse", "Deadzone", "0.0001", buffer, sizeof(buffer), iniPath.c_str()); touchpad_deadzone = std::stof(buffer);
+    GetPrivateProfileStringA("TouchToMouse", "Smoothing", "0.40", buffer, sizeof(buffer), iniPath.c_str()); touchpad_smoothing = std::stof(buffer);
+
     // [KeyMapping]
     g_EnableMouseDoubleClick = GetPrivateProfileIntA("KeyMapping", "EnableMouseDoubleClick", 0, iniPath.c_str()) == 1;
     GetPrivateProfileStringA("KeyMapping", "TriggerThreshold", "40", buffer, sizeof(buffer), iniPath.c_str()); g_TriggerThreshold = std::stof(buffer);
@@ -256,6 +266,9 @@ void LoadButtonLayer(const char* section, int offset, bool isBaseLayer, const ch
     ParseKey(section, "Paddle2", isBaseLayer ? "0" : "0", CUSTOM_ID_PADDLE2, offset, iniPath);
     ParseKey(section, "Paddle3", isBaseLayer ? "0" : "0", CUSTOM_ID_PADDLE3, offset, iniPath);
     ParseKey(section, "Paddle4", isBaseLayer ? "0" : "0", CUSTOM_ID_PADDLE4, offset, iniPath);
+
+	// Touchpad Button
+	ParseKey(section, "Touchpad_Button", isBaseLayer ? "-1" : "0", CUSTOM_ID_TOUCHPAD_BUTTON, offset, iniPath);
 
     // Stick Buttons
     ParseKey(section, "RSB", isBaseLayer ? "0" : "0", CUSTOM_ID_RSB, offset, iniPath);

@@ -35,6 +35,8 @@ enum CustomInputID {
     CUSTOM_ID_PADDLE3,
     CUSTOM_ID_PADDLE4,
 
+    CUSTOM_ID_TOUCHPAD_BUTTON,
+
     CUSTOM_ID_LSB,
     CUSTOM_ID_RSB,
 
@@ -92,6 +94,10 @@ extern int responsetime;
 // StickToMouse
 extern int righthanded;
 extern float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, sensitivity_multiplier, horizontal_sensitivity, vertical_sensitivity, look_accel_multiplier;
+
+// TouchToMouse
+extern float touchpad_sensitivity, touchpad_horizontal_sensitivity, touchpad_vertical_sensitivity, touchpad_deadzone, touchpad_smoothing;
+extern bool disable_touchpad_mouse;
 
 // KeyMapping
 extern bool g_EnableMouseDoubleClick;
