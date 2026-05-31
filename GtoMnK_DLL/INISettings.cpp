@@ -215,7 +215,7 @@ void LoadIniSettings() {
     GetPrivateProfileStringA("TouchToMouse", "Sensitivity", "1500.00", buffer, sizeof(buffer), iniPath.c_str()); touchpad_sensitivity = std::stof(buffer);
     GetPrivateProfileStringA("TouchToMouse", "Horizontal_Sensitivity", "0.00", buffer, sizeof(buffer), iniPath.c_str()); touchpad_horizontal_sensitivity = std::stof(buffer);
     GetPrivateProfileStringA("TouchToMouse", "Vertical_Sensitivity", "0.00", buffer, sizeof(buffer), iniPath.c_str()); touchpad_vertical_sensitivity = std::stof(buffer);
-    GetPrivateProfileStringA("TouchToMouse", "Deadzone", "0.0001", buffer, sizeof(buffer), iniPath.c_str()); touchpad_deadzone = std::stof(buffer);
+    GetPrivateProfileStringA("TouchToMouse", "Deadzone", "0.0015", buffer, sizeof(buffer), iniPath.c_str()); touchpad_deadzone = std::stof(buffer);
     GetPrivateProfileStringA("TouchToMouse", "Smoothing", "0.40", buffer, sizeof(buffer), iniPath.c_str()); touchpad_smoothing = std::stof(buffer);
 
     // [KeyMapping]
