@@ -42,6 +42,11 @@ bool WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
             SystemXInputGetKeystroke = (FPXGetKeystroke)GetProcAddress(hSystem, "XInputGetKeystroke");
             SystemXInputGetDSoundAudioDeviceGuids = (FPXGetDSoundAudioDeviceGuids)GetProcAddress(hSystem, "XInputGetDSoundAudioDeviceGuids");
             SystemXInputGetAudioDeviceIds = (FPXGetAudioDeviceIds)GetProcAddress(hSystem, "XInputGetAudioDeviceIds");
+
+            SystemXInputGetStateEx = (FPXGetStateEx)GetProcAddress(hSystem, (LPCSTR)100);
+            SystemXInputWaitForGuideButton = (FPXWaitForGuideButton)GetProcAddress(hSystem, (LPCSTR)101);
+            SystemXInputCancelGuideButtonWait = (FPXCancelGuideButtonWait)GetProcAddress(hSystem, (LPCSTR)102);
+            SystemXInputPowerOffController = (FPXPowerOffController)GetProcAddress(hSystem, (LPCSTR)103);
         }
         else
         {

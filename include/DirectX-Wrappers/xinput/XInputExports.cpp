@@ -9,6 +9,10 @@ FPXGetBatteryInformation SystemXInputGetBatteryInformation = nullptr;
 FPXGetKeystroke SystemXInputGetKeystroke = nullptr;
 FPXGetDSoundAudioDeviceGuids SystemXInputGetDSoundAudioDeviceGuids = nullptr;
 FPXGetAudioDeviceIds SystemXInputGetAudioDeviceIds = nullptr;
+FPXGetStateEx SystemXInputGetStateEx = nullptr;
+FPXWaitForGuideButton SystemXInputWaitForGuideButton = nullptr;
+FPXCancelGuideButtonWait SystemXInputCancelGuideButtonWait = nullptr;
+FPXPowerOffController SystemXInputPowerOffController = nullptr;
 
 // Exported wrapper functions
 DWORD APIENTRY _XInputGetState(DWORD dwUserIndex, XINPUT_STATE* pState) {
@@ -51,5 +55,25 @@ DWORD APIENTRY _XInputGetAudioDeviceIds(DWORD dwUserIndex, LPWSTR pRenderDeviceI
     if (SystemXInputGetAudioDeviceIds) {
         return SystemXInputGetAudioDeviceIds(dwUserIndex, pRenderDeviceId, pRenderCount, pCaptureDeviceId, pCaptureCount);
     }
+    return ERROR_DEVICE_NOT_CONNECTED;
+}
+
+DWORD APIENTRY _XInputGetStateEx(DWORD dwUserIndex, XINPUT_STATE* pState) {
+    if (SystemXInputGetStateEx) return SystemXInputGetStateEx(dwUserIndex, pState);
+    return ERROR_DEVICE_NOT_CONNECTED;
+}
+
+DWORD APIENTRY _XInputWaitForGuideButton(DWORD dwUserIndex, DWORD dwFlag, void* pUnKnown) {
+    if (SystemXInputWaitForGuideButton) return SystemXInputWaitForGuideButton(dwUserIndex, dwFlag, pUnKnown);
+    return ERROR_DEVICE_NOT_CONNECTED;
+}
+
+DWORD APIENTRY _XInputCancelGuideButtonWait(DWORD dwUserIndex) {
+    if (SystemXInputCancelGuideButtonWait) return SystemXInputCancelGuideButtonWait(dwUserIndex);
+    return ERROR_DEVICE_NOT_CONNECTED;
+}
+
+DWORD APIENTRY _XInputPowerOffController(DWORD dwUserIndex) {
+    if (SystemXInputPowerOffController) return SystemXInputPowerOffController(dwUserIndex);
     return ERROR_DEVICE_NOT_CONNECTED;
 }

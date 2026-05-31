@@ -9,3 +9,8 @@ EXPORTS
     XInputGetBatteryInformation     = _XInputGetBatteryInformation     @7
     XInputGetKeystroke              = _XInputGetKeystroke              @8
     XInputGetAudioDeviceIds         = _XInputGetAudioDeviceIds         @10
+
+    XInputGetStateEx                = _XInputGetStateEx                @100 NONAME
+    XInputWaitForGuideButton        = _XInputWaitForGuideButton        @101 NONAME
+    XInputCancelGuideButtonWait     = _XInputCancelGuideButtonWait     @102 NONAME
+    XInputPowerOffController        = _XInputPowerOffController        @103 NONAME
