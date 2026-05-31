@@ -439,8 +439,14 @@
                 </select>
             </div>
 
-            <div class="setting-row"><label>Mode</label><select id="Mode" title="Enable or disable mouse simulation." onchange="updateUIState()"><option value="1">Mouse & Keyboard</option><option value="0">Keyboard Only</option></select></div>
-            <div class="setting-row"><label>Thumbstick To Mouse</label><select id="Righthanded" title="Controls which analog stick is used for mouse movement." onchange="updateUIState()"><option value="1">Right Stick</option><option value="0">Left Stick</option></select></div>
+            <div class="setting-row">
+                <label>Thumbstick To Mouse</label>
+                <select id="ThumbstickToMouse" title="Controls which analog stick is used for mouse movement." onchange="updateUIState()">
+                    <option value="0">Disabled</option>
+                    <option value="1">Left Stick</option>
+                    <option value="2">Right Stick</option>
+                </select>
+            </div>
 
             <div class="setting-row"><label>Draw Cursor</label><input type="checkbox" id="DrawProtoFakeCursor" title="Enable this if the game doesn't have a cursor."></div>
 
@@ -947,39 +953,32 @@
         }
 
         function updateUIState() {
-            const mode = document.getElementById('Mode').value;
-            const stickSelect = document.getElementById('Righthanded');
-            const stick = stickSelect.value; // 1 = Right, 0 = Left
+            const thumbStick = document.getElementById('ThumbstickToMouse').value;
 
             const leftStickDirs = ['LSU', 'LSD', 'LSL', 'LSR'];
             const rightStickDirs = ['RSU', 'RSD', 'RSL', 'RSR'];
 
             // Reset everything first
             document.querySelectorAll('.btn-overlay').forEach(el => el.classList.remove('disabled'));
-            stickSelect.disabled = false;
 
-            if (mode === "0") { // Keyboard Only
-                stickSelect.disabled = true;
-            } else {
-                // Mouse & Keyboard Mode
-                if (stick === "1") { // Right Stick is Mouse, Disable R mapping
-                    rightStickDirs.forEach(id => {
-                        const el = document.getElementById(`btn-${id}`);
-                        if (el) el.classList.add('disabled');
-                    });
-                } else { // Left Stick is Mouse -> Disable L mapping
-                    leftStickDirs.forEach(id => {
-                        const el = document.getElementById(`btn-${id}`);
-                        if (el) el.classList.add('disabled');
-                    });
-                }
+            // Disable mapping for whichever stick is controlling the mouse
+            if (thumbStick === "1") {
+                leftStickDirs.forEach(id => {
+                    const el = document.getElementById(`btn-${id}`);
+                    if (el) el.classList.add('disabled');
+                });
+            } else if (thumbStick === "2") {
+                rightStickDirs.forEach(id => {
+                    const el = document.getElementById(`btn-${id}`);
+                    if (el) el.classList.add('disabled');
+                });
             }
 
             if (activeLayer === 'Fn1' || activeLayer === 'Fn2') {
                 document.querySelectorAll('.btn-overlay').forEach(el => {
                     if (el.dataset.valBasic === activeLayer) {
                         el.classList.add('disabled');
-                        el.innerText = `[${activeLayer}]`; // Add a clear visual label indicating it's the modifier
+                        el.innerText = `[${activeLayer}]`; // Add a clear visual label
                         el.title = `This button acts as the ${activeLayer} trigger.`;
                     }
                 });
@@ -1284,8 +1283,7 @@
 
             document.getElementById('GameName').value = "";
             document.getElementById('InputMethod').value = "2";
-            document.getElementById('Mode').value = "1";
-            document.getElementById('Righthanded').value = "1";
+            document.getElementById('ThumbstickToMouse').value = "0";
             document.getElementById('DrawProtoFakeCursor').checked = false;
 
             document.getElementById('Sensitivity').value = "5.00";
@@ -1446,9 +1444,7 @@
             setVal('MessageFilter', 'KeyboardButtonFilter');
 
             // Sensitivity & Deadzones
-            setVal('Settings', 'Mode');
             setVal('Settings', 'DrawProtoFakeCursor');
-            setVal('StickToMouse', 'Righthanded');
             setVal('StickToMouse', 'Sensitivity');
             setVal('StickToMouse', 'Sensitivity_Multiplier');
             setVal('StickToMouse', 'Horizontal_Sensitivity');
@@ -1463,6 +1459,24 @@
             // Other mappings
             setVal('KeyMapping', 'StickAsButtonDeadzone');
             setVal('KeyMapping', 'TriggerThreshold');
+
+            // Legacy Thumbstick to Mouse Handling
+            let loadedThumbstick = 0;
+            if (data['StickToMouse'] && data['StickToMouse']['ThumbStickToMouse'] !== undefined) {
+                loadedThumbstick = parseInt(data['StickToMouse']['ThumbStickToMouse']);
+            } else {
+                // Translate legacy INI values if the new key is missing
+                let legacyMode = -1;
+                let legacyRight = -1;
+                if (data['Settings'] && data['Settings']['Mode'] !== undefined) legacyMode = parseInt(data['Settings']['Mode']);
+                if (data['StickToMouse'] && data['StickToMouse']['Righthanded'] !== undefined) legacyRight = parseInt(data['StickToMouse']['Righthanded']);
+
+                if (legacyMode === 1) {
+                    loadedThumbstick = (legacyRight === 0) ? 1 : 2;
+                }
+            }
+            const elThumb = document.getElementById('ThumbstickToMouse');
+            if (elThumb) elThumb.value = loadedThumbstick;
 
             // Process Buttons Across Layers
             Object.keys(positions).forEach(id => {
@@ -1535,7 +1549,7 @@
 
             const iniContent = `[Info]
 Name=${getSet('GameName')}
-Ver=1.4.1b
+Ver=1.4.0
 
 [API]
 InputMethod=${getSet('InputMethod')}
@@ -1568,13 +1582,12 @@ CooperativeLevelUnlocker=1
 [Settings]
 Controllerid=0
 
-Mode=${getSet('Mode')}
 DrawProtoFakeCursor=${getSet('DrawProtoFakeCursor')}
 Responsetime=4
 StartUpDelay=0
 
 [StickToMouse]
-Righthanded=${getSet('Righthanded')}
+ThumbStickToMouse=${getSet('ThumbstickToMouse')}
 
 Sensitivity=${getSet('Sensitivity')}
 Sensitivity_Multiplier=${getSet('Sensitivity_Multiplier')}
