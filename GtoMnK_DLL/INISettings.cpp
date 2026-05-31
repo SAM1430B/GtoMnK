@@ -11,6 +11,7 @@ extern HMODULE g_hModule;
 std::map<UINT, ButtonState> buttonStates;
 bool g_EnableMouseDoubleClick = false;
 int righthanded;
+int global_thumbStickToMouse, g_thumbStickToMouse[3];
 
 // For Controller Setting
 int controllerID = 0;
@@ -19,7 +20,7 @@ float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, 
 float stick_as_button_deadzone;
 float g_TriggerThreshold = 40;
 float touchpad_sensitivity, touchpad_horizontal_sensitivity, touchpad_vertical_sensitivity, touchpad_deadzone, touchpad_smoothing;
-bool disable_touchpad_mouse;
+int global_touchPadToMouse, g_touchPadToMouse[3];
 
 // For Initialization and Thread state
 int startUpDelay = 0;
@@ -33,7 +34,7 @@ int drawProtoFakeCursor = 0; // From ProtoInput also for the Cursor visibility h
 int createdWindowIsOwned = 1;
 int ShowProtoCursorWhenImageUpdated = 1; // From ProtoInput
 int DontShowCursorWhenImageUpdated = 0; // From ProtoInput, used as a way to enable/disable the ShowProtoCursorWhenImageUpdated behavior.
-int mode = 1;
+int mode;
 int responsetime = 4;
 
 // For the Hooks
@@ -92,6 +93,7 @@ std::string getShortenedPath_Manual(const std::string& fullPath)
 
 void ParseKey(const char* section, const char* key, const char* defaultVal, UINT baseId, int offset, const char* iniPath);
 void LoadButtonLayer(const char* section, int offset, bool isBaseLayer, const char* iniPath);
+void LegacyMouseOption();
 
 void LoadIniSettings() {
 
@@ -178,7 +180,7 @@ void LoadIniSettings() {
     recheckHWND = GetPrivateProfileIntA("Settings", "RecheckHWND", 1, iniPath.c_str()) == 1;
     disableOverlayOptions = (GetPrivateProfileIntA("Settings", "DisableOverlayOptions", 0, iniPath.c_str()) != 0);
     controllerID = GetPrivateProfileIntA("Settings", "Controllerid", 0, iniPath.c_str());
-    mode = GetPrivateProfileIntA("Settings", "Mode", 1, iniPath.c_str());
+    mode = GetPrivateProfileIntA("Settings", "Mode", -1, iniPath.c_str()); // This is replaced with ThumbStickToMouse in v1.4.0
     drawfakecursor = GetPrivateProfileIntA("Settings", "drawfakecursor", 0, iniPath.c_str());
     drawProtoFakeCursor = GetPrivateProfileIntA("Settings", "DrawProtoFakeCursor", 0, iniPath.c_str());
     ShowProtoCursorWhenImageUpdated = GetPrivateProfileIntA("Settings", "ShowCursorWhenImageUpdated", 1, iniPath.c_str());
@@ -194,7 +196,9 @@ void LoadIniSettings() {
     responsetime = GetPrivateProfileIntA("Settings", "Responsetime", 4, iniPath.c_str());
 
     // [StickToMouse]
-    righthanded = GetPrivateProfileIntA("StickToMouse", "Righthanded", 2, iniPath.c_str());
+    righthanded = GetPrivateProfileIntA("StickToMouse", "Righthanded", -1, iniPath.c_str()); // This is replaced with ThumbStickToMouse in v1.4.0
+    global_thumbStickToMouse = GetPrivateProfileIntA("StickToMouse", "ThumbStickToMouse", -1, iniPath.c_str());
+    LegacyMouseOption();
     GetPrivateProfileStringA("StickToMouse", "Sensitivity", "5.00", buffer, sizeof(buffer), iniPath.c_str()); sensitivity = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Sensitivity_Multiplier", "2.40", buffer, sizeof(buffer), iniPath.c_str()); sensitivity_multiplier = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Horizontal_Sensitivity", "0.00", buffer, sizeof(buffer), iniPath.c_str()); horizontal_sensitivity = std::stof(buffer);
@@ -207,7 +211,7 @@ void LoadIniSettings() {
     GetPrivateProfileStringA("StickToMouse", "Curve_Exponent", "1.85", buffer, sizeof(buffer), iniPath.c_str()); curve_exponent = std::stof(buffer);
 
     // [TouchToMouse]
-    disable_touchpad_mouse = GetPrivateProfileIntA("TouchToMouse", "DisableTouchpadMouse", 0, iniPath.c_str()) == 1;
+    global_touchPadToMouse = GetPrivateProfileIntA("TouchToMouse", "TouchpadToMouse", 1, iniPath.c_str()) == 1;
     GetPrivateProfileStringA("TouchToMouse", "Sensitivity", "1500.00", buffer, sizeof(buffer), iniPath.c_str()); touchpad_sensitivity = std::stof(buffer);
     GetPrivateProfileStringA("TouchToMouse", "Horizontal_Sensitivity", "0.00", buffer, sizeof(buffer), iniPath.c_str()); touchpad_horizontal_sensitivity = std::stof(buffer);
     GetPrivateProfileStringA("TouchToMouse", "Vertical_Sensitivity", "0.00", buffer, sizeof(buffer), iniPath.c_str()); touchpad_vertical_sensitivity = std::stof(buffer);
@@ -222,10 +226,18 @@ void LoadIniSettings() {
     g_Fn1_ButtonID = -1; g_Fn2_ButtonID = -1;
 
     LoadButtonLayer("KeyMapping", 0, true, iniPath.c_str());
+    g_thumbStickToMouse[0] = GetPrivateProfileIntA("KeyMapping", "ThumbstickToMouse", global_thumbStickToMouse, iniPath.c_str());
+    g_touchPadToMouse[0] = GetPrivateProfileIntA("KeyMapping", "TouchpadToMouse", global_touchPadToMouse ? 1 : 0, iniPath.c_str()) == 1;
+
+
     // [Fn1]
     LoadButtonLayer("Fn1", 100, false, iniPath.c_str());
+    g_thumbStickToMouse[1] = GetPrivateProfileIntA("Fn1", "ThumbstickToMouse", g_thumbStickToMouse[0], iniPath.c_str());
+    g_touchPadToMouse[1] = GetPrivateProfileIntA("Fn1", "TouchpadToMouse", g_touchPadToMouse[0] ? 1 : 0, iniPath.c_str()) == 1;
     // [Fn2]
     LoadButtonLayer("Fn2", 200, false, iniPath.c_str());
+    g_thumbStickToMouse[2] = GetPrivateProfileIntA("Fn2", "ThumbstickToMouse", g_thumbStickToMouse[0], iniPath.c_str());
+    g_touchPadToMouse[2] = GetPrivateProfileIntA("Fn2", "TouchpadToMouse", g_touchPadToMouse[0] ? 1 : 0, iniPath.c_str()) == 1;
 
 }
 
@@ -293,4 +305,21 @@ void LoadButtonLayer(const char* section, int offset, bool isBaseLayer, const ch
     ParseKey(section, "RSD", isBaseLayer ? "0" : "0", CUSTOM_ID_RSD, offset, iniPath);
     ParseKey(section, "RSL", isBaseLayer ? "0" : "0", CUSTOM_ID_RSL, offset, iniPath);
     ParseKey(section, "RSR", isBaseLayer ? "0" : "0", CUSTOM_ID_RSR, offset, iniPath);
+}
+
+// This function is to handle the legacy "Mode" and "Righthanded" options for the ThumbStickToMouse setting, to avoid breaking existing INI configurations.
+void LegacyMouseOption() {
+    if (global_thumbStickToMouse == -1) {
+        if (mode != -1) {
+            if (mode == 1) {
+                global_thumbStickToMouse = (righthanded == 0) ? 1 : 2;
+            }
+            else {
+                global_thumbStickToMouse = 0;
+            }
+        }
+        else {
+            global_thumbStickToMouse = 0;
+        }
+    }
 }

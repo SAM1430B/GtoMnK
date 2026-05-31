@@ -20,6 +20,9 @@ struct CustomControllerState {
 extern int g_Fn1_ButtonID;
 extern int g_Fn2_ButtonID;
 
+int GetActiveThumbStickToMouse();
+int GetActiveTouchPadToMouse();
+
 POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY);
 POINT TouchpadMouseMove(float touchX, float touchY, bool isActive);
 

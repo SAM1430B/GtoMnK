@@ -16,6 +16,18 @@ bool g_Fn2_State = false;
 static std::unordered_map<UINT, int> g_ButtonLayer;
 static std::unordered_map<UINT, bool> g_ButtonLastState;
 
+int GetActiveThumbStickToMouse() {
+    if (g_Fn2_State) return g_thumbStickToMouse[2];
+    if (g_Fn1_State) return g_thumbStickToMouse[1];
+    return g_thumbStickToMouse[0];
+}
+
+int GetActiveTouchPadToMouse() {
+    if (g_Fn2_State) return g_touchPadToMouse[2];
+    if (g_Fn1_State) return g_touchPadToMouse[1];
+    return g_touchPadToMouse[0];
+}
+
 POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
     const double smoothing_factor = 0.35;
 

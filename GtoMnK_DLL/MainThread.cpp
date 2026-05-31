@@ -29,7 +29,6 @@ HWND hwnd = nullptr;
 HANDLE hMutex = nullptr;
 
 // Drawing & cursor state
-bool onoroff = true;
 int showmessage = 0;
 int counter = 0;
 bool pausedraw = false;
@@ -56,7 +55,10 @@ int leftrect, toprect, rightrect, bottomrect;
 
 
 void DrawOverlay() {
-    if (showmessage == 0 && !(drawfakecursor && mode == 1 && onoroff)) {
+    int activeThumbStick = GetActiveThumbStickToMouse();
+    bool isMouseActive = (activeThumbStick == 1 || activeThumbStick == 2);
+
+    if (showmessage == 0 && !(drawfakecursor && isMouseActive)) {
         return;
     }
     HDC hdcWindow = GetDC(hwnd);
@@ -68,7 +70,7 @@ void DrawOverlay() {
     else if (showmessage == 69) TextOutA(hdcWindow, Mouse::Xf, Mouse::Yf, "DISABLED", 8);
     else if (showmessage == 70) TextOutA(hdcWindow, Mouse::Xf, Mouse::Yf, "ENABLED", 7);
     else if (showmessage == 12) TextOutA(hdcWindow, 20, 20, "CONTROLLER DISCONNECTED", 23);
-    else if (drawfakecursor && mode == 1 && onoroff) {
+    else if (drawfakecursor && isMouseActive) {
         Mouse::DrawBeautifulCursor(hdcWindow);
     }
     ReleaseDC(hwnd, hdcWindow);
@@ -279,8 +281,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                 ProcessTrigger(CUSTOM_ID_RT, state.RightTrigger);
 
                 // Analog Sticks (as buttons)
+                int activeThumbStickToMouse = GetActiveThumbStickToMouse();
+
                 // Left Thumbsticks
-                if (onoroff && (mode == 0 || (mode == 1 && righthanded == 1))) {
+                bool useLeftStickForMouse = (activeThumbStickToMouse == 1);
+
+                if (!useLeftStickForMouse) {
                     float normLX = static_cast<float>(state.ThumbLX) / 32767.0f;
                     float normLY = static_cast<float>(state.ThumbLY) / 32767.0f;
                     float magnitudeL = static_cast<float>(sqrt(normLX * normLX + normLY * normLY));
@@ -299,7 +305,9 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                     ProcessButton(CUSTOM_ID_LSR, isLSR);
                 }
 				// Right Thumbsticks
-                if (onoroff && (mode == 0 || (mode == 1 && righthanded == 0))) {
+                bool useRightStickForMouse = (activeThumbStickToMouse == 2);
+
+                if (!useRightStickForMouse) {
                     float normRX = static_cast<float>(state.ThumbRX) / 32767.0f;
                     float normRY = static_cast<float>(state.ThumbRY) / 32767.0f;
                     float magnitudeR = static_cast<float>(sqrt(normRX * normRX + normRY * normRY));
@@ -319,40 +327,51 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                 }
 
                 // Mouse Movement
-                if (mode == 1 && onoroff) {
-                    SHORT thumbX = (righthanded == 1) ? state.ThumbRX : state.ThumbLX;
-                    SHORT thumbY = (righthanded == 1) ? state.ThumbRY : state.ThumbLY;
-                    POINT delta = ThumbstickMouseMove(thumbX, thumbY);
+                POINT totalDelta = { 0, 0 };
 
-                    // Touchpad used only in SDL2 mode since XInput doesn't support it.
-                    POINT touchDelta = { 0, 0 };
-                    if (g_GamepadMethod == GamepadMethod::SDL2 && !disable_touchpad_mouse) {
-                        touchDelta = TouchpadMouseMove(state.TouchpadX, state.TouchpadY, state.TouchpadActive);
+                // Thumbstick As Mouse
+                if (useLeftStickForMouse || useRightStickForMouse) {
+                    SHORT thumbX = useRightStickForMouse ? state.ThumbRX : state.ThumbLX;
+                    SHORT thumbY = useRightStickForMouse ? state.ThumbRY : state.ThumbLY;
+
+                    POINT thumbDelta = ThumbstickMouseMove(thumbX, thumbY);
+                    totalDelta.x += thumbDelta.x;
+                    totalDelta.y += thumbDelta.y;
+                }
+
+				// Touchpad As Mouse
+                int activeTouchPadToMouse = GetActiveTouchPadToMouse();
+
+                // used only in SDL2 mode since XInput doesn't support it.
+                bool useTouchpadForMouse = (activeTouchPadToMouse == 1);
+                if (g_GamepadMethod == GamepadMethod::SDL2 && useTouchpadForMouse) {
+                    POINT touchDelta = TouchpadMouseMove(state.TouchpadX, state.TouchpadY, state.TouchpadActive);
+                    totalDelta.x += touchDelta.x;
+                    totalDelta.y += touchDelta.y;
+                }
+
+                if (totalDelta.x != 0 || totalDelta.y != 0) {
+                    Mouse::Xf += totalDelta.x;
+                    Mouse::Yf += totalDelta.y;
+
+                    Mouse::Xf = std::max((LONG)rect.left, std::min((LONG)Mouse::Xf, (LONG)rect.right - 1));
+                    Mouse::Yf = std::max((LONG)rect.top, std::min((LONG)Mouse::Yf, (LONG)rect.bottom - 1));
+
+                    //ProtoInput Fake Cursor update
+                    if (drawProtoFakeCursor == 1) {
+                        FakeCursor::NotifyUpdatedCursorPosition();
                     }
-                    delta.x += touchDelta.x;
-                    delta.y += touchDelta.y;
 
-                    if (delta.x != 0 || delta.y != 0) {
-                        Mouse::Xf += delta.x; Mouse::Yf += delta.y;
-                        Mouse::Xf = std::max((LONG)rect.left, std::min((LONG)Mouse::Xf, (LONG)rect.right - 1));
-                        Mouse::Yf = std::max((LONG)rect.top, std::min((LONG)Mouse::Yf, (LONG)rect.bottom - 1));
-
-                        //ProtoInput Fake Cursor update
-                        if (drawProtoFakeCursor == 1) {
-                            FakeCursor::NotifyUpdatedCursorPosition();
+                    ULONGLONG currentTime = GetTickCount64();
+                    if (currentTime - lastMoveTime > MOVE_UPDATE_INTERVAL) {
+                        lastMoveTime = currentTime;
+                        if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hybrid) {
+                            Input::SendMouseMoveDelta(totalDelta.x, totalDelta.y);
                         }
-
-                        ULONGLONG currentTime = GetTickCount64();
-                        if (currentTime - lastMoveTime > MOVE_UPDATE_INTERVAL) {
-                            lastMoveTime = currentTime;
-                            if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hybrid) {
-                                Input::SendMouseMoveDelta(delta.x, delta.y);
-                            }
-                            if (g_InputMethod == InputMethod::PostMessage || g_InputMethod == InputMethod::Hybrid) {
-                                POINT screenPos = { (LONG)Mouse::Xf, (LONG)Mouse::Yf };
-                                ClientToScreen(hwnd, &screenPos);
-                                Input::SendMouseMoveAbsolute(screenPos.x, screenPos.y);
-                            }
+                        if (g_InputMethod == InputMethod::PostMessage || g_InputMethod == InputMethod::Hybrid) {
+                            POINT screenPos = { (LONG)Mouse::Xf, (LONG)Mouse::Yf };
+                            ClientToScreen(hwnd, &screenPos);
+                            Input::SendMouseMoveAbsolute(screenPos.x, screenPos.y);
                         }
                     }
                 }

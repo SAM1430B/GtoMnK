@@ -265,7 +265,7 @@ bool SDL2_GetState(CustomControllerState& outState) {
             outState.TouchpadX = x;
             outState.TouchpadY = y;
 
-			// TODO: Add support for touchpad pressure state as buttons.
+			// TODO: Add support for touchpad pressure state.
             outState.TouchpadPressure = pressure;
         }
     }

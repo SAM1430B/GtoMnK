@@ -93,11 +93,12 @@ extern int responsetime;
 
 // StickToMouse
 extern int righthanded;
+extern int g_thumbStickToMouse[3];
 extern float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, sensitivity_multiplier, horizontal_sensitivity, vertical_sensitivity, look_accel_multiplier;
 
 // TouchToMouse
 extern float touchpad_sensitivity, touchpad_horizontal_sensitivity, touchpad_vertical_sensitivity, touchpad_deadzone, touchpad_smoothing;
-extern bool disable_touchpad_mouse;
+extern int g_touchPadToMouse[3];
 
 // KeyMapping
 extern bool g_EnableMouseDoubleClick;
