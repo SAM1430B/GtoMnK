@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GtoMnK Configuration - Image Mode</title>
+    <script src="chart.js"></script>
+    <script>
+        if (typeof Chart === 'undefined') {
+            document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>');
+        }
+    </script>
     <style>
         :root {
             --bg-color: rgb(24, 25, 26);
@@ -234,6 +240,28 @@
             gap: 5px;
         }
 
+        .hybrid-input {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+            .hybrid-input input[type="range"] {
+                width: 80px;
+                accent-color: var(--accent);
+                cursor: pointer;
+            }
+
+            .hybrid-input input[type="number"] {
+                width: 60px;
+                background: #3c3c3c;
+                border: 1px solid #555;
+                color: white;
+                padding: 5px;
+                border-radius: 4px;
+            }
+
         select:disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -241,7 +269,7 @@
             color: #777;
         }
 
-        input[type="text"], input[type="number"], select {
+        input[type="text"], select {
             background: #3c3c3c;
             border: 1px solid #555;
             color: white;
@@ -420,31 +448,104 @@
                 <label>Sensitivity</label>
                 <div class="input-group">
                     <div class="arrow-btn" onclick="toggleSection(this, 'sens-options')" title="Advanced Mouse Options">▼</div>
-                    <input type="text" id="Sensitivity" title="The base speed of the mouse move.&#10;Higher values make the cursor move faster." value="5.00">
+                    <div class="hybrid-input">
+                        <input type="range" id="Sensitivity_slider" min="0" max="20" step="0.1" value="5.00" oninput="syncHybrid('Sensitivity')">
+                        <input type="number" id="Sensitivity" title="The base speed of the mouse move.&#10;Higher values make the cursor move faster." value="5.00" step="0.1" oninput="syncHybrid('Sensitivity', true)">
+                    </div>
                 </div>
             </div>
             <div id="sens-options" class="hidden-content">
                 <div class="note-row"><p><strong>NOTE:</strong> It's recommended to set the lowest sensitivity in the game for the smoothest mouse movement.</p></div>
-                <div class="setting-row"><label title="Sensitivity Multiplier. 1.0 uses global Sensitivity.">Sensitivity Multiplier</label><input type="text" id="Sensitivity_Multiplier" title="Further scales the base sensitivity.&#10;Higher values make the cursor move faster." value="2.40"></div>
-                <div class="setting-row"><label title="Horizontal Sensitivity. 0.0 uses global Sensitivity.">Horiz. Sens.</label><input type="text" id="Horizontal_Sensitivity" title="Horizontal Sensitivity.&#10;Range: -1.0 (-100%) to 1.0 (100%)." value="0.00"></div>
-                <div class="setting-row"><label title="Vertical Sensitivity. 0.0 uses global Sensitivity.">Vert. Sens.</label><input type="text" id="Vertical_Sensitivity" title="Vertical Sensitivity.&#10;Range: -1.0 (-100%) to 1.0 (100%)." value="0.00"></div>
-                <div class="setting-row"><label>Max Threshold</label><input type="text" id="Max_Threshold" title="An outer deadzone. Allows the mouse to reach max speed before the stick is fully pushed.&#10;Range: 0.0 to 0.15 (15%)." value="0.045"></div>
-                <div class="setting-row"><label title="Look Accel Multiplier. 1.0 uses global Sensitivity.">Look_Accel_Multiplier.</label><input type="text" id="Look_Accel_Multiplier" title="Boosts speed when stick is near the edge.&#10;Value = 1.0: No boost. Value > 1.0: Boosts speed." value="1.15"></div>
-                <div class="setting-row"><label>Curve Slope</label><input type="text" id="Curve_Slope" title="The initial, linear part of the movement..&#10;Higher value = more linear." value="0.16"></div>
-                <div class="setting-row"><label>Curve Exponent</label><input type="text" id="Curve_Exponent" title="How sharply the speed ramps up.&#10;Higher value = more acceleration." value="1.85"></div>
+                <div class="setting-row">
+                    <label title="Sensitivity Multiplier. 1.0 uses global Sensitivity.">Sensitivity Multiplier</label>
+                    <div class="hybrid-input">
+                        <input type="range" id="Sensitivity_Multiplier_slider" min="0" max="20" step="0.1" value="2.40" oninput="syncHybrid('Sensitivity_Multiplier')">
+                        <input type="number" id="Sensitivity_Multiplier" title="Further scales the base sensitivity." value="2.40" step="0.1" oninput="syncHybrid('Sensitivity_Multiplier', true)">
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <label title="Horizontal Sensitivity. 0.0 uses global Sensitivity.">Horiz. Sens.</label>
+                    <div class="hybrid-input">
+                        <input type="range" id="Horizontal_Sensitivity_slider" min="-1" max="1" step="0.01" value="0.00" oninput="syncHybrid('Horizontal_Sensitivity')">
+                        <input type="number" id="Horizontal_Sensitivity" title="Horizontal Sensitivity.&#10;Range: -1.0 (-100%) to 1.0 (100%)." value="0.00" step="0.01" oninput="syncHybrid('Horizontal_Sensitivity', true)">
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <label title="Vertical Sensitivity. 0.0 uses global Sensitivity.">Vert. Sens.</label>
+                    <div class="hybrid-input">
+                        <input type="range" id="Vertical_Sensitivity_slider" min="-1" max="1" step="0.01" value="0.00" oninput="syncHybrid('Vertical_Sensitivity')">
+                        <input type="number" id="Vertical_Sensitivity" title="Vertical Sensitivity.&#10;Range: -1.0 (-100%) to 1.0 (100%)." value="0.00" step="0.01" oninput="syncHybrid('Vertical_Sensitivity', true)">
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <label>Max Threshold</label>
+                    <div class="hybrid-input">
+                        <input type="range" id="Max_Threshold_slider" min="0" max="0.15" step="0.005" value="0.045" oninput="syncHybrid('Max_Threshold')">
+                        <input type="number" id="Max_Threshold" title="An outer deadzone. Allows the mouse to reach max speed before the stick is fully pushed.&#10;Range: 0.0 to 0.15 (15%)." value="0.045" step="0.001" oninput="syncHybrid('Max_Threshold', true)">
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <label title="Look Accel Multiplier. 1.0 uses global Sensitivity.">Look Accel</label>
+                    <div class="hybrid-input">
+                        <input type="range" id="Look_Accel_Multiplier_slider" min="1" max="2" step="0.005" value="1.15" oninput="syncHybrid('Look_Accel_Multiplier')">
+                        <input type="number" id="Look_Accel_Multiplier" title="Boosts speed when stick is near the edge." value="1.15" step="0.05" oninput="syncHybrid('Look_Accel_Multiplier', true)">
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <label>Curve Slope</label>
+                    <div class="hybrid-input">
+                        <input type="range" id="Curve_Slope_slider" min="0" max="1" step="0.005" value="0.16" oninput="syncHybrid('Curve_Slope')">
+                        <input type="number" id="Curve_Slope" title="The initial, linear part of the movement." value="0.16" step="0.01" oninput="syncHybrid('Curve_Slope', true)">
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <label>Curve Exponent</label>
+                    <div class="hybrid-input">
+                        <input type="range" id="Curve_Exponent_slider" min="1" max="5" step="0.005" value="1.85" oninput="syncHybrid('Curve_Exponent')">
+                        <input type="number" id="Curve_Exponent" title="How sharply the speed ramps up." value="1.85" step="0.05" oninput="syncHybrid('Curve_Exponent', true)">
+                    </div>
+                </div>
+
+                <div class="setting-row" style="flex-direction: column; align-items: stretch; margin-top: 15px;">
+                    <label style="margin-bottom: 10px; text-align: center;">Sensitivity Curve Preview</label>
+                    <div style="position: relative; height: 250px; width: 100%; background: #1e1e1e; border: 1px solid #444; border-radius: 4px; padding: 10px; box-sizing: border-box;">
+                        <canvas id="curveChart"></canvas>
+                    </div>
+                </div>
             </div>
 
             <div class="setting-row">
                 <label>Radial Deadzone</label>
                 <div class="input-group">
                     <div class="arrow-btn" onclick="toggleSection(this, 'deadzone-options')" title="Advanced Deadzone Options">▼</div>
-                    <input type="text" id="Radial_Deadzone" title="The circular deadzone with no guiding.&#10;Range: 0.0 to 1.0 (100%)." value="0.15">
+                    <div class="hybrid-input">
+                        <input type="range" id="Radial_Deadzone_slider" min="0" max="1" step="0.01" value="0.15" oninput="syncHybrid('Radial_Deadzone')">
+                        <input type="number" id="Radial_Deadzone" title="The circular deadzone with no guiding.&#10;Range: 0.0 to 1.0 (100%)." value="0.15" step="0.01" oninput="syncHybrid('Radial_Deadzone', true)">
+                    </div>
                 </div>
             </div>
             <div id="deadzone-options" class="hidden-content">
-                <div class="setting-row"><label>Axial Deadzone</label><input type="text" id="Axial_Deadzone" title="The Square-shaped deadzone with cardinal guiding.&#10;Range: 0.0 to 1.0 (100%)." value="0.0"></div>
-                <div class="setting-row"><label title="Deadzone for using sticks as digital buttons">StickAsBtn Deadzone</label><input type="text" id="StickAsButtonDeadzone" title="Thumbstick As Button Deadzone.&#10;Range: 0.0 to 1.0 (100%)." value="0.25"></div>
-                <div class="setting-row"><label title="0-255 Threshold for triggers">Trigger Threshold</label><input type="text" id="TriggerThreshold" title="Range: 0 (hair trigger) to 255 (must be pulled all the way)." value="40"></div>
+                <div class="setting-row">
+                    <label>Axial Deadzone</label>
+                    <div class="hybrid-input">
+                        <input type="range" id="Axial_Deadzone_slider" min="0" max="1" step="0.01" value="0.00" oninput="syncHybrid('Axial_Deadzone')">
+                        <input type="number" id="Axial_Deadzone" title="Square-shaped deadzone with cardinal guiding.&#10;Range: 0.0 to 1.0 (100%)." value="0.0" step="0.01" oninput="syncHybrid('Axial_Deadzone', true)">
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <label title="Deadzone for using sticks as digital buttons">StickAsBtn Dz</label>
+                    <div class="hybrid-input">
+                        <input type="range" id="StickAsButtonDeadzone_slider" min="0" max="1" step="0.01" value="0.25" oninput="syncHybrid('StickAsButtonDeadzone')">
+                        <input type="number" id="StickAsButtonDeadzone" title="Thumbstick As Button Deadzone.&#10;Range: 0.0 to 1.0 (100%)." value="0.25" step="0.01" oninput="syncHybrid('StickAsButtonDeadzone', true)">
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <label title="0-255 Threshold for triggers">Trigger Threshold</label>
+                    <div class="hybrid-input">
+                        <input type="range" id="TriggerThreshold_slider" min="0" max="255" step="1" value="40" oninput="syncHybrid('TriggerThreshold')">
+                        <input type="number" id="TriggerThreshold" title="Range: 0 (hair trigger) to 255 (must be pulled all the way)." value="40" step="1" oninput="syncHybrid('TriggerThreshold', true)">
+                    </div>
+                </div>
             </div>
 
             <div class="setting-row">
@@ -457,7 +558,7 @@
             <div id="hooks-options" class="hidden-content">
                 <div class="setting-row"><label>GetCursorPos</label><input type="checkbox" id="GetCursorposHook" title="GetCursorPos Hook is needed for most of the games." checked></div>
                 <div class="setting-row"><label>SetCursorPos</label><input type="checkbox" id="SetCursorposHook" title="SetCursorPos Hook is needed for most of the games." checked></div>
-                <div class="setting-row"><label>ClipCursor</label><input type="checkbox" id="ClipCursorHook" title="ClipCursor Hook"></div>
+                <div class="setting-row"><label>ClipCursor</label><input type="checkbox" id="ClipCursorHook" title="ClipCursor Hook" checked></div>
                 <div class="setting-row"><label>GetKeyState</label><input type="checkbox" id="GetKeystateHook" title="GetKeyState Hook" checked></div>
                 <div class="setting-row"><label>GetAsyncKey</label><input type="checkbox" id="GetAsynckeystateHook" title="GetAsyncKeyState Hook" checked></div>
                 <div class="setting-row"><label>GetKeyboardState</label><input type="checkbox" id="GetKeyboardstateHook" title="GetKeyboardState Hook" checked></div>
@@ -477,8 +578,8 @@
                 <div class="setting-row"><label>Window Activate</label><input type="checkbox" id="WindowActivateFilter" title=""></div>
                 <div class="setting-row"><label>Window Activate App</label><input type="checkbox" id="WindowActivateAppFilter" title=""></div>
                 <div class="setting-row"><label>Mouse Wheel</label><input type="checkbox" id="MouseWheelFilter" title=""></div>
-                <div class="setting-row"><label>Mouse Button</label><input type="checkbox" id="MouseButtonFilter" title="Prevents `the real mouse` interactions." checked></div>
-                <div class="setting-row"><label>Keyboard Button</label><input type="checkbox" id="KeyboardButtonFilter" title="Prevents `the real keyboard` interactions." checked></div>
+                <div class="setting-row"><label>Mouse Button</label><input type="checkbox" id="MouseButtonFilter" title="Prevents `the real mouse` interactions."></div>
+                <div class="setting-row"><label>Keyboard Button</label><input type="checkbox" id="KeyboardButtonFilter" title="Prevents `the real keyboard` interactions."></div>
             </div>
         </div>
 
@@ -546,6 +647,24 @@
             } else {
                 content.classList.add('show');
                 btn.classList.add('open');
+            }
+        }
+
+        // HYBRID INPUT SYNC
+        function syncHybrid(id, fromNumber = false) {
+            const numInput = document.getElementById(id);
+            const slider = document.getElementById(id + '_slider');
+            if (!numInput || !slider) return;
+
+            if (fromNumber) {
+                slider.value = numInput.value;
+            } else {
+                numInput.value = slider.value;
+            }
+
+            // DIRECTLY call the chart update function instead of relying on event triggers
+            if (typeof updateCurveChart === 'function') {
+                updateCurveChart();
             }
         }
 
@@ -1185,7 +1304,7 @@
 
             document.getElementById('GetCursorposHook').checked = true;
             document.getElementById('SetCursorposHook').checked = true;
-            document.getElementById('ClipCursorHook').checked = false;
+            document.getElementById('ClipCursorHook').checked = true;
             document.getElementById('GetKeystateHook').checked = true;
             document.getElementById('GetAsynckeystateHook').checked = true;
             document.getElementById('GetKeyboardstateHook').checked = true;
@@ -1196,8 +1315,8 @@
             document.getElementById('WindowActivateFilter').checked = false;
             document.getElementById('WindowActivateAppFilter').checked = false;
             document.getElementById('MouseWheelFilter').checked = false;
-            document.getElementById('MouseButtonFilter').checked = true;
-            document.getElementById('KeyboardButtonFilter').checked = true;
+            document.getElementById('MouseButtonFilter').checked = false;
+            document.getElementById('KeyboardButtonFilter').checked = false;
 
             document.querySelector('input[name="bindMode"][value="0"]').checked = true;
             document.getElementById('useCompound1').checked = false;
@@ -1227,11 +1346,20 @@
                 el.classList.remove('recording', 'active-controller');
             });
 
+            // Sync all sliders back to their reset values
+            const hybridIds = [
+                'Sensitivity', 'Sensitivity_Multiplier', 'Horizontal_Sensitivity', 'Vertical_Sensitivity',
+                'Max_Threshold', 'Look_Accel_Multiplier', 'Curve_Slope', 'Curve_Exponent',
+                'Radial_Deadzone', 'Axial_Deadzone', 'StickAsButtonDeadzone', 'TriggerThreshold'
+            ];
+            hybridIds.forEach(id => syncHybrid(id, true));
+
             document.querySelector('input[name="layerSwitch"][value="Basic"]').checked = true;
             switchLayer('Basic');
 
             updateBindUI();
             updateUIState();
+            updateCurveChart();
         }
 
         // INI IMPORT
@@ -1288,6 +1416,9 @@
                     if (el) {
                         if (el.type === 'checkbox') el.checked = (data[section][key] === "1");
                         else el.value = data[section][key];
+
+                        const slider = document.getElementById((elementId || key) + '_slider');
+                        if (slider) slider.value = data[section][key];
                     }
                 }
             };
@@ -1365,6 +1496,7 @@
             switchLayer('Basic');
             updateBindUI();
             updateUIState();
+            updateCurveChart();
         }
 
         // INI EXPORT
@@ -1403,7 +1535,7 @@
 
             const iniContent = `[Info]
 Name=${getSet('GameName')}
-Ver=1.3.0
+Ver=1.4.1b
 
 [API]
 InputMethod=${getSet('InputMethod')}
@@ -1479,9 +1611,107 @@ ${buildSection('Fn2')}
             window.URL.revokeObjectURL(url);
         }
 
+        // Sensitivity curve graph logic
+        let curveChartInstance = null;
+
+        function updateCurveChart() {
+            const radial_deadzone = parseFloat(document.getElementById('Radial_Deadzone').value) || 0;
+            const curve_slope = parseFloat(document.getElementById('Curve_Slope').value) || 0;
+            const curve_exponent = parseFloat(document.getElementById('Curve_Exponent').value) || 1;
+            const max_threshold = parseFloat(document.getElementById('Max_Threshold').value) || 0;
+            const look_accel_multiplier = parseFloat(document.getElementById('Look_Accel_Multiplier').value) || 1;
+
+            const dataPoints = [];
+            for (let i = 0; i <= 100; i++) {
+                let rawMagnitude = i / 100.0;
+                let y = 0.0;
+
+                if (rawMagnitude >= radial_deadzone) {
+                    let effectiveRange = 1.0 - radial_deadzone;
+                    if (effectiveRange < 1e-6) effectiveRange = 1.0;
+
+                    let x = (rawMagnitude - radial_deadzone) / effectiveRange;
+                    x = Math.max(0.0, Math.min(1.0, x));
+
+                    let accelBoundary = 1.0 - max_threshold;
+                    accelBoundary = Math.max(0.0, Math.min(1.0, accelBoundary));
+
+                    if (x <= accelBoundary) {
+                        y = (curve_slope * x) + (1.0 - curve_slope) * Math.pow(x, curve_exponent);
+                    } else {
+                        let kneeValue = (curve_slope * accelBoundary) + (1.0 - curve_slope) * Math.pow(accelBoundary, curve_exponent);
+                        let rampWidth = 1.0 - accelBoundary;
+
+                        if (rampWidth <= 1e-6) {
+                            y = look_accel_multiplier;
+                        } else {
+                            let rampProgress = (x - accelBoundary) / rampWidth;
+                            y = kneeValue + (look_accel_multiplier - kneeValue) * rampProgress;
+                        }
+                    }
+                }
+                dataPoints.push({ x: rawMagnitude, y: y });
+            }
+
+            const ctx = document.getElementById('curveChart');
+            if (!ctx) return;
+
+            if (curveChartInstance) {
+                curveChartInstance.data.datasets[0].data = dataPoints;
+                curveChartInstance.options.scales.y.suggestedMax = Math.max(1, look_accel_multiplier * 1.1);
+                curveChartInstance.update();
+            } else {
+                Chart.defaults.color = '#ccc';
+                curveChartInstance = new Chart(ctx.getContext('2d'), {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Curve Multiplier',
+                            data: dataPoints,
+                            borderColor: '#007acc',
+                            backgroundColor: 'rgba(0, 122, 204, 0.2)',
+                            showLine: true,
+                            pointRadius: 0,
+                            borderWidth: 2,
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 150 },
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom',
+                                title: { display: true, text: 'Raw Stick Deflection' },
+                                min: 0, max: 1,
+                                grid: { color: '#333' }
+                            },
+                            y: {
+                                title: { display: true, text: 'Output Speed Multiplier' },
+                                min: 0,
+                                suggestedMax: Math.max(1.2, look_accel_multiplier * 1.1),
+                                grid: { color: '#333' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => `Input: ${ctx.parsed.x.toFixed(2)}, Speed: ${ctx.parsed.y.toFixed(2)}x`
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
         // Initialize UI State
         updateBindUI();
         updateUIState();
+        setTimeout(updateCurveChart, 100);
     </script>
 </body>
 </html>
