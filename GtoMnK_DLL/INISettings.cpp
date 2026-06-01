@@ -232,12 +232,12 @@ void LoadIniSettings() {
 
     // [Fn1]
     LoadButtonLayer("Fn1", 100, false, iniPath.c_str());
-    g_thumbStickToMouse[1] = GetPrivateProfileIntA("Fn1", "ThumbstickToMouse", g_thumbStickToMouse[0], iniPath.c_str());
-    g_touchPadToMouse[1] = GetPrivateProfileIntA("Fn1", "TouchpadToMouse", g_touchPadToMouse[0] ? 1 : 0, iniPath.c_str()) == 1;
+    g_thumbStickToMouse[1] = GetPrivateProfileIntA("Fn1", "ThumbstickToMouse", global_thumbStickToMouse, iniPath.c_str());
+    g_touchPadToMouse[1] = GetPrivateProfileIntA("Fn1", "TouchpadToMouse", global_touchPadToMouse ? 1 : 0, iniPath.c_str()) == 1;
     // [Fn2]
     LoadButtonLayer("Fn2", 200, false, iniPath.c_str());
-    g_thumbStickToMouse[2] = GetPrivateProfileIntA("Fn2", "ThumbstickToMouse", g_thumbStickToMouse[0], iniPath.c_str());
-    g_touchPadToMouse[2] = GetPrivateProfileIntA("Fn2", "TouchpadToMouse", g_touchPadToMouse[0] ? 1 : 0, iniPath.c_str()) == 1;
+    g_thumbStickToMouse[2] = GetPrivateProfileIntA("Fn2", "ThumbstickToMouse", global_thumbStickToMouse, iniPath.c_str());
+    g_touchPadToMouse[2] = GetPrivateProfileIntA("Fn2", "TouchpadToMouse", global_touchPadToMouse ? 1 : 0, iniPath.c_str()) == 1;
 
 }
 
