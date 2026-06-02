@@ -50,10 +50,10 @@ void SDL2_Initialize() {
 
     // Load gamecontrollerdb.txt if it exists.
     if (mappingsAdded > 0) {
-        LOG("SDL2: Loaded %d mappings from external 'gamecontrollerdb.txt'.", mappingsAdded);
+        LOG("Loaded %d mappings from external 'gamecontrollerdb.txt'.", mappingsAdded);
     }
     else {
-        LOG("SDL2: External mapping file not found. Falling back to embedded resource.");
+        LOG("External mapping file not found. Falling back to embedded resource.");
 
         HMODULE hModule = NULL;
         GetModuleHandleExA(
@@ -74,15 +74,15 @@ void SDL2_Initialize() {
                 int embeddedMappings = SDL_GameControllerAddMappingsFromRW(rw, 1);
 
                 if (embeddedMappings > 0) {
-                    LOG("SDL2: Loaded %d mappings from Embedded Resource.", embeddedMappings);
+                    LOG("Loaded %d mappings from Embedded Resource.", embeddedMappings);
                 }
                 else {
-                    LOG("SDL2 Error: Failed to load embedded mappings: %s", SDL_GetError());
+                    LOG("Failed to load embedded mappings: %s", SDL_GetError());
                 }
             }
         }
         else {
-            LOG("SDL2 Error: Could not find the embedded resource in the DLL.");
+            LOG("Could not find the embedded resource in the DLL.");
         }
     }
 
@@ -118,12 +118,12 @@ void AttemptInitialConnect() {
         if (path) {
             g_JoyHardwarePath = path;
         }
-        LOG("SDL2: Using %s",
+        LOG("Using %s",
             SDL_GameControllerName(g_GameController));
 
-        LOG("SDL2: Joystick Serial: [%s]",
+        LOG("Joystick Serial: [%s]",
             g_JoySerialNum.empty() ? "NONE" : g_JoySerialNum.c_str());
-        LOG("SDL2: Joystick Path: [%s]",
+        LOG("Joystick Path: [%s]",
             g_JoyHardwarePath.empty() ? "NONE" : g_JoyHardwarePath.c_str());
             
     }
@@ -165,7 +165,7 @@ bool SDL2_GetState(CustomControllerState& outState) {
                         if (isMatch) {
                             g_GameController = tempController;
                             g_JoyID = SDL_JoystickInstanceID(joy);
-                            LOG("SDL2: Controller is successfully reclaimed!");
+                            LOG("Controller is successfully reclaimed!");
                         }
                         else {
                             // Not the matched controller
@@ -182,7 +182,7 @@ bool SDL2_GetState(CustomControllerState& outState) {
                 g_GameController = nullptr;
                 g_JoyID = -1;
 
-                LOG("SDL2: Controller is disconnected. Waiting for original hardware...");
+                LOG("Controller is disconnected. Waiting for original hardware...");
             }
         }
     }

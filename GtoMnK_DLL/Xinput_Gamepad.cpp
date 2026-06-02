@@ -14,7 +14,6 @@ void XInput_Initialize() {
         pXInputGetState = (XInputGetStateFunc)OXI::OpenXInputGetState;
     }
     else {
-        LOG("Using Standard XInput.");
         pXInputGetState = (XInputGetStateFunc)XInputGetState;
     }
 }

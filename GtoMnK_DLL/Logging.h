@@ -1,6 +1,8 @@
 #pragma once
 
 #include <mutex>
+#include <fstream>
+#include <string>
 
 namespace GtoMnK {
 
@@ -8,7 +10,7 @@ namespace GtoMnK {
     public:
         static void InitializeLogger();
         static void ShutdownLogger();
-        static void Log(const char* format, ...);
+        static void Log(const char* file, int line, const char* format, ...);
 
     private:
         static std::ofstream g_logFile;
@@ -21,7 +23,7 @@ namespace GtoMnK {
 #if defined(_DEBUG) || defined(ENABLE_LOGGING)
 #define INIT_LOGGER()     GtoMnK::Logging::InitializeLogger()
 #define SHUTDOWN_LOGGER() GtoMnK::Logging::ShutdownLogger()
-#define LOG(...)          GtoMnK::Logging::Log(__VA_ARGS__)
+#define LOG(...)          GtoMnK::Logging::Log(__FILE__, __LINE__, __VA_ARGS__)
 
 #else
 #define INIT_LOGGER()

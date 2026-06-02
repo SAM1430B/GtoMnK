@@ -5,6 +5,8 @@
 #if defined(_DEBUG) || defined(ENABLE_LOGGING)
 
 #include <cstdarg>
+#include <chrono>
+#include <iomanip>
 
 namespace GtoMnK {
 
@@ -33,7 +35,7 @@ namespace GtoMnK {
         }
     }
 
-    void Logging::Log(const char* format, ...) {
+    void Logging::Log(const char* file, int line, const char* format, ...) {
         std::lock_guard<std::mutex> lock(g_logMutex);
         if (!g_logFile.is_open()) return;
 
@@ -42,15 +44,23 @@ namespace GtoMnK {
         struct tm time_info;
         localtime_s(&time_info, &in_time_t);
 
-        g_logFile << "[" << std::put_time(&time_info, "%T") << "] ";
+        const char* fileName = strrchr(file, '\\');
+        if (!fileName) fileName = strrchr(file, '/');
+        fileName = fileName ? fileName + 1 : file;
 
-        char buffer[1024];
+        char timeStr[16];
+        strftime(timeStr, sizeof(timeStr), "%T", &time_info);
+
+        char prefixBuffer[128];
+        snprintf(prefixBuffer, sizeof(prefixBuffer), "[%s] [%s:%d]", timeStr, fileName, line);
+
+        char messageBuffer[1024];
         va_list args;
         va_start(args, format);
-        vsnprintf(buffer, sizeof(buffer), format, args);
+        vsnprintf(messageBuffer, sizeof(messageBuffer), format, args);
         va_end(args);
 
-        g_logFile << buffer << std::endl;
+        g_logFile << std::left << std::setw(40) << prefixBuffer << " " << messageBuffer << std::endl;
     }
 
 }
