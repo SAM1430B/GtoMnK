@@ -135,6 +135,9 @@
     <ClInclude Include="GtoMnKMutex.h">
       <Filter>Misc</Filter>
     </ClInclude>
+    <ClInclude Include="GamepadInputIDs.h">
+      <Filter>Files\Gamepad</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Files">

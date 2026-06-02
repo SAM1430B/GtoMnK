@@ -13,50 +13,6 @@ enum class GamepadMethod {
     SDL2 // 1
 };
 
-// For Controller Input
-enum CustomInputID {
-    CUSTOM_ID_A = 0,
-    CUSTOM_ID_B,
-    CUSTOM_ID_X,
-    CUSTOM_ID_Y,
-
-    CUSTOM_ID_DPAD_UP,
-    CUSTOM_ID_DPAD_DOWN,
-    CUSTOM_ID_DPAD_LEFT,
-    CUSTOM_ID_DPAD_RIGHT,
-
-    CUSTOM_ID_START,
-    CUSTOM_ID_BACK,
-
-    CUSTOM_ID_GUIDE,
-    CUSTOM_ID_MISC1,
-    CUSTOM_ID_PADDLE1,
-    CUSTOM_ID_PADDLE2,
-    CUSTOM_ID_PADDLE3,
-    CUSTOM_ID_PADDLE4,
-
-    CUSTOM_ID_TOUCHPAD_BUTTON,
-
-    CUSTOM_ID_LSB,
-    CUSTOM_ID_RSB,
-
-    CUSTOM_ID_LB,
-    CUSTOM_ID_RB,
-
-    CUSTOM_ID_LT = 0x10000,
-    CUSTOM_ID_RT,
-
-    CUSTOM_ID_LSU,
-    CUSTOM_ID_LSD,
-    CUSTOM_ID_LSL,
-    CUSTOM_ID_LSR,
-
-    CUSTOM_ID_RSU,
-    CUSTOM_ID_RSD,
-    CUSTOM_ID_RSL,
-    CUSTOM_ID_RSR
-};
-
 // Find Window
 extern char iniWindowName[256];
 extern char iniClassName[256];

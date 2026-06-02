@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "INISettings.h"
+#include "GamepadInputIDs.h"
 #include "Logging.h"
 #include "InputState.h" 
 #include "Input.h"
@@ -256,55 +257,55 @@ void ParseKey(const char* section, const char* key, const char* defaultVal, UINT
 
 void LoadButtonLayer(const char* section, int offset, bool isBaseLayer, const char* iniPath) {
 	// Face Buttons
-    ParseKey(section, "A", isBaseLayer ? "13" : "0", CUSTOM_ID_A, offset, iniPath);
-    ParseKey(section, "B", isBaseLayer ? "0" : "0", CUSTOM_ID_B, offset, iniPath);
-    ParseKey(section, "X", isBaseLayer ? "42" : "0", CUSTOM_ID_X, offset, iniPath);
-    ParseKey(section, "Y", isBaseLayer ? "0" : "0", CUSTOM_ID_Y, offset, iniPath);
+    ParseKey(section, "A", isBaseLayer ? "13" : "0", GAMEPAD_ID_A, offset, iniPath);
+    ParseKey(section, "B", isBaseLayer ? "0" : "0", GAMEPAD_ID_B, offset, iniPath);
+    ParseKey(section, "X", isBaseLayer ? "42" : "0", GAMEPAD_ID_X, offset, iniPath);
+    ParseKey(section, "Y", isBaseLayer ? "0" : "0", GAMEPAD_ID_Y, offset, iniPath);
 
     // D-Pad
-    ParseKey(section, "D_UP", isBaseLayer ? "14" : "0", CUSTOM_ID_DPAD_UP, offset, iniPath);
-    ParseKey(section, "D_DOWN", isBaseLayer ? "15" : "0", CUSTOM_ID_DPAD_DOWN, offset, iniPath);
-    ParseKey(section, "D_LEFT", isBaseLayer ? "16" : "0", CUSTOM_ID_DPAD_LEFT, offset, iniPath);
-    ParseKey(section, "D_RIGHT", isBaseLayer ? "17" : "0", CUSTOM_ID_DPAD_RIGHT, offset, iniPath);
+    ParseKey(section, "D_UP", isBaseLayer ? "14" : "0", GAMEPAD_ID_DPAD_UP, offset, iniPath);
+    ParseKey(section, "D_DOWN", isBaseLayer ? "15" : "0", GAMEPAD_ID_DPAD_DOWN, offset, iniPath);
+    ParseKey(section, "D_LEFT", isBaseLayer ? "16" : "0", GAMEPAD_ID_DPAD_LEFT, offset, iniPath);
+    ParseKey(section, "D_RIGHT", isBaseLayer ? "17" : "0", GAMEPAD_ID_DPAD_RIGHT, offset, iniPath);
 
     // Start & Back
-    ParseKey(section, "Start", isBaseLayer ? "1" : "0", CUSTOM_ID_START, offset, iniPath);
-    ParseKey(section, "Back", isBaseLayer ? "3" : "0", CUSTOM_ID_BACK, offset, iniPath);
+    ParseKey(section, "Start", isBaseLayer ? "1" : "0", GAMEPAD_ID_START, offset, iniPath);
+    ParseKey(section, "Back", isBaseLayer ? "3" : "0", GAMEPAD_ID_BACK, offset, iniPath);
 
     // Extended Buttons
-    ParseKey(section, "Guide", isBaseLayer ? "0" : "0", CUSTOM_ID_GUIDE, offset, iniPath);
-    ParseKey(section, "Misc1", isBaseLayer ? "0" : "0", CUSTOM_ID_MISC1, offset, iniPath);
-    ParseKey(section, "Paddle1", isBaseLayer ? "0" : "0", CUSTOM_ID_PADDLE1, offset, iniPath);
-    ParseKey(section, "Paddle2", isBaseLayer ? "0" : "0", CUSTOM_ID_PADDLE2, offset, iniPath);
-    ParseKey(section, "Paddle3", isBaseLayer ? "0" : "0", CUSTOM_ID_PADDLE3, offset, iniPath);
-    ParseKey(section, "Paddle4", isBaseLayer ? "0" : "0", CUSTOM_ID_PADDLE4, offset, iniPath);
+    ParseKey(section, "Guide", isBaseLayer ? "0" : "0", GAMEPAD_ID_GUIDE, offset, iniPath);
+    ParseKey(section, "Misc1", isBaseLayer ? "0" : "0", GAMEPAD_ID_MISC1, offset, iniPath);
+    ParseKey(section, "Paddle1", isBaseLayer ? "0" : "0", GAMEPAD_ID_PADDLE1, offset, iniPath);
+    ParseKey(section, "Paddle2", isBaseLayer ? "0" : "0", GAMEPAD_ID_PADDLE2, offset, iniPath);
+    ParseKey(section, "Paddle3", isBaseLayer ? "0" : "0", GAMEPAD_ID_PADDLE3, offset, iniPath);
+    ParseKey(section, "Paddle4", isBaseLayer ? "0" : "0", GAMEPAD_ID_PADDLE4, offset, iniPath);
 
 	// Touchpad Button
-	ParseKey(section, "Touchpad_Button", isBaseLayer ? "-1" : "0", CUSTOM_ID_TOUCHPAD_BUTTON, offset, iniPath);
+	ParseKey(section, "Touchpad_Button", isBaseLayer ? "-1" : "0", GAMEPAD_ID_TOUCHPAD_BUTTON, offset, iniPath);
 
     // Stick Buttons
-    ParseKey(section, "RSB", isBaseLayer ? "0" : "0", CUSTOM_ID_RSB, offset, iniPath);
-    ParseKey(section, "LSB", isBaseLayer ? "4" : "0", CUSTOM_ID_LSB, offset, iniPath);
+    ParseKey(section, "RSB", isBaseLayer ? "0" : "0", GAMEPAD_ID_RSB, offset, iniPath);
+    ParseKey(section, "LSB", isBaseLayer ? "4" : "0", GAMEPAD_ID_LSB, offset, iniPath);
 
     // Shoulder Buttons
-    ParseKey(section, "RB", isBaseLayer ? "0" : "0", CUSTOM_ID_RB, offset, iniPath);
-    ParseKey(section, "LB", isBaseLayer ? "0" : "0", CUSTOM_ID_LB, offset, iniPath);
+    ParseKey(section, "RB", isBaseLayer ? "0" : "0", GAMEPAD_ID_RB, offset, iniPath);
+    ParseKey(section, "LB", isBaseLayer ? "0" : "0", GAMEPAD_ID_LB, offset, iniPath);
 
     // Triggers
-    ParseKey(section, "LT", isBaseLayer ? "-2" : "0", CUSTOM_ID_LT, offset, iniPath);
-    ParseKey(section, "RT", isBaseLayer ? "-1" : "0", CUSTOM_ID_RT, offset, iniPath);
+    ParseKey(section, "LT", isBaseLayer ? "-2" : "0", GAMEPAD_ID_LT, offset, iniPath);
+    ParseKey(section, "RT", isBaseLayer ? "-1" : "0", GAMEPAD_ID_RT, offset, iniPath);
 
     // Left Stick As Buttons
-    ParseKey(section, "LSU", isBaseLayer ? "47" : "0", CUSTOM_ID_LSU, offset, iniPath);
-    ParseKey(section, "LSD", isBaseLayer ? "43" : "0", CUSTOM_ID_LSD, offset, iniPath);
-    ParseKey(section, "LSL", isBaseLayer ? "25" : "0", CUSTOM_ID_LSL, offset, iniPath);
-    ParseKey(section, "LSR", isBaseLayer ? "28" : "0", CUSTOM_ID_LSR, offset, iniPath);
+    ParseKey(section, "LSU", isBaseLayer ? "47" : "0", GAMEPAD_ID_LSU, offset, iniPath);
+    ParseKey(section, "LSD", isBaseLayer ? "43" : "0", GAMEPAD_ID_LSD, offset, iniPath);
+    ParseKey(section, "LSL", isBaseLayer ? "25" : "0", GAMEPAD_ID_LSL, offset, iniPath);
+    ParseKey(section, "LSR", isBaseLayer ? "28" : "0", GAMEPAD_ID_LSR, offset, iniPath);
 
     // Right Stick As Buttons
-    ParseKey(section, "RSU", isBaseLayer ? "0" : "0", CUSTOM_ID_RSU, offset, iniPath);
-    ParseKey(section, "RSD", isBaseLayer ? "0" : "0", CUSTOM_ID_RSD, offset, iniPath);
-    ParseKey(section, "RSL", isBaseLayer ? "0" : "0", CUSTOM_ID_RSL, offset, iniPath);
-    ParseKey(section, "RSR", isBaseLayer ? "0" : "0", CUSTOM_ID_RSR, offset, iniPath);
+    ParseKey(section, "RSU", isBaseLayer ? "0" : "0", GAMEPAD_ID_RSU, offset, iniPath);
+    ParseKey(section, "RSD", isBaseLayer ? "0" : "0", GAMEPAD_ID_RSD, offset, iniPath);
+    ParseKey(section, "RSL", isBaseLayer ? "0" : "0", GAMEPAD_ID_RSL, offset, iniPath);
+    ParseKey(section, "RSR", isBaseLayer ? "0" : "0", GAMEPAD_ID_RSR, offset, iniPath);
 }
 
 // This function is to handle the legacy "Mode" and "Righthanded" options for the ThumbStickToMouse setting, to avoid breaking existing INI configurations.

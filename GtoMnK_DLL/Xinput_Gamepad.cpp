@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "XInput_Gamepad.h"
+#include "GamepadInputIDs.h"
 #include "INISettings.h"
 #include "EnableOpenXinput.h" 
 #include "Logging.h"
@@ -34,41 +35,41 @@ bool XInput_GetState(CustomControllerState& outState) {
     }
 
 	// Face Buttons
-    outState.buttons[CUSTOM_ID_A] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_A);
-    outState.buttons[CUSTOM_ID_B] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_B);
-    outState.buttons[CUSTOM_ID_X] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_X);
-    outState.buttons[CUSTOM_ID_Y] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_Y);
+    outState.buttons[GAMEPAD_ID_A] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_A);
+    outState.buttons[GAMEPAD_ID_B] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_B);
+    outState.buttons[GAMEPAD_ID_X] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_X);
+    outState.buttons[GAMEPAD_ID_Y] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_Y);
 
 	// D-Pad
-    outState.buttons[CUSTOM_ID_DPAD_UP] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_UP);
-    outState.buttons[CUSTOM_ID_DPAD_DOWN] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_DOWN);
-    outState.buttons[CUSTOM_ID_DPAD_LEFT] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_LEFT);
-    outState.buttons[CUSTOM_ID_DPAD_RIGHT] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_RIGHT);
+    outState.buttons[GAMEPAD_ID_DPAD_UP] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_UP);
+    outState.buttons[GAMEPAD_ID_DPAD_DOWN] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_DOWN);
+    outState.buttons[GAMEPAD_ID_DPAD_LEFT] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_LEFT);
+    outState.buttons[GAMEPAD_ID_DPAD_RIGHT] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_RIGHT);
 
     // Start & Back
-    outState.buttons[CUSTOM_ID_START] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_START);
-    outState.buttons[CUSTOM_ID_BACK] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_BACK);
+    outState.buttons[GAMEPAD_ID_START] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_START);
+    outState.buttons[GAMEPAD_ID_BACK] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_BACK);
 
     // Extended Buttons
 	// Extended buttons are not supported in XInput.
-    outState.buttons[CUSTOM_ID_GUIDE] = false;
-    outState.buttons[CUSTOM_ID_MISC1] = false;
-    outState.buttons[CUSTOM_ID_PADDLE1] = false;
-    outState.buttons[CUSTOM_ID_PADDLE2] = false;
-    outState.buttons[CUSTOM_ID_PADDLE3] = false;
-    outState.buttons[CUSTOM_ID_PADDLE4] = false;
+    outState.buttons[GAMEPAD_ID_GUIDE] = false;
+    outState.buttons[GAMEPAD_ID_MISC1] = false;
+    outState.buttons[GAMEPAD_ID_PADDLE1] = false;
+    outState.buttons[GAMEPAD_ID_PADDLE2] = false;
+    outState.buttons[GAMEPAD_ID_PADDLE3] = false;
+    outState.buttons[GAMEPAD_ID_PADDLE4] = false;
 
 	// Touchpad Button
 	// Touchpad is not supported in XInput.
-    outState.buttons[CUSTOM_ID_TOUCHPAD_BUTTON] = false;
+    outState.buttons[GAMEPAD_ID_TOUCHPAD_BUTTON] = false;
 
     // Stick Buttons
-    outState.buttons[CUSTOM_ID_LSB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_LEFT_THUMB);
-    outState.buttons[CUSTOM_ID_RSB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_RIGHT_THUMB);
+    outState.buttons[GAMEPAD_ID_LSB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_LEFT_THUMB);
+    outState.buttons[GAMEPAD_ID_RSB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_RIGHT_THUMB);
 
 	// Shoulder Buttons
-    outState.buttons[CUSTOM_ID_LB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_LEFT_SHOULDER);
-    outState.buttons[CUSTOM_ID_RB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_RIGHT_SHOULDER);
+    outState.buttons[GAMEPAD_ID_LB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_LEFT_SHOULDER);
+    outState.buttons[GAMEPAD_ID_RB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_RIGHT_SHOULDER);
 
     // Triggers
     outState.LeftTrigger = state.Gamepad.bLeftTrigger;

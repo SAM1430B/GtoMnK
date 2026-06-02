@@ -2,10 +2,11 @@
 
 #include "pch.h"
 #include "OverlayMenu.h"
-#include "Logging.h"
 #include "MainThread.h"
 #include <time.h>
 #include "INISettings.h"
+#include "GamepadInputIDs.h"
+#include "Logging.h"
 
 namespace GtoMnK {
 
@@ -52,8 +53,8 @@ namespace GtoMnK {
             { "Touch Sensitivity", &touchpad_sensitivity,               5.000f,    0.0f, 10000.0f, 13,  0, false },
             { "Touch Horiz Sens", &touchpad_horizontal_sensitivity,     0.005f,   -1.0f,     1.0f, 14, 13, false },
             { "Touch Vert Sens", &touchpad_vertical_sensitivity,        0.005f,   -1.0f,     1.0f, 15, 13, false },
-            { "Touch Deadzone", &touchpad_deadzone,                    0.0001f, 0.0000f,     1.0f, 16, 13, false },
-			{ "Touch Smoothing", &touchpad_smoothing,                    0.50f,   0.00f,   100.0f, 17, 13, false },
+            { "Touch Deadzone", &touchpad_deadzone,                     0.001f, 0.0000f,     1.0f, 16, 13, false },
+			{ "Touch Smoothing", &touchpad_smoothing,                   0.001f,   0.00f,     1.0f, 17, 13, false },
 #endif
         };
     }
@@ -106,7 +107,7 @@ namespace GtoMnK {
         if (std::abs(stickY) < StickMenuDeadzone) stickY = 0;
 
         // Close the overlay
-        if (state.buttons[CUSTOM_ID_START] || state.buttons[CUSTOM_ID_B]) {
+        if (state.buttons[GAMEPAD_ID_START] || state.buttons[GAMEPAD_ID_B]) {
             EnableDisableMenu(false);
             input = true;
 			Sleep(250); // TODO: Add button release wait loop here instead of just sleeping.
@@ -117,7 +118,7 @@ namespace GtoMnK {
             return;
         }
         // Toggle expand children option
-        if (state.buttons[CUSTOM_ID_X]) {
+        if (state.buttons[GAMEPAD_ID_X]) {
             int currentPId = options[menuSelection].parentId;
             int targetId = (currentPId == 0) ? options[menuSelection].id : currentPId;
             for (int i = 0; i < (int)options.size(); i++) {
@@ -133,7 +134,7 @@ namespace GtoMnK {
             }
         }
         // Navigate up
-        if (state.buttons[CUSTOM_ID_DPAD_UP] || (stickY > 0)) {
+        if (state.buttons[GAMEPAD_ID_DPAD_UP] || (stickY > 0)) {
             do {
                 menuSelection--;
                 if (menuSelection < 0) menuSelection = (int)options.size() - 1;
@@ -141,7 +142,7 @@ namespace GtoMnK {
             input = true;
         }
         // Navigate down
-        else if (state.buttons[CUSTOM_ID_DPAD_DOWN] || (stickY < 0)) {
+        else if (state.buttons[GAMEPAD_ID_DPAD_DOWN] || (stickY < 0)) {
             do {
                 menuSelection++;
                 if (menuSelection >= options.size()) menuSelection = 0;
@@ -149,7 +150,7 @@ namespace GtoMnK {
             input = true;
         }
         // Value decrement
-        else if (state.buttons[CUSTOM_ID_DPAD_LEFT] || (stickX < 0)) {
+        else if (state.buttons[GAMEPAD_ID_DPAD_LEFT] || (stickX < 0)) {
             if (lastDir != 1 || (now - lastInputTime > 250)) {
                 dirHoldTimer = now;
                 lastDir = 1;
@@ -163,7 +164,7 @@ namespace GtoMnK {
             input = true;
         }
         // Value increment
-        else if (state.buttons[CUSTOM_ID_DPAD_RIGHT] || (stickX > 0)) {
+        else if (state.buttons[GAMEPAD_ID_DPAD_RIGHT] || (stickX > 0)) {
             if (lastDir != 2 || (now - lastInputTime > 250)) {
                 dirHoldTimer = now;
                 lastDir = 2;

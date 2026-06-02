@@ -350,6 +350,7 @@ exit /b 0</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="GamepadInputIDs.h" />
     <ClInclude Include="GamepadState.h" />
     <ClInclude Include="GtoMnKMutex.h" />
     <ClInclude Include="HandleMainWindow.h" />

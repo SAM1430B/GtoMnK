@@ -1,17 +1,13 @@
 #include "pch.h"
+#include "MainThread.h"
+#include "INISettings.h"
+#include "GamepadInputIDs.h"
 #include "Logging.h"
 #include "Hooks.h"
 #include "Mouse.h"
-#include "Keyboard.h"
-#include "InputState.h"
 #include "RawInput.h"
-#include "MainThread.h"
 #include "FakeCursor.h"
 #include "OverlayMenu.h"
-#include "EnableOpenXinput.h"
-#include "INISettings.h"
-#include "HandleMainWindow.h"
-#include "GamepadState.h"
 #include "Xinput_Gamepad.h"
 #include "SDL2_Gamepad.h"
 
@@ -156,6 +152,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
 
     while (loop) {
 
+		// Window Handle Validation
         if (recheckHWND) {
             if (hwnd && !IsWindow(hwnd)) {
                 LOG("Window handle became invalid. Resetting...");
@@ -201,12 +198,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
 
             if (!disableOverlayOptions && OverlayMenu::state.IsReady())
             {
-                bool backDown = state.buttons[CUSTOM_ID_BACK];
-                bool dpadDown = state.buttons[CUSTOM_ID_DPAD_DOWN];
+                bool backDown = state.buttons[GAMEPAD_ID_BACK];
+                bool dpadDown = state.buttons[GAMEPAD_ID_DPAD_DOWN];
 
                 if (backDown && dpadDown) {
-                    ProcessButton(CUSTOM_ID_BACK, false);
-                    ProcessButton(CUSTOM_ID_DPAD_DOWN, false);
+                    ProcessButton(GAMEPAD_ID_BACK, false);
+                    ProcessButton(GAMEPAD_ID_DPAD_DOWN, false);
 
                     if (!menuTogglePending) {
                         menuToggleTimer = GetTickCount64();
@@ -226,7 +223,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                             if (g_GamepadMethod == GamepadMethod::SDL2) {waitConnected = SDL2_GetState(waitState);}
                             else {waitConnected = XInput_GetState(waitState);}
                             if (!waitConnected) break;
-                        } while (waitState.buttons[CUSTOM_ID_BACK] || waitState.buttons[CUSTOM_ID_DPAD_DOWN]);
+                        } while (waitState.buttons[GAMEPAD_ID_BACK] || waitState.buttons[GAMEPAD_ID_DPAD_DOWN]);
                         continue;
                     }
                 }
@@ -242,43 +239,43 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
             }
             else {
                 // Face Buttons
-                ProcessButton(CUSTOM_ID_A, state.buttons[CUSTOM_ID_A]);
-                ProcessButton(CUSTOM_ID_B, state.buttons[CUSTOM_ID_B]);
-                ProcessButton(CUSTOM_ID_X, state.buttons[CUSTOM_ID_X]);
-                ProcessButton(CUSTOM_ID_Y, state.buttons[CUSTOM_ID_Y]);
+                ProcessButton(GAMEPAD_ID_A, state.buttons[GAMEPAD_ID_A]);
+                ProcessButton(GAMEPAD_ID_B, state.buttons[GAMEPAD_ID_B]);
+                ProcessButton(GAMEPAD_ID_X, state.buttons[GAMEPAD_ID_X]);
+                ProcessButton(GAMEPAD_ID_Y, state.buttons[GAMEPAD_ID_Y]);
 
                 // D-Pad
-                ProcessButton(CUSTOM_ID_DPAD_UP, state.buttons[CUSTOM_ID_DPAD_UP]);
-                ProcessButton(CUSTOM_ID_DPAD_DOWN, state.buttons[CUSTOM_ID_DPAD_DOWN]);
-                ProcessButton(CUSTOM_ID_DPAD_LEFT, state.buttons[CUSTOM_ID_DPAD_LEFT]);
-                ProcessButton(CUSTOM_ID_DPAD_RIGHT, state.buttons[CUSTOM_ID_DPAD_RIGHT]);
+                ProcessButton(GAMEPAD_ID_DPAD_UP, state.buttons[GAMEPAD_ID_DPAD_UP]);
+                ProcessButton(GAMEPAD_ID_DPAD_DOWN, state.buttons[GAMEPAD_ID_DPAD_DOWN]);
+                ProcessButton(GAMEPAD_ID_DPAD_LEFT, state.buttons[GAMEPAD_ID_DPAD_LEFT]);
+                ProcessButton(GAMEPAD_ID_DPAD_RIGHT, state.buttons[GAMEPAD_ID_DPAD_RIGHT]);
                 
 				// Start & Back
-                ProcessButton(CUSTOM_ID_START, state.buttons[CUSTOM_ID_START]);
-                ProcessButton(CUSTOM_ID_BACK, state.buttons[CUSTOM_ID_BACK]);
+                ProcessButton(GAMEPAD_ID_START, state.buttons[GAMEPAD_ID_START]);
+                ProcessButton(GAMEPAD_ID_BACK, state.buttons[GAMEPAD_ID_BACK]);
 
                 // Extended Buttons
-                ProcessButton(CUSTOM_ID_GUIDE, state.buttons[CUSTOM_ID_GUIDE]);
-                ProcessButton(CUSTOM_ID_MISC1, state.buttons[CUSTOM_ID_MISC1]);
-                ProcessButton(CUSTOM_ID_PADDLE1, state.buttons[CUSTOM_ID_PADDLE1]);
-                ProcessButton(CUSTOM_ID_PADDLE2, state.buttons[CUSTOM_ID_PADDLE2]);
-                ProcessButton(CUSTOM_ID_PADDLE3, state.buttons[CUSTOM_ID_PADDLE3]);
-                ProcessButton(CUSTOM_ID_PADDLE4, state.buttons[CUSTOM_ID_PADDLE4]);
+                ProcessButton(GAMEPAD_ID_GUIDE, state.buttons[GAMEPAD_ID_GUIDE]);
+                ProcessButton(GAMEPAD_ID_MISC1, state.buttons[GAMEPAD_ID_MISC1]);
+                ProcessButton(GAMEPAD_ID_PADDLE1, state.buttons[GAMEPAD_ID_PADDLE1]);
+                ProcessButton(GAMEPAD_ID_PADDLE2, state.buttons[GAMEPAD_ID_PADDLE2]);
+                ProcessButton(GAMEPAD_ID_PADDLE3, state.buttons[GAMEPAD_ID_PADDLE3]);
+                ProcessButton(GAMEPAD_ID_PADDLE4, state.buttons[GAMEPAD_ID_PADDLE4]);
 
                 // Touchpad Button
-                ProcessButton(CUSTOM_ID_TOUCHPAD_BUTTON, state.buttons[CUSTOM_ID_TOUCHPAD_BUTTON]);
+                ProcessButton(GAMEPAD_ID_TOUCHPAD_BUTTON, state.buttons[GAMEPAD_ID_TOUCHPAD_BUTTON]);
 
                 // Stick Buttons
-                ProcessButton(CUSTOM_ID_RSB, state.buttons[CUSTOM_ID_RSB]);
-                ProcessButton(CUSTOM_ID_LSB, state.buttons[CUSTOM_ID_LSB]);
+                ProcessButton(GAMEPAD_ID_RSB, state.buttons[GAMEPAD_ID_RSB]);
+                ProcessButton(GAMEPAD_ID_LSB, state.buttons[GAMEPAD_ID_LSB]);
 
                 // Shoulder Buttons
-                ProcessButton(CUSTOM_ID_RB, state.buttons[CUSTOM_ID_RB]);
-                ProcessButton(CUSTOM_ID_LB, state.buttons[CUSTOM_ID_LB]);
+                ProcessButton(GAMEPAD_ID_RB, state.buttons[GAMEPAD_ID_RB]);
+                ProcessButton(GAMEPAD_ID_LB, state.buttons[GAMEPAD_ID_LB]);
 
                 // Triggers
-                ProcessTrigger(CUSTOM_ID_LT, state.LeftTrigger);
-                ProcessTrigger(CUSTOM_ID_RT, state.RightTrigger);
+                ProcessTrigger(GAMEPAD_ID_LT, state.LeftTrigger);
+                ProcessTrigger(GAMEPAD_ID_RT, state.RightTrigger);
 
                 // Analog Sticks (as buttons)
                 int activeThumbStickToMouse = GetActiveThumbStickToMouse();
@@ -299,10 +296,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                         if (angleDeg > 112.5f && angleDeg < 247.5f) isLSL = true;
                         if (angleDeg > 292.5f || angleDeg < 67.5f) isLSR = true;
                     }
-                    ProcessButton(CUSTOM_ID_LSU, isLSU);
-                    ProcessButton(CUSTOM_ID_LSD, isLSD);
-                    ProcessButton(CUSTOM_ID_LSL, isLSL);
-                    ProcessButton(CUSTOM_ID_LSR, isLSR);
+                    ProcessButton(GAMEPAD_ID_LSU, isLSU);
+                    ProcessButton(GAMEPAD_ID_LSD, isLSD);
+                    ProcessButton(GAMEPAD_ID_LSL, isLSL);
+                    ProcessButton(GAMEPAD_ID_LSR, isLSR);
                 }
 				// Right Thumbsticks
                 bool useRightStickForMouse = (activeThumbStickToMouse == 2);
@@ -320,10 +317,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                         if (angleDeg > 112.5f && angleDeg < 247.5f) isRSL = true;
                         if (angleDeg > 292.5f || angleDeg < 67.5f) isRSR = true;
                     }
-                    ProcessButton(CUSTOM_ID_RSU, isRSU);
-                    ProcessButton(CUSTOM_ID_RSD, isRSD);
-                    ProcessButton(CUSTOM_ID_RSL, isRSL);
-                    ProcessButton(CUSTOM_ID_RSR, isRSR);
+                    ProcessButton(GAMEPAD_ID_RSU, isRSU);
+                    ProcessButton(GAMEPAD_ID_RSD, isRSD);
+                    ProcessButton(GAMEPAD_ID_RSL, isRSL);
+                    ProcessButton(GAMEPAD_ID_RSR, isRSR);
                 }
 
                 // Mouse Movement

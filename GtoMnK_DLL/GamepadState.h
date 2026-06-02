@@ -3,8 +3,8 @@
 #include <map>
 
 struct CustomControllerState {
-    // Use a map or fixed array to store the state of every CUSTOM_ID
-    // Simple boolean state: Is CUSTOM_ID_X pressed?
+    // Use a map or fixed array to store the state of every GAMEPAD_ID
+    // Simple boolean state: Is GAMEPAD_ID_X pressed?
     bool buttons[30];
 
     // Analog values for sticks/triggers
