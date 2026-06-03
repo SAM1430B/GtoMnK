@@ -25,6 +25,7 @@ int global_touchPadToMouse, g_touchPadToMouse[3];
 
 // For Initialization and Thread state
 int startUpDelay = 0;
+char waitForDllName[256] = { 0 };
 bool recheckHWND = true;
 bool disableOverlayOptions = false;
 bool g_EnableOpenXinput = false;
@@ -178,6 +179,7 @@ void LoadIniSettings() {
 
     // [Settings]
     startUpDelay = GetPrivateProfileIntA("Settings", "StartUpDelay", 0, iniPath.c_str());
+    GetPrivateProfileStringA("Settings", "WaitForDllName", "", waitForDllName, sizeof(waitForDllName), iniPath.c_str());
     recheckHWND = GetPrivateProfileIntA("Settings", "RecheckHWND", 1, iniPath.c_str()) == 1;
     disableOverlayOptions = (GetPrivateProfileIntA("Settings", "DisableOverlayOptions", 0, iniPath.c_str()) != 0);
     controllerID = GetPrivateProfileIntA("Settings", "Controllerid", 0, iniPath.c_str());

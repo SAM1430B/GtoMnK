@@ -72,6 +72,21 @@ void DrawOverlay() {
     ReleaseDC(hwnd, hdcWindow);
 }
 
+void WaitForOtherDll() {
+    if (waitForDllName[0] == '\0') {
+        return;
+    }
+    LOG("Waiting for DLL '%s' to be loaded into memory...", waitForDllName);
+
+    while (loop) {
+        if (GetModuleHandleA(waitForDllName) != NULL) {
+            LOG("Found DLL '%s'. Proceeding with initialization...", waitForDllName);
+            break;
+        }
+        Sleep(500);
+    }
+}
+
 DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     LOG("ThreadFunction started.");
 
@@ -88,9 +103,12 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         LOG("Using controller ID: %d", controllerID);
     }
 
+    // Wait for external DLL
+    WaitForOtherDll();
+
     // Startup Delay
     if (startUpDelay > 0) {
-        LOG("Waiting for startup delay of %dSec before hooking...", startUpDelay);
+        LOG("Waiting for startup delay of %dsec before hooking...", startUpDelay);
         Sleep(startUpDelay * 1000);
     }
 

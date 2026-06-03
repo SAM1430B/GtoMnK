@@ -36,6 +36,7 @@ extern bool g_filterKeyboardButton;
 
 // General Settings
 extern int startUpDelay;
+extern char waitForDllName[256];
 extern bool recheckHWND;
 extern bool disableOverlayOptions;
 extern int controllerID;
