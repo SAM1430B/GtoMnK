@@ -25,6 +25,8 @@ namespace GtoMnK
 		int offsetSET; //0:sizing 1:offset 2:done
 		int cursorWidth = 40;
 		int cursorHeight = 40;
+		bool nochange = false; //if normal offset was found at first then assume all cursors got same offset
+		HCURSOR oldhCursor = NULL;
 
 		// This is either on or off for a given game (ie. it doesn't change)
 		bool drawingEnabled = false;
