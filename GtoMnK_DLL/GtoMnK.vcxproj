@@ -352,6 +352,7 @@ exit /b 0</Command>
   <ItemGroup>
     <ClInclude Include="GamepadInputIDs.h" />
     <ClInclude Include="GamepadState.h" />
+    <ClInclude Include="OverlayNotification.h" />
     <ClInclude Include="GtoMnKMutex.h" />
     <ClInclude Include="HandleMainWindow.h" />
     <ClInclude Include="INISettings.h" />
@@ -379,6 +380,7 @@ exit /b 0</Command>
     <ClInclude Include="XInput_Gamepad.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="OverlayNotification.cpp" />
     <ClCompile Include="GtoMnKMutex.cpp" />
     <ClCompile Include="SDL2_Gamepad.cpp" />
     <ClCompile Include="XInput_Gamepad.cpp" />

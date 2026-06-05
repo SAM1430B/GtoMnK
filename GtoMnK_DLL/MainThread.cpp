@@ -10,6 +10,7 @@
 #include "OverlayMenu.h"
 #include "Xinput_Gamepad.h"
 #include "SDL2_Gamepad.h"
+#include "OverlayNotification.h"
 
 using namespace GtoMnK;
 
@@ -48,29 +49,6 @@ int leftrect, toprect, rightrect, bottomrect;
 //bool scrollmap = false;
 //POINT rectignore = { 0, 0 };
 //int ignorerect;
-
-
-void DrawOverlay() {
-    int activeThumbStick = GetActiveThumbStickToMouse();
-    bool isMouseActive = (activeThumbStick == 1 || activeThumbStick == 2);
-
-    if (showmessage == 0 && !(drawfakecursor && isMouseActive)) {
-        return;
-    }
-    HDC hdcWindow = GetDC(hwnd);
-    if (!hdcWindow) {
-        return;
-    }
-    if (showmessage == 1) TextOutA(hdcWindow, Mouse::Xf, Mouse::Yf, "KEYBOARD MODE", 13);
-    else if (showmessage == 2) TextOutA(hdcWindow, Mouse::Xf, Mouse::Yf, "CURSOR MODE", 11);
-    else if (showmessage == 69) TextOutA(hdcWindow, Mouse::Xf, Mouse::Yf, "DISABLED", 8);
-    else if (showmessage == 70) TextOutA(hdcWindow, Mouse::Xf, Mouse::Yf, "ENABLED", 7);
-    else if (showmessage == 12) TextOutA(hdcWindow, 20, 20, "CONTROLLER DISCONNECTED", 23);
-    else if (drawfakecursor && isMouseActive) {
-        Mouse::DrawBeautifulCursor(hdcWindow);
-    }
-    ReleaseDC(hwnd, hdcWindow);
-}
 
 void WaitForOtherDll() {
     if (waitForDllName[0] == '\0') {
@@ -131,9 +109,6 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         if (!createdWindowIsOwned)
             FakeCursor::EnableDisableFakeCursor(true);
     }
-    else if (drawfakecursor) {
-        LOG("Simple Fake Cursor is enabled.");
-    }
 
     // Setup Hooks
     Hooks::SetupHooks();
@@ -148,6 +123,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     {
         OverlayMenu::state.Initialise();
         LOG("Overlay Options Initialized.");
+        OverlayNotification::state.Initialise();
+		LOG("Overlay Notification Initialized.");
     }
     else {
         LOG("Overlay Options is disabled.");
@@ -161,7 +138,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         SDL2_Initialize();
         
     }
-
+    
     ULONGLONG menuToggleTimer = 0;
     bool menuTogglePending = false;
     ULONGLONG lastMoveTime = 0;
@@ -170,7 +147,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
 
     while (loop) {
 
-		// Window Handle Validation
+        // Window Handle Validation
         if (recheckHWND) {
             if (hwnd && !IsWindow(hwnd)) {
                 LOG("Window handle became invalid. Resetting...");
@@ -267,8 +244,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                 ProcessButton(GAMEPAD_ID_DPAD_DOWN, state.buttons[GAMEPAD_ID_DPAD_DOWN]);
                 ProcessButton(GAMEPAD_ID_DPAD_LEFT, state.buttons[GAMEPAD_ID_DPAD_LEFT]);
                 ProcessButton(GAMEPAD_ID_DPAD_RIGHT, state.buttons[GAMEPAD_ID_DPAD_RIGHT]);
-                
-				// Start & Back
+
+                // Start & Back
                 ProcessButton(GAMEPAD_ID_START, state.buttons[GAMEPAD_ID_START]);
                 ProcessButton(GAMEPAD_ID_BACK, state.buttons[GAMEPAD_ID_BACK]);
 
@@ -319,7 +296,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                     ProcessButton(GAMEPAD_ID_LSL, isLSL);
                     ProcessButton(GAMEPAD_ID_LSR, isLSR);
                 }
-				// Right Thumbsticks
+                // Right Thumbsticks
                 bool useRightStickForMouse = (activeThumbStickToMouse == 2);
 
                 if (!useRightStickForMouse) {
@@ -354,7 +331,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
                     totalDelta.y += thumbDelta.y;
                 }
 
-				// Touchpad As Mouse
+                // Touchpad As Mouse
                 int activeTouchPadToMouse = GetActiveTouchPadToMouse();
 
                 // used only in SDL2 mode since XInput doesn't support it.
@@ -397,12 +374,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         }
 
         // Drawing and Message
-        DrawOverlay();
-        if (showmessage != 0 && showmessage != 12) {
-            if (++counter > 150) {
-                showmessage = 0;
-                counter = 0;
-            }
+        if (IsOverlayNotificationEnabled) {
+            OverlayNotification::state.DrawOverlay(showmessage);
         }
 
         if (responsetime <= 0)
@@ -413,6 +386,11 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
 	// Cleanup
     if (g_GamepadMethod == GamepadMethod::SDL2) {
         SDL2_Cleanup();
+    }
+
+    if (IsOverlayNotificationEnabled) {
+        OverlayNotification::state.CleanupGDIOverlay();
+		LOG("Overlay Notification cleaned up.");
     }
 
     LOG("ThreadFunction gracefully exiting.");

@@ -12,14 +12,6 @@ namespace GtoMnK {
         static BOOL WINAPI GetCursorPosHook(PPOINT lpPoint);
         static BOOL WINAPI SetCursorPosHook(int X, int Y);
 
-
-        static bool Mutexlock(bool lock);
-
-        static void DrawBeautifulCursor(HDC hdc);
-
-    private:
-        static int colorfulSword[20][20];
-        static COLORREF colors[5];
     };
 
 }

@@ -22,7 +22,7 @@ extern InputMethod g_InputMethod;
 extern GamepadMethod g_GamepadMethod;
 
 // Hooks
-extern int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setCursorHook, setRectHook;
+extern int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setRectHook;
 
 // MessageFilter
 extern bool g_filterRawInput;
@@ -42,7 +42,6 @@ extern bool disableOverlayOptions;
 extern int controllerID;
 extern bool g_EnableOpenXinput;
 extern int mode;
-extern int drawfakecursor;
 extern int drawProtoFakeCursor;
 extern int ShowProtoCursorWhenImageUpdated;
 extern int createdWindowIsOwned;

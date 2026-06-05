@@ -31,7 +31,6 @@ bool disableOverlayOptions = false;
 bool g_EnableOpenXinput = false;
 
 // Drawing & cursor state
-int drawfakecursor = 0;
 int drawProtoFakeCursor = 0; // From ProtoInput also for the Cursor visibility hooks
 int createdWindowIsOwned = 1;
 int ShowProtoCursorWhenImageUpdated = 1; // From ProtoInput
@@ -41,7 +40,7 @@ int responsetime = 4;
 
 // For the Hooks
 InputMethod g_InputMethod = InputMethod::Hybrid;
-int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setCursorHook, setRectHook;
+int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setRectHook;
 
 // For MessageFilterHook
 bool g_filterRawInput = false;
@@ -164,7 +163,6 @@ void LoadIniSettings() {
     getKeyStateHook = GetPrivateProfileIntA("Hooks", "GetKeystateHook", 1, iniPath.c_str());
     getAsyncKeyStateHook = GetPrivateProfileIntA("Hooks", "GetAsynckeystateHook", 1, iniPath.c_str());
     getKeyboardStateHook = GetPrivateProfileIntA("Hooks", "GetKeyboardstateHook", 1, iniPath.c_str());
-    setCursorHook = GetPrivateProfileIntA("Hooks", "SetCursorHook", 0, iniPath.c_str());
     setRectHook = GetPrivateProfileIntA("Hooks", "SetRectHook", 0, iniPath.c_str());
 
     // [MessageFilter]
@@ -184,16 +182,10 @@ void LoadIniSettings() {
     disableOverlayOptions = (GetPrivateProfileIntA("Settings", "DisableOverlayOptions", 0, iniPath.c_str()) != 0);
     controllerID = GetPrivateProfileIntA("Settings", "Controllerid", 0, iniPath.c_str());
     mode = GetPrivateProfileIntA("Settings", "Mode", -1, iniPath.c_str()); // This is replaced with ThumbStickToMouse in v1.4.0
-    drawfakecursor = GetPrivateProfileIntA("Settings", "drawfakecursor", 0, iniPath.c_str());
     drawProtoFakeCursor = GetPrivateProfileIntA("Settings", "DrawProtoFakeCursor", 0, iniPath.c_str());
     ShowProtoCursorWhenImageUpdated = GetPrivateProfileIntA("Settings", "ShowCursorWhenImageUpdated", 1, iniPath.c_str());
     DontShowCursorWhenImageUpdated = GetPrivateProfileIntA("Settings", "DontShowCursorWhenImageUpdated", 0, iniPath.c_str());
-    if (drawProtoFakeCursor == 1) {
-        if (drawfakecursor == 1) {
-            LOG("INI Info: Both 'drawfakecursor' and 'drawProtoFakeCursor' are enabled. Prioritizing the ProtoInput cursor.");
-            drawfakecursor = 0; // Force the old cursor to be disabled.
-        }
-    }
+    
     // Let the PointerWindow and RawInput window owned by the main window (game).
     createdWindowIsOwned = GetPrivateProfileIntA("Settings", "CreatedWindowIsOwned", 1, iniPath.c_str());
     responsetime = GetPrivateProfileIntA("Settings", "Responsetime", 4, iniPath.c_str());
@@ -231,7 +223,6 @@ void LoadIniSettings() {
     LoadButtonLayer("KeyMapping", 0, true, iniPath.c_str());
     g_thumbStickToMouse[0] = GetPrivateProfileIntA("KeyMapping", "ThumbstickToMouse", global_thumbStickToMouse, iniPath.c_str());
     g_touchPadToMouse[0] = GetPrivateProfileIntA("KeyMapping", "TouchpadToMouse", global_touchPadToMouse ? 1 : 0, iniPath.c_str()) == 1;
-
 
     // [Fn1]
     LoadButtonLayer("Fn1", 100, false, iniPath.c_str());

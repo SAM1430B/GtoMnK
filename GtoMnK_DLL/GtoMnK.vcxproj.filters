@@ -58,6 +58,9 @@
     <ClCompile Include="GtoMnKMutex.cpp">
       <Filter>Misc</Filter>
     </ClCompile>
+    <ClCompile Include="OverlayNotification.cpp">
+      <Filter>Files\Overlay</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -137,6 +140,9 @@
     </ClInclude>
     <ClInclude Include="GamepadInputIDs.h">
       <Filter>Files\Gamepad</Filter>
+    </ClInclude>
+    <ClInclude Include="OverlayNotification.h">
+      <Filter>Files\Overlay</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

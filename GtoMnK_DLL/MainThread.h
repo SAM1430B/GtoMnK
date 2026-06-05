@@ -17,6 +17,7 @@ struct ButtonState {
 extern HMODULE g_hModule;
 extern bool loop;
 extern bool hooksinited;
+extern bool IsOverlayNotificationEnabled;
 extern std::map<UINT, ButtonState> buttonStates;
 
 // Used by Input.cpp, Hooks.cpp, dllmain.cpp, etc.
