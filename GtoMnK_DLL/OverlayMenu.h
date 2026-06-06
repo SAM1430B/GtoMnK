@@ -25,6 +25,7 @@ namespace GtoMnK {
         void EnableDisableMenu(bool enable);
         void ProcessInput(const CustomControllerState& state); // Handles the overlay buttons
         void GetWindowDimensions(HWND mWnd);
+        bool HandleOverlayMenuToggle(const CustomControllerState& state);
 
         void SetupOptions();
 
@@ -37,6 +38,10 @@ namespace GtoMnK {
         void UpdatePositionLoopInternal();
         void DrawUI();
         bool IsOptionVisible(int index);
+
+		//  Process the toggle input for the overlay menu.
+        ULONGLONG m_menuToggleTimer = 0;
+        bool m_menuTogglePending = false;
 
         HDC hdc = nullptr;
         HBRUSH transparencyBrush = nullptr;

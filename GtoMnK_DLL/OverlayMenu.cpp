@@ -3,6 +3,11 @@
 #include "pch.h"
 #include "OverlayMenu.h"
 #include "MainThread.h"
+
+#include "Mouse.h"
+#include "SDL2_Gamepad.h"
+#include "XInput_Gamepad.h"
+
 #include <time.h>
 #include "INISettings.h"
 #include "GamepadInputIDs.h"
@@ -87,7 +92,54 @@ namespace GtoMnK {
         }
     }
 
-    // Overlay menu input process
+	// Open Overlay Menu (Back + D-Pad Down), used in the MainThread input loop.
+    bool OverlayMenu::HandleOverlayMenuToggle(const CustomControllerState& state)
+    {
+        if (disableOverlayOptions || !IsReady()) return false;
+
+        bool backDown = state.buttons[GAMEPAD_ID_BACK];
+        bool dpadDown = state.buttons[GAMEPAD_ID_DPAD_DOWN];
+
+        if (backDown && dpadDown) {
+            ProcessButton(GAMEPAD_ID_BACK, false);
+            ProcessButton(GAMEPAD_ID_DPAD_DOWN, false);
+
+            if (!m_menuTogglePending) {
+                m_menuToggleTimer = GetTickCount64();
+                m_menuTogglePending = true;
+            }
+            else if (GetTickCount64() - m_menuToggleTimer > 50) {
+                // Toggle Menu
+                bool newState = !isMenuOpen;
+                EnableDisableMenu(newState);
+                m_menuTogglePending = false;
+
+                //Mouse::Xf = Mouse::Xf;
+
+                CustomControllerState waitState;
+                do {
+                    Sleep(100); // Important
+                    bool waitConnected = false;
+                    if (g_GamepadMethod == GamepadMethod::SDL2) {
+                        waitConnected = SDL2_GetState(waitState);
+                    }
+                    else if (g_GamepadMethod == GamepadMethod::XInput) {
+                        waitConnected = XInput_GetState(waitState);
+                    }
+                    if (!waitConnected) break;
+                } while (waitState.buttons[GAMEPAD_ID_BACK] || waitState.buttons[GAMEPAD_ID_DPAD_DOWN]);
+
+                return true;
+            }
+        }
+        else {
+            m_menuTogglePending = false;
+        }
+
+        return false;
+    }
+
+	// Overlay menu input process, Used in the MainThread input loop when the menu is open.
     void OverlayMenu::ProcessInput(const CustomControllerState& state) {
         if (!isMenuOpen) return;
 

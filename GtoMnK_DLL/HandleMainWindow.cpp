@@ -3,6 +3,7 @@
 #include "FakeCursor.h" 
 #include "RawInput.h"
 #include "OverlayMenu.h"
+#include "Logging.h"
 
 HWND GetMainWindowHandle(DWORD targetPID, const char* requiredName, const char* requiredClass, DWORD timeoutMS) {
     struct HandleData {
@@ -68,4 +69,29 @@ HWND GetMainWindowHandle(DWORD targetPID, const char* requiredName, const char* 
     }
 
     return nullptr;
+}
+
+bool RecoverMainWindow(HWND& hwnd, bool recheckHWND, const char* windowName, const char* className) {
+    if (recheckHWND) {
+        if (hwnd && !IsWindow(hwnd)) {
+            LOG("Window handle became invalid. Resetting...");
+            hwnd = nullptr;
+        }
+    }
+
+    if (!hwnd) {
+        hwnd = GetMainWindowHandle(GetCurrentProcessId(), windowName, className, 300000);
+        if (!hwnd) {
+            LOG("CRITICAL: Game window missing for 5 minute.");
+            return false;
+        }
+        LOG("Acquired new window handle: 0x%p", hwnd);
+
+        /*if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hybrid) {
+            LOG("Window changed! Re-running RawInput recovery...");
+            RawInput::RecoverMissedRegistration();
+        }*/
+    }
+
+    return true;
 }

@@ -61,6 +61,9 @@
     <ClCompile Include="OverlayNotification.cpp">
       <Filter>Files\Overlay</Filter>
     </ClCompile>
+    <ClCompile Include="GamepadProcessor.cpp">
+      <Filter>Files\Gamepad</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -143,6 +146,12 @@
     </ClInclude>
     <ClInclude Include="OverlayNotification.h">
       <Filter>Files\Overlay</Filter>
+    </ClInclude>
+    <ClInclude Include="GamepadProcessor.h">
+      <Filter>Files\Gamepad</Filter>
+    </ClInclude>
+    <ClInclude Include="GamepadBackend.h">
+      <Filter>Files\Gamepad</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
