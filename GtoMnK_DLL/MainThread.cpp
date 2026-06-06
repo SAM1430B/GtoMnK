@@ -100,7 +100,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     Hooks::SetupHooks();
     hooksinited = true;
 
-    if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hybrid) {
+    if (g_FakeInputMethod == FakeInputMethod::RawInput || g_FakeInputMethod == FakeInputMethod::Hybrid) {
         RawInput::Initialize();
     }
 

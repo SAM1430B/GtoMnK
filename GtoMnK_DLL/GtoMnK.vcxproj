@@ -370,7 +370,7 @@ exit /b 0</Command>
     <ClInclude Include="MessageFilters.h" />
     <ClInclude Include="ProtoMessageFilterIDs.h" />
     <ClInclude Include="RawInputHooks.h" />
-    <ClInclude Include="Input.h" />
+    <ClInclude Include="FakeInput.h" />
     <ClInclude Include="InputState.h" />
     <ClInclude Include="Keyboard.h" />
     <ClInclude Include="Logging.h" />
@@ -400,7 +400,7 @@ exit /b 0</Command>
     <ClCompile Include="MainThread.cpp" />
     <ClCompile Include="MessageFilterHooks.cpp" />
     <ClCompile Include="RawInputHooks.cpp" />
-    <ClCompile Include="Input.cpp" />
+    <ClCompile Include="FakeInput.cpp" />
     <ClCompile Include="Keyboard.cpp" />
     <ClCompile Include="Logging.cpp" />
     <ClCompile Include="Mouse.cpp" />

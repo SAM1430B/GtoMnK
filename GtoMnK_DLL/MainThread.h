@@ -1,6 +1,6 @@
 #pragma once
 #include <map>
-#include "Input.h"
+#include "FakeInput.h"
 
 struct ButtonState {
     bool isPhysicallyPressed = false;
@@ -21,7 +21,7 @@ extern bool IsOverlayNotificationEnabled;
 extern std::map<UINT, ButtonState> buttonStates;
 
 // Used by Input.cpp, Hooks.cpp, dllmain.cpp, etc.
-extern GtoMnK::InputMethod g_InputMethod;
+extern GtoMnK::FakeInputMethod g_FakeInputMethod;
 extern HWND hwnd;
 
 // For finding the game window

@@ -6,7 +6,7 @@
     <ClCompile Include="Hooks.cpp">
       <Filter>Files</Filter>
     </ClCompile>
-    <ClCompile Include="Input.cpp">
+    <ClCompile Include="FakeInput.cpp">
       <Filter>Files</Filter>
     </ClCompile>
     <ClCompile Include="Keyboard.cpp">
@@ -73,7 +73,7 @@
     <ClInclude Include="Hooks.h">
       <Filter>Files</Filter>
     </ClInclude>
-    <ClInclude Include="Input.h">
+    <ClInclude Include="FakeInput.h">
       <Filter>Files</Filter>
     </ClInclude>
     <ClInclude Include="InputState.h">

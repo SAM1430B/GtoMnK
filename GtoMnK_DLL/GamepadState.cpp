@@ -2,7 +2,7 @@
 #include "GamepadState.h"
 #include "INISettings.h"
 #include "InputState.h"
-#include "Input.h"
+#include "FakeInput.h"
 #include <unordered_map>
 
 // For Controller Button States
@@ -225,7 +225,7 @@ void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
 
     if (!bs.pendingReleaseAction.empty()) {
         if (GetTickCount64() >= bs.pendingReleaseTime) {
-            Input::SendAction(bs.pendingReleaseAction, false);
+            FakeInput::SendAction(bs.pendingReleaseAction, false);
             bs.pendingReleaseAction.clear();
         }
     }
@@ -243,7 +243,7 @@ void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
             const Action& tapAction = bs.actions[0];
 
             if (!tapAction.onRelease) {
-                Input::SendAction(tapAction.actionString, true);
+                FakeInput::SendAction(tapAction.actionString, true);
                 bs.heldActionString = tapAction.actionString;
                 bs.pressActionFired = true;
             }
@@ -262,14 +262,14 @@ void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
         }
         if (newActionIndex != static_cast<size_t>(-1) && newActionIndex != bs.activeActionIndex) {
             if (!bs.heldActionString.empty() && bs.heldActionString != "0") {
-                Input::SendAction(bs.heldActionString, false);
+                FakeInput::SendAction(bs.heldActionString, false);
             }
             bs.activeActionIndex = newActionIndex;
             bs.pressActionFired = false;
             bs.heldActionString = "0";
             const Action& newActiveAction = bs.actions[bs.activeActionIndex];
             if (!newActiveAction.onRelease) {
-                Input::SendAction(newActiveAction.actionString, true);
+                FakeInput::SendAction(newActiveAction.actionString, true);
                 bs.heldActionString = newActiveAction.actionString;
                 bs.pressActionFired = true;
             }
@@ -292,13 +292,13 @@ void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
         if (finalActionIndex != static_cast<size_t>(-1) && bs.actions[finalActionIndex].onRelease) {
             const Action& finalAction = bs.actions[finalActionIndex];
 
-            Input::SendAction(finalAction.actionString, true);
+            FakeInput::SendAction(finalAction.actionString, true);
             bs.pendingReleaseAction = finalAction.actionString;
             bs.pendingReleaseTime = GetTickCount64() + 20;
         }
 
         if (!bs.heldActionString.empty() && bs.heldActionString != "0") {
-            Input::SendAction(bs.heldActionString, false);
+            FakeInput::SendAction(bs.heldActionString, false);
         }
 
         bs.activeActionIndex = static_cast<size_t>(-1);

@@ -4,7 +4,7 @@
 #include "ProtoMessageFilterIDs.h"
 #include "KeyboardState.h"
 #include "Mouse.h"
-#include "Input.h"
+#include "FakeInput.h"
 
 namespace GtoMnK
 {
@@ -78,8 +78,8 @@ public:
 class MouseWheelFilter : public GtoMnK::MessageFilterBase<MouseWheelFilterID, WM_MOUSEWHEEL, WM_MOUSEHWHEEL> {
 public:
     static bool Filter(unsigned int message, unsigned int* lparam, unsigned int* wparam, intptr_t hwnd) {
-        if ((*wparam & Input::GtoMnK_MOUSE_SIGNATURE) != 0) {
-            *wparam &= ~Input::GtoMnK_MOUSE_SIGNATURE;
+        if ((*wparam & FakeInput::GtoMnK_MOUSE_SIGNATURE) != 0) {
+            *wparam &= ~FakeInput::GtoMnK_MOUSE_SIGNATURE;
             return true;
 		}
         return false;
@@ -89,8 +89,8 @@ public:
 class MouseButtonFilter : public GtoMnK::MessageFilterBase<MouseButtonFilterID, WM_LBUTTONDOWN, WM_XBUTTONUP> {
 public:
     static bool Filter(unsigned int message, unsigned int* lparam, unsigned int* wparam, intptr_t hwnd) {
-        if ((*wparam & Input::GtoMnK_MOUSE_SIGNATURE) != 0) { // Is set in Input.cpp
-            *wparam &= ~Input::GtoMnK_MOUSE_SIGNATURE;
+        if ((*wparam & FakeInput::GtoMnK_MOUSE_SIGNATURE) != 0) { // Is set in Input.cpp
+            *wparam &= ~FakeInput::GtoMnK_MOUSE_SIGNATURE;
             return true;
         }
         return false;
@@ -100,8 +100,8 @@ public:
 class KeyboardButtonFilter : public GtoMnK::MessageFilterBase<KeyboardButtonFilterID, WM_KEYDOWN, WM_SYSKEYUP> {
 public:
     static bool Filter(unsigned int message, unsigned int* lparam, unsigned int* wparam, intptr_t hwnd) {
-        if ((*lparam & Input::GtoMnK_KEYBOARD_SIGNATURE) != 0) { // Is set in Input.cpp
-            *lparam &= ~Input::GtoMnK_KEYBOARD_SIGNATURE;
+        if ((*lparam & FakeInput::GtoMnK_KEYBOARD_SIGNATURE) != 0) { // Is set in Input.cpp
+            *lparam &= ~FakeInput::GtoMnK_KEYBOARD_SIGNATURE;
             return true;
         }
         return false;

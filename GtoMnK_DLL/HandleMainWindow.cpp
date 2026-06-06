@@ -87,7 +87,7 @@ bool RecoverMainWindow(HWND& hwnd, bool recheckHWND, const char* windowName, con
         }
         LOG("Acquired new window handle: 0x%p", hwnd);
 
-        /*if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hybrid) {
+        /*if (g_FakeInputMethod == FakeInputMethod::RawInput || g_FakeInputMethod == FakeInputMethod::Hybrid) {
             LOG("Window changed! Re-running RawInput recovery...");
             RawInput::RecoverMissedRegistration();
         }*/

@@ -3,7 +3,7 @@
 #include "Hooks.h"
 #include "Mouse.h"
 #include "Keyboard.h"
-#include "Input.h"
+#include "FakeInput.h"
 #include "InputState.h"
 #include <map>
 #include "RawInput.h"
@@ -60,7 +60,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
                 LOG("Running as master. Performing full cleanup...");
                 Hooks::RemoveHooks();
                 LOG("Hooks removed.");
-                if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hybrid) {
+                if (g_FakeInputMethod == FakeInputMethod::RawInput || g_FakeInputMethod == FakeInputMethod::Hybrid) {
                     RawInput::Shutdown();
                     LOG("RawInput system shut down.");
                 }

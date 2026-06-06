@@ -3,13 +3,13 @@
 
 namespace GtoMnK {
 
-    enum class InputMethod {
+    enum class FakeInputMethod {
         PostMessage,
         RawInput,
         Hybrid
     };
 
-    namespace Input {
+    namespace FakeInput {
 
         void SendAction(const std::string& actionString, bool press);
         void SendMouseMoveAbsolute(int screenX, int screenY);

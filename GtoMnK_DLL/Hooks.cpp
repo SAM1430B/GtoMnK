@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Hooks.h"
 #include "Logging.h"
-#include "Input.h"
+#include "FakeInput.h"
 #include "INISettings.h"
 #include "Mouse.h"
 #include "Keyboard.h"
@@ -14,7 +14,8 @@
 extern int leftrect, toprect, rightrect, bottomrect;
 extern int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setRectHook;
 
-extern GtoMnK::InputMethod g_InputMethod;
+extern GtoMnK::FakeInputMethod g_FakeInputMethod;
+extern GamepadMethod g_GamepadMethod;
 extern int drawProtoFakeCursor;
 extern bool g_filterRawInput, g_filterMouseMove, g_filterMouseActivate, g_filterWindowActivate, g_filterWindowActivateApp, g_filterMouseWheel, g_filterMouseButton, g_filterKeyboardButton;
 
@@ -55,7 +56,7 @@ namespace GtoMnK {
         NTSTATUS result;
 
 		// RawInput hooks
-        if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hybrid) {
+        if (g_FakeInputMethod == FakeInputMethod::RawInput || g_FakeInputMethod == FakeInputMethod::Hybrid) {
             LOG("Installing hooks for RawInput mode...");
 
             RawInputHooks::TrueGetRawInputData = (UINT(WINAPI*)(HRAWINPUT, UINT, LPVOID, PUINT, UINT))GetProcAddress(hUser32, "GetRawInputData");
@@ -148,7 +149,7 @@ namespace GtoMnK {
         LOG("Activating installed hooks...");
         ULONG threadIdList[] = { 0 };
 
-        if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hybrid) {
+        if (g_FakeInputMethod == FakeInputMethod::RawInput || g_FakeInputMethod == FakeInputMethod::Hybrid) {
             LhSetExclusiveACL(threadIdList, 1, &g_getRawInputDataHook);
             LhSetExclusiveACL(threadIdList, 1, &g_registerRawInputDevicesHook);
         }

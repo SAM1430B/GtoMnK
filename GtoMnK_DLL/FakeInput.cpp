@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Input.h"
+#include "FakeInput.h"
 #include "Mouse.h"
 #include "InputState.h"
 #include "KeyboardState.h"
@@ -8,13 +8,8 @@
 #include <map>
 #include "MainThread.h"
 
-//extern HWND hwnd;
-//extern GtoMnK::InputMethod g_InputMethod;
-//extern int keystatesend;
-//extern bool g_EnableMouseDoubleClick;
-
 namespace GtoMnK {
-    namespace Input {
+    namespace FakeInput {
 
         static bool isLMB_Down = false, isRMB_Down = false, isMMB_Down = false, isX1B_Down = false, isX2B_Down = false;
 
@@ -342,10 +337,10 @@ namespace GtoMnK {
             if (actionString.empty() || actionString == "0") return;
 
             auto dispatcher = [](int code, bool p) {
-                if (g_InputMethod == InputMethod::PostMessage || g_InputMethod == InputMethod::Hybrid) {
+                if (g_FakeInputMethod == FakeInputMethod::PostMessage || g_FakeInputMethod == FakeInputMethod::Hybrid) {
                     DispatchAction_PostMessage(code, p);
                 }
-                if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hybrid) {
+                if (g_FakeInputMethod == FakeInputMethod::RawInput || g_FakeInputMethod == FakeInputMethod::Hybrid) {
                     DispatchAction_RawInput(code, p);
                 }
                 };
@@ -434,7 +429,7 @@ namespace GtoMnK {
 
 		// For PostMessage method
         void SendMouseMoveAbsolute(int screenX, int screenY) {
-            if (g_InputMethod != InputMethod::PostMessage && g_InputMethod != InputMethod::Hybrid) return;
+            if (g_FakeInputMethod != FakeInputMethod::PostMessage && g_FakeInputMethod != FakeInputMethod::Hybrid) return;
             if (!hwnd) return;
             WPARAM wParam = BuildWParam();
             POINT clientPos = { screenX, screenY };
@@ -444,7 +439,7 @@ namespace GtoMnK {
 
 		// For RawInput method
         void SendMouseMoveDelta(int deltaX, int deltaY) {
-            if (g_InputMethod != InputMethod::RawInput && g_InputMethod != InputMethod::Hybrid) return;
+            if (g_FakeInputMethod != FakeInputMethod::RawInput && g_FakeInputMethod != FakeInputMethod::Hybrid) return;
 
             RAWINPUT ri = {};
             ri.header.dwType = RIM_TYPEMOUSE;

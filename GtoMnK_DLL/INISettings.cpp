@@ -3,7 +3,7 @@
 #include "GamepadInputIDs.h"
 #include "Logging.h"
 #include "InputState.h" 
-#include "Input.h"
+#include "FakeInput.h"
 #include "GamepadState.h"
 
 extern HMODULE g_hModule;
@@ -39,7 +39,7 @@ int mode;
 int responsetime = 4;
 
 // For the Hooks
-InputMethod g_InputMethod = InputMethod::Hybrid;
+FakeInputMethod g_FakeInputMethod = FakeInputMethod::Hybrid;
 int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setRectHook;
 
 // For MessageFilterHook
@@ -125,22 +125,23 @@ void LoadIniSettings() {
     GetPrivateProfileStringA("FindWindow", "ClassName", NULL, iniClassName, sizeof(iniClassName), iniPath.c_str());
 
     // [API]
-    int inputMethod = GetPrivateProfileIntA("API", "InputMethod", 2, iniPath.c_str());
-    if (inputMethod == 0) {
-		g_InputMethod = InputMethod::PostMessage;
+    int fakeInputMethod = GetPrivateProfileIntA("API", "InputMethod", 2, iniPath.c_str());
+    if (fakeInputMethod == 0) {
+		g_FakeInputMethod = FakeInputMethod::PostMessage;
     }
-    else if (inputMethod == 1) {
-        g_InputMethod = InputMethod::RawInput;
+    else if (fakeInputMethod == 1) {
+        g_FakeInputMethod = FakeInputMethod::RawInput;
     }
     else {
-        g_InputMethod = InputMethod::Hybrid;
+        g_FakeInputMethod = FakeInputMethod::Hybrid;
     }
 
+	// Log the chosen fake input method
     const char* methodName = "Hybrid";
-    if (g_InputMethod == InputMethod::RawInput) {
+    if (g_FakeInputMethod == FakeInputMethod::RawInput) {
         methodName = "RawInput";
     }
-    else if (g_InputMethod == InputMethod::PostMessage) {
+    else if (g_FakeInputMethod == FakeInputMethod::PostMessage) {
         methodName = "PostMessage";
     }
     LOG("Using Input Method: %s", methodName);
@@ -245,7 +246,7 @@ void ParseKey(const char* section, const char* key, const char* defaultVal, UINT
         if (val == "Fn1" || val == "fn1") { g_Fn1_ButtonID = baseId; return; }
         if (val == "Fn2" || val == "fn2") { g_Fn2_ButtonID = baseId; return; }
     }
-    buttonStates[baseId + offset].actions = Input::ParseActionString(val);
+    buttonStates[baseId + offset].actions = FakeInput::ParseActionString(val);
 }
 
 void LoadButtonLayer(const char* section, int offset, bool isBaseLayer, const char* iniPath) {

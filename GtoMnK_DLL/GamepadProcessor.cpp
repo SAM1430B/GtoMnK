@@ -156,13 +156,13 @@ void GamepadProcessor::ProcessMouseMovement(const CustomControllerState& state, 
         if (currentTime - m_lastMoveTime > m_moveUpdateInterval) {
             m_lastMoveTime = currentTime;
 
-            if (g_InputMethod == InputMethod::RawInput || g_InputMethod == InputMethod::Hybrid) {
-                Input::SendMouseMoveDelta(totalDelta.x, totalDelta.y);
+            if (g_FakeInputMethod == FakeInputMethod::RawInput || g_FakeInputMethod == FakeInputMethod::Hybrid) {
+                FakeInput::SendMouseMoveDelta(totalDelta.x, totalDelta.y);
             }
-            if (g_InputMethod == InputMethod::PostMessage || g_InputMethod == InputMethod::Hybrid) {
+            if (g_FakeInputMethod == FakeInputMethod::PostMessage || g_FakeInputMethod == FakeInputMethod::Hybrid) {
                 POINT screenPos = { (LONG)Mouse::Xf, (LONG)Mouse::Yf };
                 ClientToScreen(m_hwnd, &screenPos);
-                Input::SendMouseMoveAbsolute(screenPos.x, screenPos.y);
+                FakeInput::SendMouseMoveAbsolute(screenPos.x, screenPos.y);
             }
         }
     }

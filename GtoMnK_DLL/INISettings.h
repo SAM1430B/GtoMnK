@@ -18,7 +18,7 @@ extern char iniWindowName[256];
 extern char iniClassName[256];
 
 // API
-extern InputMethod g_InputMethod;
+extern FakeInputMethod g_FakeInputMethod;
 extern GamepadMethod g_GamepadMethod;
 
 // Hooks
