@@ -2,7 +2,6 @@
 #include "INISettings.h"
 #include "GamepadInputIDs.h"
 #include "Logging.h"
-#include "InputState.h" 
 #include "FakeInput.h"
 #include "GamepadState.h"
 

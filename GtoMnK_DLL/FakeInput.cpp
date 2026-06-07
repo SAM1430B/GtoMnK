@@ -273,8 +273,8 @@ namespace GtoMnK {
         }
 
 		// For Hold/Release logic in the INI.
-        std::vector<Action> ParseActionString(const std::string& fullString) {
-            std::vector<Action> parsedActions;
+        std::vector<FakeInputAction> ParseActionString(const std::string& fullString) {
+            std::vector<FakeInputAction> parsedActions;
             if (fullString.empty() || fullString == "0") {
                 return parsedActions;
             }
@@ -304,7 +304,7 @@ namespace GtoMnK {
             }
 
             for (const std::string& token : tokens) {
-                Action newAction;
+                FakeInputAction newAction;
                 std::string cleanActionString = "";
 
                 for (char c : token) {
@@ -325,7 +325,7 @@ namespace GtoMnK {
                 }
             }
 
-            std::sort(parsedActions.begin(), parsedActions.end(), [](const Action& a, const Action& b) {
+            std::sort(parsedActions.begin(), parsedActions.end(), [](const FakeInputAction& a, const FakeInputAction& b) {
                 return a.holdDurationMs < b.holdDurationMs;
                 });
 

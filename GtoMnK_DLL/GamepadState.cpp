@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "GamepadState.h"
 #include "INISettings.h"
-#include "InputState.h"
 #include "FakeInput.h"
 #include <unordered_map>
 
@@ -240,7 +239,7 @@ void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
 
         if (!bs.actions.empty() && bs.actions[0].holdDurationMs == 0) {
             bs.activeActionIndex = 0;
-            const Action& tapAction = bs.actions[0];
+            const FakeInputAction& tapAction = bs.actions[0];
 
             if (!tapAction.onRelease) {
                 FakeInput::SendAction(tapAction.actionString, true);
@@ -267,7 +266,7 @@ void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
             bs.activeActionIndex = newActionIndex;
             bs.pressActionFired = false;
             bs.heldActionString = "0";
-            const Action& newActiveAction = bs.actions[bs.activeActionIndex];
+            const FakeInputAction& newActiveAction = bs.actions[bs.activeActionIndex];
             if (!newActiveAction.onRelease) {
                 FakeInput::SendAction(newActiveAction.actionString, true);
                 bs.heldActionString = newActiveAction.actionString;
@@ -290,7 +289,7 @@ void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
         }
 
         if (finalActionIndex != static_cast<size_t>(-1) && bs.actions[finalActionIndex].onRelease) {
-            const Action& finalAction = bs.actions[finalActionIndex];
+            const FakeInputAction& finalAction = bs.actions[finalActionIndex];
 
             FakeInput::SendAction(finalAction.actionString, true);
             bs.pendingReleaseAction = finalAction.actionString;

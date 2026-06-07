@@ -3,7 +3,6 @@
 #include "Hooks.h"
 #include "Mouse.h"
 #include "FakeInput.h"
-#include "InputState.h"
 #include <map>
 #include "RawInput.h"
 #include <easyhook.h>

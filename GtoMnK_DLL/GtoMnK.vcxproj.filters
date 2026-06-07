@@ -73,9 +73,6 @@
     <ClInclude Include="FakeInput.h">
       <Filter>Files</Filter>
     </ClInclude>
-    <ClInclude Include="InputState.h">
-      <Filter>Files</Filter>
-    </ClInclude>
     <ClInclude Include="FakeKeyboard.h">
       <Filter>Files</Filter>
     </ClInclude>

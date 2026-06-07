@@ -370,7 +370,6 @@ exit /b 0</Command>
     <ClInclude Include="ProtoMessageFilterIDs.h" />
     <ClInclude Include="RawInputHooks.h" />
     <ClInclude Include="FakeInput.h" />
-    <ClInclude Include="InputState.h" />
     <ClInclude Include="FakeKeyboard.h" />
     <ClInclude Include="Logging.h" />
     <ClInclude Include="Mouse.h" />

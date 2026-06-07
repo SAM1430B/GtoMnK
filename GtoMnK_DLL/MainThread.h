@@ -7,7 +7,7 @@ struct ButtonState {
     ULONGLONG pressTime = 0;
     size_t activeActionIndex = static_cast<size_t>(-1);
     bool pressActionFired = false;
-    std::vector<Action> actions;
+    std::vector<GtoMnK::FakeInputAction> actions;
     std::string heldActionString = "0";
 
     ULONGLONG pendingReleaseTime = 0;
