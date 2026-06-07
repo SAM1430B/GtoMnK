@@ -4,7 +4,7 @@
 #include "FakeInput.h"
 #include "INISettings.h"
 #include "Mouse.h"
-#include "Keyboard.h"
+#include "FakeKeyboard.h"
 #include "RawInput.h"
 #include "RawInputHooks.h"
 #include "CursorVisibilityHooks.h"
@@ -123,17 +123,17 @@ namespace GtoMnK {
         }
         if (getKeyStateHook) {
 			LOG("Installing GetKeyStateHook...");
-            result = LhInstallHook(GetProcAddress(hUser32, "GetKeyState"), Keyboard::GetKeyStateHook, NULL, &g_getKeyStateHookHandle);
+            result = LhInstallHook(GetProcAddress(hUser32, "GetKeyState"), FakeKeyboard::GetKeyStateHook, NULL, &g_getKeyStateHookHandle);
             if (FAILED(result)) LOG("Failed to install hook for GetKeyState: %S", RtlGetLastErrorString());
         }
         if (getAsyncKeyStateHook) {
 			LOG("Installing GetAsyncKeyStateHook...");
-            result = LhInstallHook(GetProcAddress(hUser32, "GetAsyncKeyState"), Keyboard::GetAsyncKeyStateHook, NULL, &g_getAsyncKeyStateHookHandle);
+            result = LhInstallHook(GetProcAddress(hUser32, "GetAsyncKeyState"), FakeKeyboard::GetAsyncKeyStateHook, NULL, &g_getAsyncKeyStateHookHandle);
             if (FAILED(result)) LOG("Failed to install hook for GetAsyncKeyState: %S", RtlGetLastErrorString());
         }
         if (getKeyboardStateHook) {
 			LOG("Installing GetKeyboardStateHook...");
-            result = LhInstallHook(GetProcAddress(hUser32, "GetKeyboardState"), Keyboard::GetKeyboardStateHook, NULL, &g_getKeyboardStateHookHandle);
+            result = LhInstallHook(GetProcAddress(hUser32, "GetKeyboardState"), FakeKeyboard::GetKeyboardStateHook, NULL, &g_getKeyboardStateHookHandle);
             if (FAILED(result)) LOG("Failed to install hook for GetKeyboardState: %S", RtlGetLastErrorString());
         }
         if (setRectHook) {

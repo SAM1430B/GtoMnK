@@ -2,7 +2,6 @@
 #include <WinUser.h>
 #include "MessageFilterBase.h"
 #include "ProtoMessageFilterIDs.h"
-#include "KeyboardState.h"
 #include "Mouse.h"
 #include "FakeInput.h"
 

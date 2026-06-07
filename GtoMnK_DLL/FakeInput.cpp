@@ -1,8 +1,7 @@
 #include "pch.h"
 #include "FakeInput.h"
 #include "Mouse.h"
-#include "InputState.h"
-#include "KeyboardState.h"
+#include "FakeKeyboard.h"
 #include "RawInput.h"
 #include <sstream>
 #include <map>
@@ -226,8 +225,8 @@ namespace GtoMnK {
                 case -5: case -12: vkCode = VK_XBUTTON2; break;
                 }
                 if (vkCode != 0) {
-                    if (press) g_heldVirtualKeys.insert(vkCode);
-                    else g_heldVirtualKeys.erase(vkCode);
+                    if (press) FakeKeyboard::heldVirtualKeys.insert(vkCode);
+                    else FakeKeyboard::heldVirtualKeys.erase(vkCode);
                 }
                 PostMessageMouse(actionCode, press);
             }
@@ -236,8 +235,8 @@ namespace GtoMnK {
                 int vkCode; bool isExtended;
                 TranslateKeyboardAction(actionCode, vkCode, isExtended);
                 if (vkCode != 0) {
-                    if (press) g_heldVirtualKeys.insert(vkCode);
-                    else g_heldVirtualKeys.erase(vkCode);
+                    if (press) FakeKeyboard::heldVirtualKeys.insert(vkCode);
+                    else FakeKeyboard::heldVirtualKeys.erase(vkCode);
                 }
                 PostMessageKey(vkCode, press, isExtended);
             }
@@ -256,8 +255,8 @@ namespace GtoMnK {
                 case -5: case -12: vkCode = VK_XBUTTON2; break;
                 }
                 if (vkCode != 0) {
-                    if (press) g_heldVirtualKeys.insert(vkCode);
-                    else g_heldVirtualKeys.erase(vkCode);
+                    if (press) FakeKeyboard::heldVirtualKeys.insert(vkCode);
+                    else FakeKeyboard::heldVirtualKeys.erase(vkCode);
                 }
                 GenerateRawMouseButton(actionCode, press);
             }
@@ -266,8 +265,8 @@ namespace GtoMnK {
                 int vkCode; bool isExtended;
                 TranslateKeyboardAction(actionCode, vkCode, isExtended);
                 if (vkCode != 0) {
-                    if (press) g_heldVirtualKeys.insert(vkCode);
-                    else g_heldVirtualKeys.erase(vkCode);
+                    if (press) FakeKeyboard::heldVirtualKeys.insert(vkCode);
+                    else FakeKeyboard::heldVirtualKeys.erase(vkCode);
                 }
                 GenerateRawKey(vkCode, press, isExtended);
             }

@@ -2,8 +2,6 @@
 #include "RawInputHooks.h"
 #include "RawInput.h"
 #include "Logging.h"
-#include "Mouse.h"
-#include "Keyboard.h"
 #include "FakeCursor.h"
 #include "OverlayMenu.h"
 

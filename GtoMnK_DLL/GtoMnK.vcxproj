@@ -363,7 +363,6 @@ exit /b 0</Command>
     <ClInclude Include="FakeCursor.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Hooks.h" />
-    <ClInclude Include="KeyboardState.h" />
     <ClInclude Include="MainThread.h" />
     <ClInclude Include="MessageFilterBase.h" />
     <ClInclude Include="MessageFilterHooks.h" />
@@ -372,7 +371,7 @@ exit /b 0</Command>
     <ClInclude Include="RawInputHooks.h" />
     <ClInclude Include="FakeInput.h" />
     <ClInclude Include="InputState.h" />
-    <ClInclude Include="Keyboard.h" />
+    <ClInclude Include="FakeKeyboard.h" />
     <ClInclude Include="Logging.h" />
     <ClInclude Include="Mouse.h" />
     <ClInclude Include="pch.h" />
@@ -396,12 +395,11 @@ exit /b 0</Command>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="FakeCursor.cpp" />
     <ClCompile Include="Hooks.cpp" />
-    <ClCompile Include="KeyboardState.cpp" />
     <ClCompile Include="MainThread.cpp" />
     <ClCompile Include="MessageFilterHooks.cpp" />
     <ClCompile Include="RawInputHooks.cpp" />
     <ClCompile Include="FakeInput.cpp" />
-    <ClCompile Include="Keyboard.cpp" />
+    <ClCompile Include="FakeKeyboard.cpp" />
     <ClCompile Include="Logging.cpp" />
     <ClCompile Include="Mouse.cpp" />
     <ClCompile Include="pch.cpp">

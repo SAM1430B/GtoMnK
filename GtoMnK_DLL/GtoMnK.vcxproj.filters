@@ -9,7 +9,7 @@
     <ClCompile Include="FakeInput.cpp">
       <Filter>Files</Filter>
     </ClCompile>
-    <ClCompile Include="Keyboard.cpp">
+    <ClCompile Include="FakeKeyboard.cpp">
       <Filter>Files</Filter>
     </ClCompile>
     <ClCompile Include="Logging.cpp">
@@ -23,9 +23,6 @@
     </ClCompile>
     <ClCompile Include="RawInputHooks.cpp">
       <Filter>Files\RawInput</Filter>
-    </ClCompile>
-    <ClCompile Include="KeyboardState.cpp">
-      <Filter>Files</Filter>
     </ClCompile>
     <ClCompile Include="MainThread.cpp" />
     <ClCompile Include="FakeCursor.cpp">
@@ -79,7 +76,7 @@
     <ClInclude Include="InputState.h">
       <Filter>Files</Filter>
     </ClInclude>
-    <ClInclude Include="Keyboard.h">
+    <ClInclude Include="FakeKeyboard.h">
       <Filter>Files</Filter>
     </ClInclude>
     <ClInclude Include="Logging.h">
@@ -93,9 +90,6 @@
     </ClInclude>
     <ClInclude Include="RawInputHooks.h">
       <Filter>Files\RawInput</Filter>
-    </ClInclude>
-    <ClInclude Include="KeyboardState.h">
-      <Filter>Files</Filter>
     </ClInclude>
     <ClInclude Include="MainThread.h" />
     <ClInclude Include="FakeCursor.h">
