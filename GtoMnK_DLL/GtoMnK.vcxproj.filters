@@ -3,178 +3,186 @@
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="Hooks.cpp">
-      <Filter>Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FakeInput.cpp">
-      <Filter>Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FakeKeyboard.cpp">
-      <Filter>Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Logging.cpp">
-      <Filter>Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FakeMouse.cpp">
-      <Filter>Files</Filter>
+    <ClCompile Include="InstallHooks.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="RawInput.cpp">
-      <Filter>Files\RawInput</Filter>
+      <Filter>Source Files\FakeMouseKeyboard\RawInput</Filter>
     </ClCompile>
     <ClCompile Include="RawInputHooks.cpp">
-      <Filter>Files\RawInput</Filter>
+      <Filter>Source Files\FakeMouseKeyboard\RawInput</Filter>
     </ClCompile>
     <ClCompile Include="MainThread.cpp" />
-    <ClCompile Include="FakeCursor.cpp">
-      <Filter>Files\Imported</Filter>
-    </ClCompile>
-    <ClCompile Include="CursorVisibilityHooks.cpp">
-      <Filter>Files\Imported</Filter>
-    </ClCompile>
     <ClCompile Include="MessageFilterHooks.cpp">
-      <Filter>Files\Imported</Filter>
+      <Filter>Source Files\FakeMouseKeyboard\Filter</Filter>
     </ClCompile>
     <ClCompile Include="OverlayMenu.cpp">
-      <Filter>Files\Overlay</Filter>
+      <Filter>Source Files\Overlay</Filter>
     </ClCompile>
     <ClCompile Include="INISettings.cpp">
       <Filter>INI</Filter>
     </ClCompile>
     <ClCompile Include="HandleMainWindow.cpp">
-      <Filter>Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="GamepadState.cpp">
-      <Filter>Files\Gamepad</Filter>
+      <Filter>Source Files\Gamepad</Filter>
     </ClCompile>
     <ClCompile Include="SDL2_Gamepad.cpp">
-      <Filter>Files\Gamepad\SDL_Gamepad</Filter>
+      <Filter>Source Files\Gamepad\SDL_Gamepad</Filter>
     </ClCompile>
     <ClCompile Include="XInput_Gamepad.cpp">
-      <Filter>Files\Gamepad\XInput_Gamepad</Filter>
+      <Filter>Source Files\Gamepad\XInput_Gamepad</Filter>
     </ClCompile>
     <ClCompile Include="GtoMnKMutex.cpp">
       <Filter>Misc</Filter>
     </ClCompile>
     <ClCompile Include="OverlayNotification.cpp">
-      <Filter>Files\Overlay</Filter>
+      <Filter>Source Files\Overlay</Filter>
     </ClCompile>
     <ClCompile Include="GamepadProcessor.cpp">
-      <Filter>Files\Gamepad</Filter>
+      <Filter>Source Files\Gamepad</Filter>
+    </ClCompile>
+    <ClCompile Include="FakeInput.cpp">
+      <Filter>Source Files\FakeMouseKeyboard</Filter>
+    </ClCompile>
+    <ClCompile Include="FakeMouse.cpp">
+      <Filter>Source Files\FakeMouseKeyboard\FakeMouse</Filter>
+    </ClCompile>
+    <ClCompile Include="FakeKeyboard.cpp">
+      <Filter>Source Files\FakeMouseKeyboard\FakeKeyboard</Filter>
+    </ClCompile>
+    <ClCompile Include="FakeCursor.cpp">
+      <Filter>Source Files\FakeMouseKeyboard\FakeMouse</Filter>
+    </ClCompile>
+    <ClCompile Include="CursorVisibilityHooks.cpp">
+      <Filter>Source Files\FakeMouseKeyboard\FakeMouse</Filter>
+    </ClCompile>
+    <ClCompile Include="Logging.cpp">
+      <Filter>Misc</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="framework.h">
-      <Filter>Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Hooks.h">
-      <Filter>Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FakeInput.h">
-      <Filter>Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FakeKeyboard.h">
-      <Filter>Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Logging.h">
-      <Filter>Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FakeMouse.h">
-      <Filter>Files</Filter>
+    <ClInclude Include="InstallHooks.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="RawInput.h">
-      <Filter>Files\RawInput</Filter>
+      <Filter>Source Files\FakeMouseKeyboard\RawInput</Filter>
     </ClInclude>
     <ClInclude Include="RawInputHooks.h">
-      <Filter>Files\RawInput</Filter>
+      <Filter>Source Files\FakeMouseKeyboard\RawInput</Filter>
     </ClInclude>
     <ClInclude Include="MainThread.h" />
-    <ClInclude Include="FakeCursor.h">
-      <Filter>Files\Imported</Filter>
-    </ClInclude>
-    <ClInclude Include="CursorVisibilityHooks.h">
-      <Filter>Files\Imported</Filter>
-    </ClInclude>
     <ClInclude Include="MessageFilterBase.h">
-      <Filter>Files\Imported</Filter>
+      <Filter>Source Files\FakeMouseKeyboard\Filter</Filter>
     </ClInclude>
     <ClInclude Include="MessageFilterHooks.h">
-      <Filter>Files\Imported</Filter>
+      <Filter>Source Files\FakeMouseKeyboard\Filter</Filter>
     </ClInclude>
     <ClInclude Include="MessageFilters.h">
-      <Filter>Files\Imported</Filter>
+      <Filter>Source Files\FakeMouseKeyboard\Filter</Filter>
     </ClInclude>
     <ClInclude Include="ProtoMessageFilterIDs.h">
-      <Filter>Files\Imported</Filter>
+      <Filter>Source Files\FakeMouseKeyboard\Filter</Filter>
     </ClInclude>
     <ClInclude Include="OverlayMenu.h">
-      <Filter>Files\Overlay</Filter>
-    </ClInclude>
-    <ClInclude Include="EnableOpenXinput.h">
-      <Filter>Files</Filter>
+      <Filter>Source Files\Overlay</Filter>
     </ClInclude>
     <ClInclude Include="INISettings.h">
       <Filter>INI</Filter>
     </ClInclude>
     <ClInclude Include="HandleMainWindow.h">
-      <Filter>Files</Filter>
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="GamepadState.h">
-      <Filter>Files\Gamepad</Filter>
+      <Filter>Source Files\Gamepad</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h" />
     <ClInclude Include="SDL2_Gamepad.h">
-      <Filter>Files\Gamepad\SDL_Gamepad</Filter>
+      <Filter>Source Files\Gamepad\SDL_Gamepad</Filter>
     </ClInclude>
     <ClInclude Include="XInput_Gamepad.h">
-      <Filter>Files\Gamepad\XInput_Gamepad</Filter>
+      <Filter>Source Files\Gamepad\XInput_Gamepad</Filter>
     </ClInclude>
     <ClInclude Include="GtoMnKMutex.h">
       <Filter>Misc</Filter>
     </ClInclude>
     <ClInclude Include="GamepadInputIDs.h">
-      <Filter>Files\Gamepad</Filter>
+      <Filter>Source Files\Gamepad</Filter>
     </ClInclude>
     <ClInclude Include="OverlayNotification.h">
-      <Filter>Files\Overlay</Filter>
+      <Filter>Source Files\Overlay</Filter>
     </ClInclude>
     <ClInclude Include="GamepadProcessor.h">
-      <Filter>Files\Gamepad</Filter>
+      <Filter>Source Files\Gamepad</Filter>
     </ClInclude>
     <ClInclude Include="GamepadBackend.h">
-      <Filter>Files\Gamepad</Filter>
+      <Filter>Source Files\Gamepad</Filter>
+    </ClInclude>
+    <ClInclude Include="EnableOpenXinput.h">
+      <Filter>Source Files\Gamepad\XInput_Gamepad</Filter>
+    </ClInclude>
+    <ClInclude Include="FakeInput.h">
+      <Filter>Source Files\FakeMouseKeyboard</Filter>
+    </ClInclude>
+    <ClInclude Include="FakeMouse.h">
+      <Filter>Source Files\FakeMouseKeyboard\FakeMouse</Filter>
+    </ClInclude>
+    <ClInclude Include="FakeKeyboard.h">
+      <Filter>Source Files\FakeMouseKeyboard\FakeKeyboard</Filter>
+    </ClInclude>
+    <ClInclude Include="FakeCursor.h">
+      <Filter>Source Files\FakeMouseKeyboard\FakeMouse</Filter>
+    </ClInclude>
+    <ClInclude Include="CursorVisibilityHooks.h">
+      <Filter>Source Files\FakeMouseKeyboard\FakeMouse</Filter>
+    </ClInclude>
+    <ClInclude Include="Logging.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Misc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="Files">
-      <UniqueIdentifier>{0dd4a3a1-b51f-416a-a2fa-bdc4b1707150}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Files\RawInput">
-      <UniqueIdentifier>{12845725-75fd-4e30-836a-14668e1dd249}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Documents">
       <UniqueIdentifier>{3907f1c7-1235-40d0-b7dd-4bd06f2b4232}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Files\Imported">
-      <UniqueIdentifier>{6a7d1011-90ae-44a1-b7a0-51353c617552}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Files\Overlay">
-      <UniqueIdentifier>{d53a98ff-d9a8-4da3-8b17-f91202dbea42}</UniqueIdentifier>
     </Filter>
     <Filter Include="INI">
       <UniqueIdentifier>{fa813b98-d3cc-463d-9154-0b2773fc3090}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Files\Gamepad">
-      <UniqueIdentifier>{5c5b6fd9-923a-45d5-a597-a7b08d260770}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Files\Gamepad\SDL_Gamepad">
-      <UniqueIdentifier>{d45b91c9-6c4c-4fe1-b831-7a1d35e182c2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Files\Gamepad\XInput_Gamepad">
-      <UniqueIdentifier>{efcdc56e-a776-45a4-a33c-dde643b10761}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Misc">
       <UniqueIdentifier>{1b8f79fd-f31a-4c1e-a2de-5b0fb3dc763b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{0dd4a3a1-b51f-416a-a2fa-bdc4b1707150}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Overlay">
+      <UniqueIdentifier>{d53a98ff-d9a8-4da3-8b17-f91202dbea42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Gamepad">
+      <UniqueIdentifier>{5c5b6fd9-923a-45d5-a597-a7b08d260770}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Gamepad\SDL_Gamepad">
+      <UniqueIdentifier>{d45b91c9-6c4c-4fe1-b831-7a1d35e182c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Gamepad\XInput_Gamepad">
+      <UniqueIdentifier>{efcdc56e-a776-45a4-a33c-dde643b10761}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\FakeMouseKeyboard">
+      <UniqueIdentifier>{9bfad58e-4b0d-4089-9ea1-2fbd554931f7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\FakeMouseKeyboard\FakeMouse">
+      <UniqueIdentifier>{3e57df13-4e91-4b84-ab6d-2a10b897ffb6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\FakeMouseKeyboard\FakeKeyboard">
+      <UniqueIdentifier>{3c425dce-448f-4402-8cef-5bc4bbba0a16}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\FakeMouseKeyboard\RawInput">
+      <UniqueIdentifier>{12845725-75fd-4e30-836a-14668e1dd249}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\FakeMouseKeyboard\Filter">
+      <UniqueIdentifier>{6a7d1011-90ae-44a1-b7a0-51353c617552}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -182,7 +190,7 @@
       <Filter>Documents</Filter>
     </Text>
     <Text Include="Resources\gamecontrollerdb.txt">
-      <Filter>Files\Gamepad\SDL_Gamepad</Filter>
+      <Filter>Source Files\Gamepad\SDL_Gamepad</Filter>
     </Text>
   </ItemGroup>
   <ItemGroup>
@@ -201,7 +209,7 @@
   <ItemGroup>
     <ResourceCompile Include="Version.rc" />
     <ResourceCompile Include="SDL_Resource.rc">
-      <Filter>Files\Gamepad\SDL_Gamepad</Filter>
+      <Filter>Source Files\Gamepad\SDL_Gamepad</Filter>
     </ResourceCompile>
   </ItemGroup>
 </Project>

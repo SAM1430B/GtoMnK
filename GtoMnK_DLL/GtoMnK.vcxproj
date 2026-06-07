@@ -361,8 +361,7 @@ exit /b 0</Command>
     <ClInclude Include="OverlayMenu.h" />
     <ClInclude Include="CursorVisibilityHooks.h" />
     <ClInclude Include="FakeCursor.h" />
-    <ClInclude Include="framework.h" />
-    <ClInclude Include="Hooks.h" />
+    <ClInclude Include="InstallHooks.h" />
     <ClInclude Include="MainThread.h" />
     <ClInclude Include="MessageFilterBase.h" />
     <ClInclude Include="MessageFilterHooks.h" />
@@ -393,7 +392,7 @@ exit /b 0</Command>
     <ClCompile Include="CursorVisibilityHooks.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="FakeCursor.cpp" />
-    <ClCompile Include="Hooks.cpp" />
+    <ClCompile Include="InstallHooks.cpp" />
     <ClCompile Include="MainThread.cpp" />
     <ClCompile Include="MessageFilterHooks.cpp" />
     <ClCompile Include="RawInputHooks.cpp" />

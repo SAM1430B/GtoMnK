@@ -4,7 +4,7 @@
 #include "Logging.h"
 
 #include "HandleMainWindow.h"
-#include "Hooks.h"
+#include "InstallHooks.h"
 
 #include "RawInput.h"
 #include "FakeCursor.h"
@@ -97,7 +97,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     }
 
     // Setup Hooks
-    Hooks::SetupHooks();
+    InstallHooks::SetupHooks();
     hooksinited = true;
 
     if (g_FakeInputMethod == FakeInputMethod::RawInput || g_FakeInputMethod == FakeInputMethod::Hybrid) {

@@ -2,7 +2,7 @@
 
 namespace GtoMnK {
 
-    class Hooks {
+    class InstallHooks {
     public:
         static void SetupHooks();
         static void RemoveHooks();

@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Hooks.h"
+#include "InstallHooks.h"
 #include "Logging.h"
 #include "FakeInput.h"
 #include "INISettings.h"
@@ -45,7 +45,7 @@ HOOK_TRACE_INFO g_HookPeekMessageWHandle = { NULL };
 
 namespace GtoMnK {
 
-    void Hooks::SetupHooks() {
+    void InstallHooks::SetupHooks() {
         LOG("Setting up hooks...");
         HMODULE hUser32 = GetModuleHandleA("user32");
         if (!hUser32) {
@@ -177,17 +177,17 @@ namespace GtoMnK {
         LOG("All selected hooks are now enabled.");
     }
 
-    void Hooks::RemoveHooks() {
+    void InstallHooks::RemoveHooks() {
 		LOG("Removing hooks...");
         LhUninstallAllHooks();
     }
 
-    BOOL WINAPI Hooks::SetRectHook(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom) {
+    BOOL WINAPI InstallHooks::SetRectHook(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom) {
         if (lprc) *lprc = { leftrect, toprect, rightrect, bottomrect };
         return TRUE;
     }
 
-    BOOL WINAPI Hooks::AdjustWindowRectHook(LPRECT lprc, DWORD dwStyle, BOOL bMenu) {
+    BOOL WINAPI InstallHooks::AdjustWindowRectHook(LPRECT lprc, DWORD dwStyle, BOOL bMenu) {
         if (lprc) *lprc = { leftrect, toprect, rightrect, bottomrect };
         return TRUE;
     }

@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Logging.h"
-#include "Hooks.h"
+#include "InstallHooks.h"
 #include <map>
 #include "RawInput.h"
 #include <easyhook.h>
@@ -54,7 +54,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
             if (hooksinited) {
                 LOG("Running as master. Performing full cleanup...");
-                Hooks::RemoveHooks();
+                InstallHooks::RemoveHooks();
                 LOG("Hooks removed.");
                 if (g_FakeInputMethod == FakeInputMethod::RawInput || g_FakeInputMethod == FakeInputMethod::Hybrid) {
                     RawInput::Shutdown();
