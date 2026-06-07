@@ -15,7 +15,7 @@
     <ClCompile Include="Logging.cpp">
       <Filter>Files</Filter>
     </ClCompile>
-    <ClCompile Include="Mouse.cpp">
+    <ClCompile Include="FakeMouse.cpp">
       <Filter>Files</Filter>
     </ClCompile>
     <ClCompile Include="RawInput.cpp">
@@ -79,7 +79,7 @@
     <ClInclude Include="Logging.h">
       <Filter>Files</Filter>
     </ClInclude>
-    <ClInclude Include="Mouse.h">
+    <ClInclude Include="FakeMouse.h">
       <Filter>Files</Filter>
     </ClInclude>
     <ClInclude Include="RawInput.h">

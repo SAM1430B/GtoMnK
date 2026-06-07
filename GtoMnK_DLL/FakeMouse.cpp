@@ -1,16 +1,16 @@
 #include "pch.h"
-#include "Mouse.h"
+#include "FakeMouse.h"
 
 extern HWND hwnd;
 extern HANDLE hMutex;
 
 namespace GtoMnK {
 
-    int Mouse::Xf = 20;
-    int Mouse::Yf = 20;
-    HICON Mouse::hCursor = 0;
+    int FakeMouse::Xf = 20;
+    int FakeMouse::Yf = 20;
+    HICON FakeMouse::hCursor = 0;
 
-    BOOL WINAPI Mouse::GetCursorPosHook(PPOINT lpPoint) {
+    BOOL WINAPI FakeMouse::GetCursorPosHook(PPOINT lpPoint) {
         if (!lpPoint) return FALSE;
 
         POINT mpos;
@@ -23,7 +23,7 @@ namespace GtoMnK {
         return TRUE;
     }
 
-    BOOL WINAPI Mouse::SetCursorPosHook(int X, int Y) {
+    BOOL WINAPI FakeMouse::SetCursorPosHook(int X, int Y) {
         POINT point = { X, Y };
         ScreenToClient(hwnd, &point);
 
@@ -38,6 +38,10 @@ namespace GtoMnK {
 
         Xf = point.x;
         Yf = point.y;
+        return TRUE;
+    }
+
+    BOOL WINAPI FakeMouse::ClipCursorHook(const RECT* lpRect) {
         return TRUE;
     }
 }

@@ -3,7 +3,7 @@
 #include "Logging.h"
 #include "FakeInput.h"
 #include "INISettings.h"
-#include "Mouse.h"
+#include "FakeMouse.h"
 #include "FakeKeyboard.h"
 #include "RawInput.h"
 #include "RawInputHooks.h"
@@ -108,17 +108,17 @@ namespace GtoMnK {
 		// General hooks
         if (getCursorPosHook) {
 			LOG("Installing GetCursorPosHook...");
-            result = LhInstallHook(GetProcAddress(hUser32, "GetCursorPos"), Mouse::GetCursorPosHook, NULL, &g_getCursorPosHookHandle);
+            result = LhInstallHook(GetProcAddress(hUser32, "GetCursorPos"), FakeMouse::GetCursorPosHook, NULL, &g_getCursorPosHookHandle);
             if (FAILED(result)) LOG("Failed to install hook for GetCursorPos: %S", RtlGetLastErrorString());
         }
         if (setCursorPosHook) {
 			LOG("Installing SetCursorPosHook...");
-            result = LhInstallHook(GetProcAddress(hUser32, "SetCursorPos"), Mouse::SetCursorPosHook, NULL, &g_setCursorPosHookHandle);
+            result = LhInstallHook(GetProcAddress(hUser32, "SetCursorPos"), FakeMouse::SetCursorPosHook, NULL, &g_setCursorPosHookHandle);
             if (FAILED(result)) LOG("Failed to install hook for SetCursorPos: %S", RtlGetLastErrorString());
         }
         if (clipCursorHook) {
 			LOG("Installing ClipCursorHook...");
-            result = LhInstallHook(GetProcAddress(hUser32, "ClipCursor"), ClipCursorHook, NULL, &g_clipCursorHookHandle);
+            result = LhInstallHook(GetProcAddress(hUser32, "ClipCursor"), FakeMouse::ClipCursorHook, NULL, &g_clipCursorHookHandle);
             if (FAILED(result)) LOG("Failed to install hook for ClipCursor: %S", RtlGetLastErrorString());
         }
         if (getKeyStateHook) {
@@ -180,10 +180,6 @@ namespace GtoMnK {
     void Hooks::RemoveHooks() {
 		LOG("Removing hooks...");
         LhUninstallAllHooks();
-    }
-
-    BOOL WINAPI Hooks::ClipCursorHook(const RECT* lpRect) {
-        return TRUE;
     }
 
     BOOL WINAPI Hooks::SetRectHook(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom) {

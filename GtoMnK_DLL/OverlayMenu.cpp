@@ -4,7 +4,6 @@
 #include "OverlayMenu.h"
 #include "MainThread.h"
 
-#include "Mouse.h"
 #include "SDL2_Gamepad.h"
 #include "XInput_Gamepad.h"
 

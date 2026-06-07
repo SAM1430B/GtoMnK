@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "FakeInput.h"
-#include "Mouse.h"
+#include "FakeMouse.h"
 #include "FakeKeyboard.h"
 #include "RawInput.h"
 #include <sstream>
@@ -32,7 +32,7 @@ namespace GtoMnK {
             if (actionCode == -9) isRMB_Down = press; if (actionCode == -10) isMMB_Down = press;
             if (actionCode == -11) isX1B_Down = press; if (actionCode == -12) isX2B_Down = press;
 
-            POINT currentPos = { Mouse::Xf, Mouse::Yf };
+            POINT currentPos = { FakeMouse::Xf, FakeMouse::Yf };
             LPARAM clickPos = MAKELPARAM(currentPos.x, currentPos.y);
             UINT msg = 0;
             WPARAM wParam = BuildWParam();

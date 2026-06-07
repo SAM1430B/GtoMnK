@@ -6,7 +6,7 @@
 #include "pch.h"
 #include "GamepadProcessor.h"
 #include "GamepadInputIDs.h"
-#include "Mouse.h"
+#include "FakeMouse.h"
 #include "FakeCursor.h"
 #include "RawInput.h"
 #include "INISettings.h"
@@ -141,12 +141,11 @@ void GamepadProcessor::ProcessMouseMovement(const CustomControllerState& state, 
 
     // Apply Movement
     if (totalDelta.x != 0 || totalDelta.y != 0) {
-        Mouse::Xf += totalDelta.x;
-        Mouse::Yf += totalDelta.y;
+        FakeMouse::Xf += totalDelta.x;
+        FakeMouse::Yf += totalDelta.y;
 
-        Mouse::Xf = std::max((LONG)m_clientRect.left, std::min((LONG)Mouse::Xf, (LONG)m_clientRect.right - 1));
-        Mouse::Yf = std::max((LONG)m_clientRect.top, std::min((LONG)Mouse::Yf, (LONG)m_clientRect.bottom - 1));
-
+        FakeMouse::Xf = std::max((LONG)m_clientRect.left, std::min((LONG)FakeMouse::Xf, (LONG)m_clientRect.right - 1));
+        FakeMouse::Yf = std::max((LONG)m_clientRect.top, std::min((LONG)FakeMouse::Yf, (LONG)m_clientRect.bottom - 1));
         // ProtoInput Fake Cursor update
         if (drawProtoFakeCursor == 1) {
             FakeCursor::NotifyUpdatedCursorPosition();
@@ -160,7 +159,7 @@ void GamepadProcessor::ProcessMouseMovement(const CustomControllerState& state, 
                 FakeInput::SendMouseMoveDelta(totalDelta.x, totalDelta.y);
             }
             if (g_FakeInputMethod == FakeInputMethod::PostMessage || g_FakeInputMethod == FakeInputMethod::Hybrid) {
-                POINT screenPos = { (LONG)Mouse::Xf, (LONG)Mouse::Yf };
+                POINT screenPos = { (LONG)FakeMouse::Xf, (LONG)FakeMouse::Yf };
                 ClientToScreen(m_hwnd, &screenPos);
                 FakeInput::SendMouseMoveAbsolute(screenPos.x, screenPos.y);
             }

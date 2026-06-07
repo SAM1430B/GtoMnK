@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "Logging.h"
 #include "Hooks.h"
-#include "Mouse.h"
-#include "FakeInput.h"
 #include <map>
 #include "RawInput.h"
 #include <easyhook.h>

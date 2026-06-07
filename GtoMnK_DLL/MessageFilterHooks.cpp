@@ -7,7 +7,6 @@ And is modified for GtoMnK usage. All credits to the original author.
 #include "MessageFilterHooks.h"
 #include "MessageFilters.h"
 #include "Logging.h"
-#include "Mouse.h"
 
 extern bool g_filterRawInput;
 extern bool g_filterMouseMove;

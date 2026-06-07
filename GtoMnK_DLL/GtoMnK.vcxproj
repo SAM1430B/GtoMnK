@@ -372,7 +372,7 @@ exit /b 0</Command>
     <ClInclude Include="FakeInput.h" />
     <ClInclude Include="FakeKeyboard.h" />
     <ClInclude Include="Logging.h" />
-    <ClInclude Include="Mouse.h" />
+    <ClInclude Include="FakeMouse.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="RawInput.h" />
     <ClInclude Include="resource.h" />
@@ -400,7 +400,7 @@ exit /b 0</Command>
     <ClCompile Include="FakeInput.cpp" />
     <ClCompile Include="FakeKeyboard.cpp" />
     <ClCompile Include="Logging.cpp" />
-    <ClCompile Include="Mouse.cpp" />
+    <ClCompile Include="FakeMouse.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

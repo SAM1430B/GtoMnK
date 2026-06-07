@@ -2,7 +2,7 @@
 #include <WinUser.h>
 #include "MessageFilterBase.h"
 #include "ProtoMessageFilterIDs.h"
-#include "Mouse.h"
+#include "FakeMouse.h"
 #include "FakeInput.h"
 
 namespace GtoMnK
@@ -44,7 +44,7 @@ public:
 class MouseMoveFilter : public GtoMnK::MessageFilterBase<MouseMoveFilterID, WM_MOUSEMOVE> {
 public:
     static bool Filter(unsigned int message, unsigned int* lparam, unsigned int* wparam, intptr_t hwnd) {
-		*lparam = MAKELPARAM(Mouse::Xf, Mouse::Yf); // Use GtoMnK's mouse position.
+		*lparam = MAKELPARAM(FakeMouse::Xf, FakeMouse::Yf); // Use GtoMnK's mouse position.
         return true;
     }
 };

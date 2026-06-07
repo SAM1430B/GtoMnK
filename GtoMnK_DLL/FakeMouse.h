@@ -3,7 +3,7 @@
 
 namespace GtoMnK {
 
-    class Mouse {
+    class FakeMouse {
     public:
         static int Xf;
         static int Yf;
@@ -11,6 +11,7 @@ namespace GtoMnK {
 
         static BOOL WINAPI GetCursorPosHook(PPOINT lpPoint);
         static BOOL WINAPI SetCursorPosHook(int X, int Y);
+        static BOOL WINAPI ClipCursorHook(const RECT* lpRect);
 
     };
 

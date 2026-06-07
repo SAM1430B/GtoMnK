@@ -5,7 +5,7 @@ And is modified for GtoMnK usage. All credits to the original author.
 
 #include "pch.h"
 #include "FakeCursor.h"
-#include "Mouse.h"
+#include "FakeMouse.h"
 #include "MainThread.h"
 #include "Logging.h"
 
@@ -76,7 +76,7 @@ namespace GtoMnK
         oldHadShowCursor = showCursor;
 
 		// Origanally from PrtotInput and modified for GtoMnK
-        POINT pos = { GtoMnK::Mouse::Xf, GtoMnK::Mouse::Yf };
+        POINT pos = { GtoMnK::FakeMouse::Xf, GtoMnK::FakeMouse::Yf };
         if (hwnd) {
             ClientToScreen(hwnd, &pos);
         }
