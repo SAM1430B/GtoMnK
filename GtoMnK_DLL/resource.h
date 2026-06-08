@@ -792,7 +792,7 @@
 #define VS_USER_DEFINED                 100
 #define VK_NUMPAD5                      0x65
 #define LANG_DIVEHI                     0x65
-#define IDR_TEXTFILE1                   101 // SDL gamecontrollerdb.txt
+#define IDR_gamecontrollerdb_txt        101 // SDL gamecontrollerdb.txt
 #define VK_NUMPAD6                      0x66
 #define VK_NUMPAD7                      0x67
 #define LANG_FULAH                      0x67

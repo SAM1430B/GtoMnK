@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "SDL2_Gamepad.h"
+#include "SDL2_GamepadHooks.h"
 #include "GamepadInputIDs.h"
 #include "INISettings.h"
 #include "Logging.h"
@@ -30,6 +31,13 @@ SDL_GameController* OpenControllerByVirtualIndex(int virtualIndex) {
 
 void SDL2_Initialize() {
     LOG("Initializing SDL2...");
+
+    if (GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetButton != nullptr) {
+        LOG("SDL2.dll Game Detected. Entering PARASITIC MODE (Skipping internal SDL_Init).");
+        return;
+    }
+
+    LOG("Game does NOT use SDL2.dll. Entering STANDALONE MODE.");
 
     SDL_SetHint(SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS, "0");
     SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
@@ -63,7 +71,7 @@ void SDL2_Initialize() {
             &hModule
         );
 
-        HRSRC hResInfo = FindResourceA(hModule, MAKEINTRESOURCEA(IDR_TEXTFILE1), "TEXTFILE");
+        HRSRC hResInfo = FindResourceA(hModule, MAKEINTRESOURCEA(IDR_gamecontrollerdb_txt), "TEXTFILE");
 
         if (hResInfo != NULL) {
             HGLOBAL hResData = LoadResource(hModule, hResInfo);
@@ -119,7 +127,7 @@ void AttemptInitialConnect() {
         if (path) {
             g_JoyHardwarePath = path;
         }
-        LOG("Using %s",
+        LOG("Controller: %s",
             SDL_GameControllerName(g_GameController));
 
         LOG("Joystick Serial: [%s]",
@@ -130,143 +138,191 @@ void AttemptInitialConnect() {
     }
 }
 
+// These routing functions check if we're in Parasitic Mode (hooked game controller) or Standalone Mode (GtoMnK) and call the appropriate function.
+inline SDL_GameController* GetRoutedController() {
+    if (SDL2Hooks::TrueSDL_GameControllerGetButton && SDL2Hooks::SnatchedGameController) {
+        return SDL2Hooks::SnatchedGameController;
+    }
+    return g_GameController;
+}
+
+inline Uint8 RoutedGetButton(SDL_GameControllerButton button) {
+    if (SDL2Hooks::TrueSDL_GameControllerGetButton && SDL2Hooks::SnatchedGameController) {
+        return SDL2Hooks::TrueSDL_GameControllerGetButton(SDL2Hooks::SnatchedGameController, button);
+    }
+    return SDL_GameControllerGetButton(g_GameController, button);
+}
+
+inline Sint16 RoutedGetAxis(SDL_GameControllerAxis axis) {
+    if (SDL2Hooks::TrueSDL_GameControllerGetAxis && SDL2Hooks::SnatchedGameController) {
+        return SDL2Hooks::TrueSDL_GameControllerGetAxis(SDL2Hooks::SnatchedGameController, axis);
+    }
+    return SDL_GameControllerGetAxis(g_GameController, axis);
+}
+
+inline int RoutedGetNumTouchpads(SDL_GameController* gc) {
+    if (SDL2Hooks::TrueSDL_GameControllerGetNumTouchpads && SDL2Hooks::SnatchedGameController) {
+        return SDL2Hooks::TrueSDL_GameControllerGetNumTouchpads(gc);
+    }
+    return SDL_GameControllerGetNumTouchpads(gc);
+}
+
+inline int RoutedGetTouchpadFinger(SDL_GameController* gc, int touchpad, int finger, Uint8* state, float* x, float* y, float* pressure) {
+    if (SDL2Hooks::TrueSDL_GameControllerGetTouchpadFinger && SDL2Hooks::SnatchedGameController) {
+        return SDL2Hooks::TrueSDL_GameControllerGetTouchpadFinger(gc, touchpad, finger, state, x, y, pressure);
+    }
+    return SDL_GameControllerGetTouchpadFinger(gc, touchpad, finger, state, x, y, pressure);
+}
+
 bool SDL2_GetState(CustomControllerState& outState) {
-    SDL_Event event;
 
-    while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_CONTROLLERDEVICEADDED) {
-            int deviceIndex = event.cdevice.which;
+	// If the MaskHook is enabled, we are in PARASITIC MODE and rely on the game to open the controller and passed its pointer to the hook.
+    if (GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetButton != nullptr) {
+        if (!GtoMnK::SDL2Hooks::SnatchedGameController) {
+            return false;
+        }
+    }
+    else {
+        // STANDALONE MODE: GtoMnK is responsible for managing the gamepad connection.
 
-            if (!g_GameController) {
-                // If never successfully connected before, try controllerID
-                if (g_JoySerialNum.empty() && g_JoyHardwarePath.empty()) {
-                    AttemptInitialConnect();
-                }
-                else {
-                    SDL_GameController* tempController = SDL_GameControllerOpen(deviceIndex);
+        SDL_Event event;
 
-                    if (tempController) {
-                        SDL_Joystick* joy = SDL_GameControllerGetJoystick(tempController);
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_CONTROLLERDEVICEADDED) {
+                int deviceIndex = event.cdevice.which;
 
-                        const char* newSerial = SDL_JoystickGetSerial(joy);
-                        const char* newPath = SDL_JoystickPath(joy);
+                if (!g_GameController) {
+                    // If never successfully connected before, try controllerID
+                    if (g_JoySerialNum.empty() && g_JoyHardwarePath.empty()) {
+                        AttemptInitialConnect();
+                    }
+                    else {
+                        SDL_GameController* tempController = SDL_GameControllerOpen(deviceIndex);
 
-                        bool isMatch = false;
+                        if (tempController) {
+                            SDL_Joystick* joy = SDL_GameControllerGetJoystick(tempController);
 
-                        // The priority is the serial numbers match.
-                        if (!g_JoySerialNum.empty() && newSerial != nullptr) {
-                            isMatch = (g_JoySerialNum == newSerial);
-                        }
-                        // If no serial is available. Check the USB path match.
-                        else if (!g_JoyHardwarePath.empty() && newPath != nullptr) {
-                            isMatch = (g_JoyHardwarePath == newPath);
-                        }
+                            const char* newSerial = SDL_JoystickGetSerial(joy);
+                            const char* newPath = SDL_JoystickPath(joy);
 
-                        // Keep it if it's the matched controller. 
-                        if (isMatch) {
-                            g_GameController = tempController;
-                            g_JoyID = SDL_JoystickInstanceID(joy);
-                            LOG("Controller is successfully reclaimed!");
-                        }
-                        else {
-                            // Not the matched controller
-                            SDL_GameControllerClose(tempController);
+                            bool isMatch = false;
+
+                            // The priority is the serial numbers match.
+                            if (!g_JoySerialNum.empty() && newSerial != nullptr) {
+                                isMatch = (g_JoySerialNum == newSerial);
+                            }
+                            // If no serial is available. Check the USB path match.
+                            else if (!g_JoyHardwarePath.empty() && newPath != nullptr) {
+                                isMatch = (g_JoyHardwarePath == newPath);
+                            }
+
+                            // Keep it if it's the matched controller. 
+                            if (isMatch) {
+                                g_GameController = tempController;
+                                g_JoyID = SDL_JoystickInstanceID(joy);
+                                LOG("Controller is successfully reclaimed!");
+                            }
+                            else {
+                                // Not the matched controller
+                                SDL_GameControllerClose(tempController);
+                            }
                         }
                     }
                 }
             }
-        }
-        else if (event.type == SDL_CONTROLLERDEVICEREMOVED) {
-            // Disconnect if the device removed.
-            if (g_GameController && event.cdevice.which == g_JoyID) {
-                SDL_GameControllerClose(g_GameController);
-                g_GameController = nullptr;
-                g_JoyID = -1;
+            else if (event.type == SDL_CONTROLLERDEVICEREMOVED) {
+                // Disconnect if the device removed.
+                if (g_GameController && event.cdevice.which == g_JoyID) {
+                    SDL_GameControllerClose(g_GameController);
+                    g_GameController = nullptr;
+                    g_JoyID = -1;
 
-                LOG("Controller is disconnected. Waiting for original hardware...");
+                    LOG("Controller is disconnected. Waiting for original hardware...");
+                }
             }
         }
+
+        if (!g_GameController) return false;
     }
 
-    if (!g_GameController) return false;
-
     // Face Buttons
-    outState.buttons[GAMEPAD_ID_A] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_A);
-    outState.buttons[GAMEPAD_ID_B] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_B);
-    outState.buttons[GAMEPAD_ID_X] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_X);
-    outState.buttons[GAMEPAD_ID_Y] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_Y);
+    outState.buttons[GAMEPAD_ID_A] = RoutedGetButton(SDL_CONTROLLER_BUTTON_A);
+    outState.buttons[GAMEPAD_ID_B] = RoutedGetButton(SDL_CONTROLLER_BUTTON_B);
+    outState.buttons[GAMEPAD_ID_X] = RoutedGetButton(SDL_CONTROLLER_BUTTON_X);
+    outState.buttons[GAMEPAD_ID_Y] = RoutedGetButton(SDL_CONTROLLER_BUTTON_Y);
 
     // D-Pad
-    outState.buttons[GAMEPAD_ID_DPAD_UP] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_DPAD_UP);
-    outState.buttons[GAMEPAD_ID_DPAD_DOWN] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
-    outState.buttons[GAMEPAD_ID_DPAD_LEFT] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
-    outState.buttons[GAMEPAD_ID_DPAD_RIGHT] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
+    outState.buttons[GAMEPAD_ID_DPAD_UP] = RoutedGetButton(SDL_CONTROLLER_BUTTON_DPAD_UP);
+    outState.buttons[GAMEPAD_ID_DPAD_DOWN] = RoutedGetButton(SDL_CONTROLLER_BUTTON_DPAD_DOWN);
+    outState.buttons[GAMEPAD_ID_DPAD_LEFT] = RoutedGetButton(SDL_CONTROLLER_BUTTON_DPAD_LEFT);
+    outState.buttons[GAMEPAD_ID_DPAD_RIGHT] = RoutedGetButton(SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
 
     // Start & Back
-    outState.buttons[GAMEPAD_ID_START] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_START);
-    outState.buttons[GAMEPAD_ID_BACK] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_BACK);
+    outState.buttons[GAMEPAD_ID_START] = RoutedGetButton(SDL_CONTROLLER_BUTTON_START);
+    outState.buttons[GAMEPAD_ID_BACK] = RoutedGetButton(SDL_CONTROLLER_BUTTON_BACK);
 
     // Extended Buttons
-    outState.buttons[GAMEPAD_ID_GUIDE] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_GUIDE);
-    outState.buttons[GAMEPAD_ID_MISC1] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_MISC1);
-    outState.buttons[GAMEPAD_ID_PADDLE1] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_PADDLE1);
-    outState.buttons[GAMEPAD_ID_PADDLE2] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_PADDLE2);
-    outState.buttons[GAMEPAD_ID_PADDLE3] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_PADDLE3);
-    outState.buttons[GAMEPAD_ID_PADDLE4] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_PADDLE4);
+    outState.buttons[GAMEPAD_ID_GUIDE] = RoutedGetButton(SDL_CONTROLLER_BUTTON_GUIDE);
+    outState.buttons[GAMEPAD_ID_MISC1] = RoutedGetButton(SDL_CONTROLLER_BUTTON_MISC1);
+    outState.buttons[GAMEPAD_ID_PADDLE1] = RoutedGetButton(SDL_CONTROLLER_BUTTON_PADDLE1);
+    outState.buttons[GAMEPAD_ID_PADDLE2] = RoutedGetButton(SDL_CONTROLLER_BUTTON_PADDLE2);
+    outState.buttons[GAMEPAD_ID_PADDLE3] = RoutedGetButton(SDL_CONTROLLER_BUTTON_PADDLE3);
+    outState.buttons[GAMEPAD_ID_PADDLE4] = RoutedGetButton(SDL_CONTROLLER_BUTTON_PADDLE4);
 
 	// Touchpad Button
-    outState.buttons[GAMEPAD_ID_TOUCHPAD_BUTTON] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_TOUCHPAD);
+    outState.buttons[GAMEPAD_ID_TOUCHPAD_BUTTON] = RoutedGetButton(SDL_CONTROLLER_BUTTON_TOUCHPAD);
 
     // Stick Buttons
-    outState.buttons[GAMEPAD_ID_LSB] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_LEFTSTICK);
-    outState.buttons[GAMEPAD_ID_RSB] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_RIGHTSTICK);
-
+    outState.buttons[GAMEPAD_ID_LSB] = RoutedGetButton(SDL_CONTROLLER_BUTTON_LEFTSTICK);
+    outState.buttons[GAMEPAD_ID_RSB] = RoutedGetButton(SDL_CONTROLLER_BUTTON_RIGHTSTICK);
     // Shoulder Buttons
-    outState.buttons[GAMEPAD_ID_LB] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
-    outState.buttons[GAMEPAD_ID_RB] = SDL_GameControllerGetButton(g_GameController, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+    outState.buttons[GAMEPAD_ID_LB] = RoutedGetButton(SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+    outState.buttons[GAMEPAD_ID_RB] = RoutedGetButton(SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
     
     // Triggers
-    Sint16 leftTrig = SDL_GameControllerGetAxis(g_GameController, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
-    Sint16 rightTrig = SDL_GameControllerGetAxis(g_GameController, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+    Sint16 leftTrig = RoutedGetAxis(SDL_CONTROLLER_AXIS_TRIGGERLEFT);
+    Sint16 rightTrig = RoutedGetAxis(SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
     outState.LeftTrigger = (BYTE)(leftTrig >> 7);
     outState.RightTrigger = (BYTE)(rightTrig >> 7);
 
 	// Fix for SDL2 axis range being -32768 to 32767
 
     // Left Stick Y Axis
-    int leftY = -SDL_GameControllerGetAxis(g_GameController, SDL_CONTROLLER_AXIS_LEFTY);
+    int leftY = -RoutedGetAxis(SDL_CONTROLLER_AXIS_LEFTY);
     if (leftY > 32767) leftY = 32767;
     if (leftY < -32768) leftY = -32768;
 
 	// Right Stick Y Axis
-    int rightY = -SDL_GameControllerGetAxis(g_GameController, SDL_CONTROLLER_AXIS_RIGHTY);
+    int rightY = -RoutedGetAxis(SDL_CONTROLLER_AXIS_RIGHTY);
     if (rightY > 32767) rightY = 32767;
     if (rightY < -32768) rightY = -32768;
 
 	// Left Stick X Axis
-    outState.ThumbLX = SDL_GameControllerGetAxis(g_GameController, SDL_CONTROLLER_AXIS_LEFTX);
+    outState.ThumbLX = RoutedGetAxis(SDL_CONTROLLER_AXIS_LEFTX);
     outState.ThumbLY = (SHORT)leftY;
 
 	// Right Stick X Axis
-    outState.ThumbRX = SDL_GameControllerGetAxis(g_GameController, SDL_CONTROLLER_AXIS_RIGHTX);
+    outState.ThumbRX = RoutedGetAxis(SDL_CONTROLLER_AXIS_RIGHTX);
     outState.ThumbRY = (SHORT)rightY;
 
-	// Touchpad
+    // Touchpad
     outState.TouchpadActive = false;
     outState.TouchpadX = 0.0f;
     outState.TouchpadY = 0.0f;
     outState.TouchpadPressure = 0.0f;
 
-    if (SDL_GameControllerGetNumTouchpads(g_GameController) > 0) {
+    SDL_GameController* activeController = GetRoutedController();
+
+    if (activeController && RoutedGetNumTouchpads(activeController) > 0) {
         Uint8 state;
         float x, y, pressure;
 
-        if (SDL_GameControllerGetTouchpadFinger(g_GameController, 0, 0, &state, &x, &y, &pressure) == 0) {
+        if (RoutedGetTouchpadFinger(activeController, 0, 0, &state, &x, &y, &pressure) == 0) {
             outState.TouchpadActive = (state == SDL_PRESSED);
             outState.TouchpadX = x;
             outState.TouchpadY = y;
 
-			// TODO: Add support for touchpad pressure state.
+            // TODO: Add support for touchpad pressure state.
             outState.TouchpadPressure = pressure;
         }
     }

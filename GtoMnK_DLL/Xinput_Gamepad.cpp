@@ -2,7 +2,8 @@
 #include "XInput_Gamepad.h"
 #include "GamepadInputIDs.h"
 #include "INISettings.h"
-#include "EnableOpenXinput.h" 
+#include "EnableOpenXinput.h"
+#include "XInput_GamepadHooks.h"
 #include "Logging.h"
 
 XInputGetStateFunc pXInputGetState = nullptr;
@@ -15,8 +16,25 @@ void XInput_Initialize() {
         pXInputGetState = (XInputGetStateFunc)OXI::OpenXInputGetState;
     }
     else {
-        pXInputGetState = (XInputGetStateFunc)XInputGetState;
+        pXInputGetState = nullptr;
     }
+}
+
+// Helper grabs a pure, unhooked pointer straight from Windows to bypass the MaskHook
+XInputGetStateFunc GetSystemXInputGetState() {
+    static XInputGetStateFunc RealSystemGetState = nullptr;
+
+    if (!RealSystemGetState) {
+        HMODULE hXInput = LoadLibraryA("xinput1_4.dll");
+        if (!hXInput) hXInput = LoadLibraryA("xinput1_3.dll");
+        if (!hXInput) hXInput = LoadLibraryA("xinput9_1_0.dll");
+
+        if (hXInput) {
+            RealSystemGetState = (XInputGetStateFunc)GetProcAddress(hXInput, "XInputGetState");
+        }
+    }
+
+    return RealSystemGetState;
 }
 
 // Helper local to this file
@@ -27,10 +45,17 @@ bool IsXInputBtnPressed(const XINPUT_STATE& state, WORD flag) {
 bool XInput_GetState(CustomControllerState& outState) {
     if (controllerID < 0) return false;
 
+    XInputGetStateFunc GetStateFunc = pXInputGetState;
+    if (!g_EnableOpenXinput) {
+        GetStateFunc = GetSystemXInputGetState();
+    }
+
+    if (!GetStateFunc) return false;
+
     XINPUT_STATE state;
     ZeroMemory(&state, sizeof(XINPUT_STATE));
 
-    if (pXInputGetState(controllerID, &state) != ERROR_SUCCESS) {
+    if (GetStateFunc(controllerID, &state) != ERROR_SUCCESS) {
         return false;
     }
 

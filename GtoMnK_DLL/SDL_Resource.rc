@@ -38,7 +38,7 @@ END
 // TEXTFILE
 //
 
-IDR_TEXTFILE1           TEXTFILE                "Resources\\gamecontrollerdb.txt"
+IDR_gamecontrollerdb_txt           TEXTFILE                "Resources\\gamecontrollerdb.txt"
 
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////

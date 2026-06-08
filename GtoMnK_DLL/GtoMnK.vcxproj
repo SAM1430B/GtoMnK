@@ -352,6 +352,7 @@ exit /b 0</Command>
   <ItemGroup>
     <ClInclude Include="GamepadBackend.h" />
     <ClInclude Include="GamepadInputIDs.h" />
+    <ClInclude Include="GamepadMasking.h" />
     <ClInclude Include="GamepadProcessor.h" />
     <ClInclude Include="GamepadState.h" />
     <ClInclude Include="OverlayNotification.h" />
@@ -376,14 +377,19 @@ exit /b 0</Command>
     <ClInclude Include="RawInput.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SDL2_Gamepad.h" />
+    <ClInclude Include="SDL2_GamepadHooks.h" />
     <ClInclude Include="XInput_Gamepad.h" />
+    <ClInclude Include="XInput_GamepadHooks.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="GamepadMasking.cpp" />
     <ClCompile Include="GamepadProcessor.cpp" />
     <ClCompile Include="OverlayNotification.cpp" />
     <ClCompile Include="GtoMnKMutex.cpp" />
     <ClCompile Include="SDL2_Gamepad.cpp" />
+    <ClCompile Include="SDL2_GamepadHooks.cpp" />
     <ClCompile Include="XInput_Gamepad.cpp" />
+    <ClCompile Include="XInput_GamepadHooks.cpp" />
     <ClInclude Include="EnableOpenXinput.h" />
     <ClCompile Include="GamepadState.cpp" />
     <ClCompile Include="HandleMainWindow.cpp" />

@@ -41,6 +41,8 @@ int responsetime = 4;
 FakeInputMethod g_FakeInputMethod = FakeInputMethod::Hybrid;
 int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setRectHook;
 
+int gamepadMaskHook = 0;
+
 // For MessageFilterHook
 bool g_filterRawInput = false;
 bool g_filterMouseMove = false;
@@ -155,6 +157,8 @@ void LoadIniSettings() {
 	LOG("Using Gamepad Method: %s", (g_GamepadMethod == GamepadMethod::SDL2) ? "SDL2" : "XInput");
 
     g_EnableOpenXinput = GetPrivateProfileIntA("API", "EnableOpenXinput", 0, iniPath.c_str()) == 1;
+
+    gamepadMaskHook = GetPrivateProfileIntA("API", "GamepadMaskHook", 0, iniPath.c_str());
 
     // [Hooks]
     getCursorPosHook = GetPrivateProfileIntA("Hooks", "GetCursorposHook", 1, iniPath.c_str());

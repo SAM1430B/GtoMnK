@@ -27,7 +27,6 @@
 
 // Other Libraries
 #include <Xinput.h>
-#pragma comment(lib, "Xinput9_1_0.lib")
 
 #include <dwmapi.h>
 #include <psapi.h>
