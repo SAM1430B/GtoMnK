@@ -15,6 +15,9 @@
 #include "GamepadProcessor.h"
 #include "GamepadBackend.h"
 
+#include <mmsystem.h>
+#pragma comment(lib, "winmm.lib")
+
 using namespace GtoMnK;
 
 // For Initialization and Thread state
@@ -54,8 +57,14 @@ void WaitForOtherDll() {
 DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     LOG("ThreadFunction started.");
 
+    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+
     LoadIniSettings();
     LOG("INI settings is Loaded");
+
+    if (!g_UseLegacyMouseMovement) {
+        timeBeginPeriod(1);
+    }
 
     // Check Controller ID
     if (controllerID < 0) {
@@ -175,6 +184,10 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     if (IsOverlayNotificationEnabled) {
         OverlayNotification::state.CleanupGDIOverlay();
 		LOG("Overlay Notification cleaned up.");
+    }
+
+    if (!g_UseLegacyMouseMovement) {
+        timeEndPeriod(1);
     }
 
     LOG("ThreadFunction gracefully exiting.");

@@ -50,6 +50,7 @@ extern int responsetime;
 // StickToMouse
 extern int righthanded;
 extern int g_thumbStickToMouse[3];
+extern bool g_UseLegacyMouseMovement;
 extern float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, sensitivity_multiplier, horizontal_sensitivity, vertical_sensitivity, look_accel_multiplier;
 
 // TouchToMouse

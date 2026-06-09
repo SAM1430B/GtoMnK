@@ -12,6 +12,7 @@ std::map<UINT, ButtonState> buttonStates;
 bool g_EnableMouseDoubleClick = false;
 int righthanded;
 int global_thumbStickToMouse, g_thumbStickToMouse[3];
+bool g_UseLegacyMouseMovement = false;
 
 // For Controller Setting
 int controllerID = 0;
@@ -197,6 +198,7 @@ void LoadIniSettings() {
     // [StickToMouse]
     righthanded = GetPrivateProfileIntA("StickToMouse", "Righthanded", -1, iniPath.c_str()); // This is replaced with ThumbStickToMouse in v1.4.0
     global_thumbStickToMouse = GetPrivateProfileIntA("StickToMouse", "ThumbStickToMouse", -1, iniPath.c_str());
+    g_UseLegacyMouseMovement = GetPrivateProfileIntA("StickToMouse", "UseLegacyMouseMovement", 0, iniPath.c_str()) == 1;
     LegacyMouseOption();
     GetPrivateProfileStringA("StickToMouse", "Sensitivity", "5.00", buffer, sizeof(buffer), iniPath.c_str()); sensitivity = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Sensitivity_Multiplier", "2.40", buffer, sizeof(buffer), iniPath.c_str()); sensitivity_multiplier = std::stof(buffer);

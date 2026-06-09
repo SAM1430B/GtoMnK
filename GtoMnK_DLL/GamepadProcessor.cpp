@@ -140,28 +140,96 @@ void GamepadProcessor::ProcessMouseMovement(const CustomControllerState& state, 
     }
 
     // Apply Movement
-    if (totalDelta.x != 0 || totalDelta.y != 0) {
-        FakeMouse::Xf += totalDelta.x;
-        FakeMouse::Yf += totalDelta.y;
+    if (g_UseLegacyMouseMovement) {
+        if (totalDelta.x != 0 || totalDelta.y != 0) {
+            FakeMouse::Xf += totalDelta.x;
+            FakeMouse::Yf += totalDelta.y;
 
-        FakeMouse::Xf = std::max((LONG)m_clientRect.left, std::min((LONG)FakeMouse::Xf, (LONG)m_clientRect.right - 1));
-        FakeMouse::Yf = std::max((LONG)m_clientRect.top, std::min((LONG)FakeMouse::Yf, (LONG)m_clientRect.bottom - 1));
-        // ProtoInput Fake Cursor update
-        if (drawProtoFakeCursor == 1) {
-            FakeCursor::NotifyUpdatedCursorPosition();
+            FakeMouse::Xf = (std::max)((LONG)m_clientRect.left, (std::min)((LONG)FakeMouse::Xf, (LONG)m_clientRect.right - 1));
+            FakeMouse::Yf = (std::max)((LONG)m_clientRect.top, (std::min)((LONG)FakeMouse::Yf, (LONG)m_clientRect.bottom - 1));
+            // ProtoInput Fake Cursor update
+            if (drawProtoFakeCursor == 1) {
+                FakeCursor::NotifyUpdatedCursorPosition();
+            }
+
+            ULONGLONG currentTime = GetTickCount64();
+            if (currentTime - m_lastMoveTime > m_moveUpdateInterval) {
+                m_lastMoveTime = currentTime;
+
+                if (g_FakeInputMethod == FakeInputMethod::RawInput || g_FakeInputMethod == FakeInputMethod::Hybrid) {
+                    FakeInput::SendMouseMoveDelta(totalDelta.x, totalDelta.y);
+                }
+                if (g_FakeInputMethod == FakeInputMethod::PostMessage || g_FakeInputMethod == FakeInputMethod::Hybrid) {
+                    POINT screenPos = { (LONG)FakeMouse::Xf, (LONG)FakeMouse::Yf };
+                    ClientToScreen(m_hwnd, &screenPos);
+                    FakeInput::SendMouseMoveAbsolute(screenPos.x, screenPos.y);
+                }
+            }
+        }
+    }
+    else {
+        static LONG unsentRawX = 0;
+        static LONG unsentRawY = 0;
+
+        if (totalDelta.x != 0 || totalDelta.y != 0) {
+            FakeMouse::Xf += totalDelta.x;
+            FakeMouse::Yf += totalDelta.y;
+
+            FakeMouse::Xf = (std::max)((LONG)m_clientRect.left, (std::min)((LONG)FakeMouse::Xf, (LONG)m_clientRect.right - 1));
+            FakeMouse::Yf = (std::max)((LONG)m_clientRect.top, (std::min)((LONG)FakeMouse::Yf, (LONG)m_clientRect.bottom - 1));
+
+            if (drawProtoFakeCursor == 1) {
+                FakeCursor::NotifyUpdatedCursorPosition();
+            }
+
+            unsentRawX += totalDelta.x;
+            unsentRawY += totalDelta.y;
         }
 
-        ULONGLONG currentTime = GetTickCount64();
-        if (currentTime - m_lastMoveTime > m_moveUpdateInterval) {
-            m_lastMoveTime = currentTime;
+        static LARGE_INTEGER frequency;
+        static LARGE_INTEGER lastSendTime;
+        static bool timerInit = false;
+
+        if (!timerInit) {
+            QueryPerformanceFrequency(&frequency);
+            QueryPerformanceCounter(&lastSendTime);
+            timerInit = true;
+        }
+
+        LARGE_INTEGER currentTime;
+        QueryPerformanceCounter(&currentTime);
+
+        double elapsedMs = static_cast<double>(currentTime.QuadPart - lastSendTime.QuadPart) * 1000.0 / frequency.QuadPart;
+
+        if (elapsedMs >= m_moveUpdateInterval) {
+
+            LONGLONG intervalTicks = static_cast<LONGLONG>(m_moveUpdateInterval * frequency.QuadPart / 1000.0);
+            lastSendTime.QuadPart += intervalTicks;
+
+            if (elapsedMs > m_moveUpdateInterval * 5.0) {
+                lastSendTime = currentTime;
+            }
 
             if (g_FakeInputMethod == FakeInputMethod::RawInput || g_FakeInputMethod == FakeInputMethod::Hybrid) {
-                FakeInput::SendMouseMoveDelta(totalDelta.x, totalDelta.y);
+                if (unsentRawX != 0 || unsentRawY != 0) {
+                    FakeInput::SendMouseMoveDelta(unsentRawX, unsentRawY);
+                    unsentRawX = 0;
+                    unsentRawY = 0;
+                }
             }
+
             if (g_FakeInputMethod == FakeInputMethod::PostMessage || g_FakeInputMethod == FakeInputMethod::Hybrid) {
-                POINT screenPos = { (LONG)FakeMouse::Xf, (LONG)FakeMouse::Yf };
-                ClientToScreen(m_hwnd, &screenPos);
-                FakeInput::SendMouseMoveAbsolute(screenPos.x, screenPos.y);
+                static LONG lastSentAbsX = -1;
+                static LONG lastSentAbsY = -1;
+
+                if (FakeMouse::Xf != lastSentAbsX || FakeMouse::Yf != lastSentAbsY) {
+                    POINT screenPos = { (LONG)FakeMouse::Xf, (LONG)FakeMouse::Yf };
+                    ClientToScreen(m_hwnd, &screenPos);
+                    FakeInput::SendMouseMoveAbsolute(screenPos.x, screenPos.y);
+
+                    lastSentAbsX = FakeMouse::Xf;
+                    lastSentAbsY = FakeMouse::Yf;
+                }
             }
         }
     }

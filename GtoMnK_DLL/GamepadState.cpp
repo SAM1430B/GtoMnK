@@ -28,8 +28,9 @@ int GetActiveTouchPadToMouse() {
 }
 
 POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
-    const double smoothing_factor = 0.35;
 
+    if (g_UseLegacyMouseMovement) {
+        const double smoothing_factor = 0.35;
     static double smoothX = 0.0;
     static double smoothY = 0.0;
     static double mouseDeltaAccumulatorX = 0.0;
@@ -57,10 +58,7 @@ POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
     double magnitude = std::sqrt(normX * normX + normY * normY);
 
     if (magnitude < 1e-6 || magnitude < radial_deadzone) {
-        if (magnitude < 1e-6) {
-            smoothX = 0.0;
-            smoothY = 0.0;
-        }
+            if (magnitude < 1e-6) {smoothX = 0.0;smoothY = 0.0;}
         return { 0, 0 };
     }
 
@@ -69,14 +67,8 @@ POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
     double dirX = normX / magnitude;
     double dirY = normY / magnitude;
 
-    if (std::abs(dirX) < axial_deadzone) {
-        dirX = 0.0;
-        dirY = (dirY > 0) ? 1.0 : -1.0;
-    }
-    else if (std::abs(dirY) < axial_deadzone) {
-        dirY = 0.0;
-        dirX = (dirX > 0) ? 1.0 : -1.0;
-    }
+        if (std::abs(dirX) < axial_deadzone) {dirX = 0.0;dirY = (dirY > 0) ? 1.0 : -1.0;}
+        else if (std::abs(dirY) < axial_deadzone) {dirY = 0.0;dirX = (dirX > 0) ? 1.0 : -1.0;}
 
     double effectiveRange = 1.0 - radial_deadzone;
     if (effectiveRange < 1e-6) effectiveRange = 1.0;
@@ -94,10 +86,7 @@ POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
     else {
         double kneeValue = curve_slope * accelBoundary + (1.0 - curve_slope) * std::pow(accelBoundary, curve_exponent);
         double rampWidth = 1.0 - accelBoundary;
-
-        if (rampWidth <= 1e-6) {
-            finalCurveValue = look_accel_multiplier;
-        }
+            if (rampWidth <= 1e-6) {finalCurveValue = look_accel_multiplier;}
         else {
             double rampProgress = (x - accelBoundary) / rampWidth;
             finalCurveValue = kneeValue + (look_accel_multiplier - kneeValue) * rampProgress;
@@ -111,10 +100,111 @@ POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
     double targetDeltaY = dirY * finalCurveValue * finalSpeedY;
 
     if (std::isnan(targetDeltaX) || std::isnan(targetDeltaY)) {
-        mouseDeltaAccumulatorX = 0;
-        mouseDeltaAccumulatorY = 0;
+            mouseDeltaAccumulatorX = 0; mouseDeltaAccumulatorY = 0; return { 0, 0 };
+        }
+
+        mouseDeltaAccumulatorX += targetDeltaX;
+        mouseDeltaAccumulatorY += targetDeltaY;
+        LONG integerDeltaX = static_cast<LONG>(mouseDeltaAccumulatorX);
+        LONG integerDeltaY = static_cast<LONG>(mouseDeltaAccumulatorY);
+        mouseDeltaAccumulatorX -= integerDeltaX;
+        mouseDeltaAccumulatorY -= integerDeltaY;
+
+        return { integerDeltaX, -integerDeltaY };
+    }
+    else {
+        static LARGE_INTEGER frequency;
+        static LARGE_INTEGER lastTime;
+        static bool timerInit = false;
+
+        if (!timerInit) {
+            QueryPerformanceFrequency(&frequency);
+            QueryPerformanceCounter(&lastTime);
+            timerInit = true;
+        }
+
+        LARGE_INTEGER currentTime;
+        QueryPerformanceCounter(&currentTime);
+
+        double deltaTime = static_cast<double>(currentTime.QuadPart - lastTime.QuadPart) / frequency.QuadPart;
+        lastTime = currentTime;
+
+        if (deltaTime > 0.05) deltaTime = 0.05;
+        double timeScale = deltaTime * 250.0;
+
+        const double base_smoothing_factor = 0.35;
+        double frameIndependentSmoothing = 1.0 - std::pow(1.0 - base_smoothing_factor, timeScale);
+        frameIndependentSmoothing = (std::max)(0.0, (std::min)(1.0, frameIndependentSmoothing));
+
+        static double smoothX = 0.0;
+        static double smoothY = 0.0;
+        static double mouseDeltaAccumulatorX = 0.0;
+        static double mouseDeltaAccumulatorY = 0.0;
+        static bool firstRun = true;
+
+        double safe_multiplier = (sensitivity_multiplier <= 0.001) ? 1.0 : sensitivity_multiplier;
+
+        double rawNormX = static_cast<double>(stickX) / 32768.0;
+        double rawNormY = static_cast<double>(stickY) / 32768.0;
+
+        if (firstRun) {
+            smoothX = rawNormX;
+            smoothY = rawNormY;
+            firstRun = false;
+        }
+        else {
+            smoothX = smoothX + frameIndependentSmoothing * (rawNormX - smoothX);
+            smoothY = smoothY + frameIndependentSmoothing * (rawNormY - smoothY);
+        }
+
+        double normX = smoothX;
+        double normY = smoothY;
+        double magnitude = std::sqrt(normX * normX + normY * normY);
+
+        if (magnitude < 1e-6 || magnitude < radial_deadzone) {
+            if (magnitude < 1e-6) { smoothX = 0.0; smoothY = 0.0; }
         return { 0, 0 };
     }
+
+        if (magnitude > 1.0) magnitude = 1.0;
+        double dirX = normX / magnitude;
+        double dirY = normY / magnitude;
+
+        if (std::abs(dirX) < axial_deadzone) { dirX = 0.0; dirY = (dirY > 0) ? 1.0 : -1.0; }
+        else if (std::abs(dirY) < axial_deadzone) { dirY = 0.0; dirX = (dirX > 0) ? 1.0 : -1.0; }
+
+        double effectiveRange = 1.0 - radial_deadzone;
+        if (effectiveRange < 1e-6) effectiveRange = 1.0;
+
+        double x = (magnitude - radial_deadzone) / effectiveRange;
+        x = (std::max)(0.0, (std::min)(1.0, x));
+
+        double finalCurveValue = 0.0;
+        double accelBoundary = 1.0 - max_threshold;
+        accelBoundary = (std::max)(0.0, (std::min)(1.0, accelBoundary));
+
+        if (x <= accelBoundary) {
+            finalCurveValue = curve_slope * x + (1.0 - curve_slope) * std::pow(x, curve_exponent);
+        }
+        else {
+            double kneeValue = curve_slope * accelBoundary + (1.0 - curve_slope) * std::pow(accelBoundary, curve_exponent);
+            double rampWidth = 1.0 - accelBoundary;
+            if (rampWidth <= 1e-6) { finalCurveValue = look_accel_multiplier; }
+            else {
+                double rampProgress = (x - accelBoundary) / rampWidth;
+                finalCurveValue = kneeValue + (look_accel_multiplier - kneeValue) * rampProgress;
+            }
+        }
+
+        double finalSpeedX = sensitivity * (1.0 + horizontal_sensitivity) * safe_multiplier;
+        double finalSpeedY = sensitivity * (1.0 + vertical_sensitivity) * safe_multiplier;
+
+        double targetDeltaX = dirX * finalCurveValue * finalSpeedX * timeScale;
+        double targetDeltaY = dirY * finalCurveValue * finalSpeedY * timeScale;
+
+        if (std::isnan(targetDeltaX) || std::isnan(targetDeltaY)) {
+            mouseDeltaAccumulatorX = 0; mouseDeltaAccumulatorY = 0; return { 0, 0 };
+        }
 
     mouseDeltaAccumulatorX += targetDeltaX;
     mouseDeltaAccumulatorY += targetDeltaY;
@@ -126,6 +216,7 @@ POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
     mouseDeltaAccumulatorY -= integerDeltaY;
 
     return { integerDeltaX, -integerDeltaY };
+}
 }
 
 POINT TouchpadMouseMove(float touchX, float touchY, bool isActive) {
