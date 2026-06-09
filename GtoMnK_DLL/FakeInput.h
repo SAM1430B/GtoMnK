@@ -12,14 +12,14 @@ namespace GtoMnK {
     };
 
     struct FakeInputAction {
-        std::string actionString = "0";
+        std::vector<int> keycodes;
         bool onRelease = false;
         int holdDurationMs = 0;
     };
 
     namespace FakeInput {
 
-        void SendAction(const std::string& actionString, bool press);
+        void SendAction(const std::vector<int>& keycodes, bool press);
         void SendMouseMoveAbsolute(int screenX, int screenY);
         void SendMouseMoveDelta(int deltaX, int deltaY);
 

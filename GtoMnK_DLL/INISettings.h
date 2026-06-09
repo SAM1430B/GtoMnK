@@ -1,7 +1,7 @@
 #pragma once
 #include "pch.h"
 #include <string>
-#include <map>
+#include <array>
 #include <vector>
 #include "MainThread.h"
 
@@ -61,6 +61,6 @@ extern int g_touchPadToMouse[3];
 extern bool g_EnableMouseDoubleClick;
 extern float stick_as_button_deadzone;
 extern float g_TriggerThreshold;
-extern std::map<UINT, ButtonState> buttonStates;
+extern std::array<ButtonState, 256> buttonStates;
 
 void LoadIniSettings();

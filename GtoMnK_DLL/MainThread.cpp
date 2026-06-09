@@ -133,17 +133,20 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
 
     while (loop) {
 
-        if (!RecoverMainWindow(hwnd, recheckHWND, iniWindowName, iniClassName)) {
-            loop = false;
-            break;
-        }
+        static ULONGLONG lastWindowCheck = 0;
+        ULONGLONG currentTime = GetTickCount64();
 
-        RECT rect;
-        if (!GetClientRect(hwnd, &rect)) {
-            rect.left = 0; rect.top = 0; rect.right = 800; rect.bottom = 600;
+        if (currentTime - lastWindowCheck > 500) {
+            if (!RecoverMainWindow(hwnd, recheckHWND, iniWindowName, iniClassName)) {
+                loop = false;
+                break;
+            }
+            RECT rect;
+            if (GetClientRect(hwnd, &rect)) {
+                gamepadProcessor.UpdateWindowInfo(hwnd, rect);
+            }
+            lastWindowCheck = currentTime;
         }
-
-        gamepadProcessor.UpdateWindowInfo(hwnd, rect);
 
         bool isConnected = GamepadBackend::GetState(state);
 

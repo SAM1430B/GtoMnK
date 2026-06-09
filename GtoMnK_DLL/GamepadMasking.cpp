@@ -27,9 +27,12 @@ bool IsButtonMapped(UINT buttonFlag) {
     if (g_Fn2_State) currentOffset = 200;
     else if (g_Fn1_State) currentOffset = 100;
 
-    auto it = buttonStates.find(buttonFlag + currentOffset);
-    if (it != buttonStates.end() && !it->second.actions.empty() && it->second.actions[0].actionString != "0") {
-        return true;
+    UINT index = buttonFlag + currentOffset;
+    if (index < 256) {
+        const ButtonState& state = buttonStates[index];
+        if (!state.actions.empty() && !state.actions[0].keycodes.empty()) {
+            return true;
+        }
     }
 
     return false;

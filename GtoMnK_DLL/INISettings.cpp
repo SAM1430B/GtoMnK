@@ -8,7 +8,7 @@
 extern HMODULE g_hModule;
 
 // For Controller Button States
-std::map<UINT, ButtonState> buttonStates;
+std::array<ButtonState, 256> buttonStates;
 bool g_EnableMouseDoubleClick = false;
 int righthanded;
 int global_thumbStickToMouse, g_thumbStickToMouse[3];
@@ -251,7 +251,14 @@ void ParseKey(const char* section, const char* key, const char* defaultVal, UINT
         if (val == "Fn1" || val == "fn1") { g_Fn1_ButtonID = baseId; return; }
         if (val == "Fn2" || val == "fn2") { g_Fn2_ButtonID = baseId; return; }
     }
-    buttonStates[baseId + offset].actions = FakeInput::ParseActionString(val);
+
+    // Safely cast to size_t to satisfy std::array's operator[]
+    size_t index = static_cast<size_t>(baseId) + static_cast<size_t>(offset);
+
+    // Safety bounds check to make the compiler happy
+    if (index < 256) {
+        buttonStates[index].actions = FakeInput::ParseActionString(val);
+    }
 }
 
 void LoadButtonLayer(const char* section, int offset, bool isBaseLayer, const char* iniPath) {

@@ -2,7 +2,7 @@
 #include "GamepadState.h"
 #include "INISettings.h"
 #include "FakeInput.h"
-#include <unordered_map>
+#include <array>
 
 // For Controller Button States
 const size_t NO_ACTION = static_cast<size_t>(-1);
@@ -12,8 +12,8 @@ int g_Fn2_ButtonID = -1;
 bool g_Fn1_State = false;
 bool g_Fn2_State = false;
 
-static std::unordered_map<UINT, int> g_ButtonLayer;
-static std::unordered_map<UINT, bool> g_ButtonLastState;
+static std::array<int, 256> g_ButtonLayer = { 0 };
+static std::array<bool, 256> g_ButtonLastState = { false };
 
 int GetActiveThumbStickToMouse() {
     if (g_Fn2_State) return g_thumbStickToMouse[2];
@@ -31,75 +31,75 @@ POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
 
     if (g_UseLegacyMouseMovement) {
         const double smoothing_factor = 0.35;
-    static double smoothX = 0.0;
-    static double smoothY = 0.0;
-    static double mouseDeltaAccumulatorX = 0.0;
-    static double mouseDeltaAccumulatorY = 0.0;
-    static bool firstRun = true;
+        static double smoothX = 0.0;
+        static double smoothY = 0.0;
+        static double mouseDeltaAccumulatorX = 0.0;
+        static double mouseDeltaAccumulatorY = 0.0;
+        static bool firstRun = true;
 
-    double safe_multiplier = (sensitivity_multiplier <= 0.001) ? 1.0 : sensitivity_multiplier;
+        double safe_multiplier = (sensitivity_multiplier <= 0.001) ? 1.0 : sensitivity_multiplier;
 
-    double rawNormX = static_cast<double>(stickX) / 32767.0;
-    double rawNormY = static_cast<double>(stickY) / 32767.0;
+        double rawNormX = static_cast<double>(stickX) / 32767.0;
+        double rawNormY = static_cast<double>(stickY) / 32767.0;
 
-    if (firstRun) {
-        smoothX = rawNormX;
-        smoothY = rawNormY;
-        firstRun = false;
-    }
-    else {
-        smoothX = smoothX + smoothing_factor * (rawNormX - smoothX);
-        smoothY = smoothY + smoothing_factor * (rawNormY - smoothY);
-    }
+        if (firstRun) {
+            smoothX = rawNormX;
+            smoothY = rawNormY;
+            firstRun = false;
+        }
+        else {
+            smoothX = smoothX + smoothing_factor * (rawNormX - smoothX);
+            smoothY = smoothY + smoothing_factor * (rawNormY - smoothY);
+        }
 
-    double normX = smoothX;
-    double normY = smoothY;
+        double normX = smoothX;
+        double normY = smoothY;
 
-    double magnitude = std::sqrt(normX * normX + normY * normY);
+        double magnitude = std::sqrt(normX * normX + normY * normY);
 
-    if (magnitude < 1e-6 || magnitude < radial_deadzone) {
+        if (magnitude < 1e-6 || magnitude < radial_deadzone) {
             if (magnitude < 1e-6) {smoothX = 0.0;smoothY = 0.0;}
-        return { 0, 0 };
-    }
+            return { 0, 0 };
+        }
 
-    if (magnitude > 1.0) magnitude = 1.0;
+        if (magnitude > 1.0) magnitude = 1.0;
 
-    double dirX = normX / magnitude;
-    double dirY = normY / magnitude;
+        double dirX = normX / magnitude;
+        double dirY = normY / magnitude;
 
         if (std::abs(dirX) < axial_deadzone) {dirX = 0.0;dirY = (dirY > 0) ? 1.0 : -1.0;}
         else if (std::abs(dirY) < axial_deadzone) {dirY = 0.0;dirX = (dirX > 0) ? 1.0 : -1.0;}
 
-    double effectiveRange = 1.0 - radial_deadzone;
-    if (effectiveRange < 1e-6) effectiveRange = 1.0;
+        double effectiveRange = 1.0 - radial_deadzone;
+        if (effectiveRange < 1e-6) effectiveRange = 1.0;
 
-    double x = (magnitude - radial_deadzone) / effectiveRange;
-    x = (std::max)(0.0, (std::min)(1.0, x));
+        double x = (magnitude - radial_deadzone) / effectiveRange;
+        x = (std::max)(0.0, (std::min)(1.0, x));
 
-    double finalCurveValue = 0.0;
-    double accelBoundary = 1.0 - max_threshold;
-    accelBoundary = (std::max)(0.0, (std::min)(1.0, accelBoundary));
+        double finalCurveValue = 0.0;
+        double accelBoundary = 1.0 - max_threshold;
+        accelBoundary = (std::max)(0.0, (std::min)(1.0, accelBoundary));
 
-    if (x <= accelBoundary) {
-        finalCurveValue = curve_slope * x + (1.0 - curve_slope) * std::pow(x, curve_exponent);
-    }
-    else {
-        double kneeValue = curve_slope * accelBoundary + (1.0 - curve_slope) * std::pow(accelBoundary, curve_exponent);
-        double rampWidth = 1.0 - accelBoundary;
-            if (rampWidth <= 1e-6) {finalCurveValue = look_accel_multiplier;}
-        else {
-            double rampProgress = (x - accelBoundary) / rampWidth;
-            finalCurveValue = kneeValue + (look_accel_multiplier - kneeValue) * rampProgress;
+        if (x <= accelBoundary) {
+            finalCurveValue = curve_slope * x + (1.0 - curve_slope) * std::pow(x, curve_exponent);
         }
-    }
+        else {
+            double kneeValue = curve_slope * accelBoundary + (1.0 - curve_slope) * std::pow(accelBoundary, curve_exponent);
+            double rampWidth = 1.0 - accelBoundary;
+            if (rampWidth <= 1e-6) {finalCurveValue = look_accel_multiplier;}
+            else {
+                double rampProgress = (x - accelBoundary) / rampWidth;
+                finalCurveValue = kneeValue + (look_accel_multiplier - kneeValue) * rampProgress;
+            }
+        }
 
-    double finalSpeedX = sensitivity * (1.0 + horizontal_sensitivity) * safe_multiplier;
-    double finalSpeedY = sensitivity * (1.0 + vertical_sensitivity) * safe_multiplier;
+        double finalSpeedX = sensitivity * (1.0 + horizontal_sensitivity) * safe_multiplier;
+        double finalSpeedY = sensitivity * (1.0 + vertical_sensitivity) * safe_multiplier;
 
-    double targetDeltaX = dirX * finalCurveValue * finalSpeedX;
-    double targetDeltaY = dirY * finalCurveValue * finalSpeedY;
+        double targetDeltaX = dirX * finalCurveValue * finalSpeedX;
+        double targetDeltaY = dirY * finalCurveValue * finalSpeedY;
 
-    if (std::isnan(targetDeltaX) || std::isnan(targetDeltaY)) {
+        if (std::isnan(targetDeltaX) || std::isnan(targetDeltaY)) {
             mouseDeltaAccumulatorX = 0; mouseDeltaAccumulatorY = 0; return { 0, 0 };
         }
 
@@ -163,8 +163,8 @@ POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
 
         if (magnitude < 1e-6 || magnitude < radial_deadzone) {
             if (magnitude < 1e-6) { smoothX = 0.0; smoothY = 0.0; }
-        return { 0, 0 };
-    }
+            return { 0, 0 };
+        }
 
         if (magnitude > 1.0) magnitude = 1.0;
         double dirX = normX / magnitude;
@@ -206,17 +206,17 @@ POINT ThumbstickMouseMove(SHORT stickX, SHORT stickY) {
             mouseDeltaAccumulatorX = 0; mouseDeltaAccumulatorY = 0; return { 0, 0 };
         }
 
-    mouseDeltaAccumulatorX += targetDeltaX;
-    mouseDeltaAccumulatorY += targetDeltaY;
+        mouseDeltaAccumulatorX += targetDeltaX;
+        mouseDeltaAccumulatorY += targetDeltaY;
 
-    LONG integerDeltaX = static_cast<LONG>(mouseDeltaAccumulatorX);
-    LONG integerDeltaY = static_cast<LONG>(mouseDeltaAccumulatorY);
+        LONG integerDeltaX = static_cast<LONG>(mouseDeltaAccumulatorX);
+        LONG integerDeltaY = static_cast<LONG>(mouseDeltaAccumulatorY);
 
-    mouseDeltaAccumulatorX -= integerDeltaX;
-    mouseDeltaAccumulatorY -= integerDeltaY;
+        mouseDeltaAccumulatorX -= integerDeltaX;
+        mouseDeltaAccumulatorY -= integerDeltaY;
 
-    return { integerDeltaX, -integerDeltaY };
-}
+        return { integerDeltaX, -integerDeltaY };
+    }
 }
 
 POINT TouchpadMouseMove(float touchX, float touchY, bool isActive) {
@@ -293,6 +293,8 @@ bool IsTriggerPressed(BYTE triggerValue) {
 }
 
 void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
+    if (buttonFlag >= 256) return;
+
     if (buttonFlag == g_Fn1_ButtonID) {
         g_Fn1_State = isCurrentlyPressed;
         return;
@@ -326,15 +328,15 @@ void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
         bs.pressTime = GetTickCount64();
         bs.activeActionIndex = static_cast<size_t>(-1);
         bs.pressActionFired = false;
-        bs.heldActionString = "0";
+        bs.heldAction.clear();
 
         if (!bs.actions.empty() && bs.actions[0].holdDurationMs == 0) {
             bs.activeActionIndex = 0;
             const FakeInputAction& tapAction = bs.actions[0];
 
             if (!tapAction.onRelease) {
-                FakeInput::SendAction(tapAction.actionString, true);
-                bs.heldActionString = tapAction.actionString;
+                FakeInput::SendAction(tapAction.keycodes, true);
+                bs.heldAction = tapAction.keycodes;
                 bs.pressActionFired = true;
             }
         }
@@ -351,16 +353,16 @@ void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
             }
         }
         if (newActionIndex != static_cast<size_t>(-1) && newActionIndex != bs.activeActionIndex) {
-            if (!bs.heldActionString.empty() && bs.heldActionString != "0") {
-                FakeInput::SendAction(bs.heldActionString, false);
+            if (!bs.heldAction.empty()) {
+                FakeInput::SendAction(bs.heldAction, false);
             }
             bs.activeActionIndex = newActionIndex;
             bs.pressActionFired = false;
-            bs.heldActionString = "0";
+            bs.heldAction.clear();
             const FakeInputAction& newActiveAction = bs.actions[bs.activeActionIndex];
             if (!newActiveAction.onRelease) {
-                FakeInput::SendAction(newActiveAction.actionString, true);
-                bs.heldActionString = newActiveAction.actionString;
+                FakeInput::SendAction(newActiveAction.keycodes, true);
+                bs.heldAction = newActiveAction.keycodes;
                 bs.pressActionFired = true;
             }
         }
@@ -382,18 +384,18 @@ void ProcessButton(UINT buttonFlag, bool isCurrentlyPressed) {
         if (finalActionIndex != static_cast<size_t>(-1) && bs.actions[finalActionIndex].onRelease) {
             const FakeInputAction& finalAction = bs.actions[finalActionIndex];
 
-            FakeInput::SendAction(finalAction.actionString, true);
-            bs.pendingReleaseAction = finalAction.actionString;
+            FakeInput::SendAction(finalAction.keycodes, true);
+            bs.pendingReleaseAction = finalAction.keycodes;
             bs.pendingReleaseTime = GetTickCount64() + 20;
         }
 
-        if (!bs.heldActionString.empty() && bs.heldActionString != "0") {
-            FakeInput::SendAction(bs.heldActionString, false);
+        if (!bs.heldAction.empty()) {
+            FakeInput::SendAction(bs.heldAction, false);
         }
 
         bs.activeActionIndex = static_cast<size_t>(-1);
         bs.pressActionFired = false;
-        bs.heldActionString = "0";
+        bs.heldAction.clear();
         return;
     }
 }

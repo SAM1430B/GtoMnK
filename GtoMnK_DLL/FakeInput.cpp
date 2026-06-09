@@ -320,8 +320,21 @@ namespace GtoMnK {
                 }
 
                 if (!cleanActionString.empty()) {
-                    newAction.actionString = cleanActionString;
-                    parsedActions.push_back(newAction);
+                    std::stringstream ss(cleanActionString);
+                    std::string part;
+                    while (std::getline(ss, part, '+')) {
+                        if (part.empty()) continue;
+                        size_t firstDigitPos = part.find_first_of("-0123456789");
+                        if (firstDigitPos != std::string::npos) {
+                            try {
+                                newAction.keycodes.push_back(std::stoi(part.substr(firstDigitPos)));
+                            }
+                            catch (...) {}
+                        }
+                    }
+                    if (!newAction.keycodes.empty()) {
+                        parsedActions.push_back(newAction);
+                    }
                 }
             }
 
@@ -332,8 +345,8 @@ namespace GtoMnK {
             return parsedActions;
         }
 
-        void SendAction(const std::string& actionString, bool press) {
-            if (actionString.empty() || actionString == "0") return;
+        void SendAction(const std::vector<int>& keycodes, bool press) {
+            if (keycodes.empty()) return;
 
             auto dispatcher = [](int code, bool p) {
                 if (g_FakeInputMethod == FakeInputMethod::PostMessage || g_FakeInputMethod == FakeInputMethod::Hybrid) {
@@ -345,12 +358,13 @@ namespace GtoMnK {
                 };
 
             static ULONGLONG lastLeftClickTime = 0;
-            if (g_EnableMouseDoubleClick && press && actionString.find('+') == std::string::npos) {
+            if (g_EnableMouseDoubleClick && press && keycodes.size() == 1) {
                 ULONGLONG currentTime = GetTickCount64();
+                int actionCode = keycodes[0];
 
                 // Left Click (-1) -> Double (-8)
                 static ULONGLONG lastL = 0;
-                if (actionString.find("-1") != std::string::npos) {
+                if (actionCode == -1) {
                     if (currentTime - lastL < GetDoubleClickTime()) {
                         dispatcher(-8, true); lastL = 0; return;
                     }
@@ -358,7 +372,7 @@ namespace GtoMnK {
                 }
                 // Right Click (-2) -> Double (-9)
                 static ULONGLONG lastR = 0;
-                if (actionString.find("-2") != std::string::npos) {
+                if (actionCode == -2) {
                     if (currentTime - lastR < GetDoubleClickTime()) {
                         dispatcher(-9, true); lastR = 0; return;
                     }
@@ -366,7 +380,7 @@ namespace GtoMnK {
                 }
                 // Middle Click (-3) -> Double (-10)
                 static ULONGLONG lastM = 0;
-                if (actionString.find("-3") != std::string::npos) {
+                if (actionCode == -3) {
                     if (currentTime - lastM < GetDoubleClickTime()) {
                         dispatcher(-10, true); lastM = 0; return;
                     }
@@ -374,7 +388,7 @@ namespace GtoMnK {
                 }
                 // X1 Click (-4) -> Double (-11)
                 static ULONGLONG lastX1 = 0;
-                if (actionString.find("-4") != std::string::npos) {
+                if (actionCode == -4) {
                     if (currentTime - lastX1 < GetDoubleClickTime()) {
                         dispatcher(-11, true); lastX1 = 0; return;
                     }
@@ -382,7 +396,7 @@ namespace GtoMnK {
                 }
                 // X2 Click (-5) -> Double (-12)
                 static ULONGLONG lastX2 = 0;
-                if (actionString.find("-5") != std::string::npos) {
+                if (actionCode == -5) {
                     if (currentTime - lastX2 < GetDoubleClickTime()) {
                         dispatcher(-12, true); lastX2 = 0; return;
                     }
@@ -390,38 +404,15 @@ namespace GtoMnK {
                 }
             }
 
-            if (actionString.find('+') == std::string::npos) {
-                // Handle single actions
-                try {
-                    dispatcher(std::stoi(actionString), press);
+            // Handle actions (both single and combo are natively handled by this loop now)
+            if (press) {
+                for (int code : keycodes) {
+                    dispatcher(code, true);
                 }
-                catch (...) {}
             }
             else {
-                // Handle combo actions
-                std::vector<int> keycodes;
-                std::stringstream ss(actionString);
-                std::string part;
-                while (std::getline(ss, part, '+')) {
-                    if (part.empty()) continue;
-                    size_t firstDigitPos = part.find_first_of("-0123456789");
-                    if (firstDigitPos != std::string::npos) {
-                        try {
-                            keycodes.push_back(std::stoi(part.substr(firstDigitPos)));
-                        }
-                        catch (...) {}
-                    }
-                }
-
-                if (press) {
-                    for (int code : keycodes) {
-                        dispatcher(code, true);
-                    }
-                }
-                else {
-                    for (auto it = keycodes.rbegin(); it != keycodes.rend(); ++it) {
-                        dispatcher(*it, false);
-                    }
+                for (auto it = keycodes.rbegin(); it != keycodes.rend(); ++it) {
+                    dispatcher(*it, false);
                 }
             }
         }

@@ -8,17 +8,17 @@ struct ButtonState {
     size_t activeActionIndex = static_cast<size_t>(-1);
     bool pressActionFired = false;
     std::vector<GtoMnK::FakeInputAction> actions;
-    std::string heldActionString = "0";
+    std::vector<int> heldAction;
 
     ULONGLONG pendingReleaseTime = 0;
-    std::string pendingReleaseAction = "";
+    std::vector<int> pendingReleaseAction;
 };
 
 extern HMODULE g_hModule;
 extern bool loop;
 extern bool hooksinited;
 extern bool IsOverlayNotificationEnabled;
-extern std::map<UINT, ButtonState> buttonStates;
+extern std::array<ButtonState, 256> buttonStates;
 
 // Used by Input.cpp, Hooks.cpp, dllmain.cpp, etc.
 extern GtoMnK::FakeInputMethod g_FakeInputMethod;

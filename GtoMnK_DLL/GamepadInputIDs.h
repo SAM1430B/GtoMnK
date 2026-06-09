@@ -30,7 +30,7 @@ enum CustomGamepadInputID : UINT {
     GAMEPAD_ID_LB,
     GAMEPAD_ID_RB,
 
-    GAMEPAD_ID_LT = 0x10000,
+    GAMEPAD_ID_LT,
     GAMEPAD_ID_RT,
 
     GAMEPAD_ID_LSU,
