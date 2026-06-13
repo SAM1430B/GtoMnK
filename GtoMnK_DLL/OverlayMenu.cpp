@@ -4,8 +4,7 @@
 #include "OverlayMenu.h"
 #include "MainThread.h"
 
-#include "SDL2_Gamepad.h"
-#include "XInput_Gamepad.h"
+#include "GamepadBackend.h"
 
 #include <time.h>
 #include "INISettings.h"
@@ -118,14 +117,11 @@ namespace GtoMnK {
                 CustomControllerState waitState;
                 do {
                     Sleep(100); // Important
-                    bool waitConnected = false;
-                    if (g_GamepadMethod == GamepadMethod::SDL2) {
-                        waitConnected = SDL2_GetState(waitState);
+
+                    if (!GamepadBackend::GetState(waitState)) {
+                        break;
                     }
-                    else if (g_GamepadMethod == GamepadMethod::XInput) {
-                        waitConnected = XInput_GetState(waitState);
-                    }
-                    if (!waitConnected) break;
+
                 } while (waitState.buttons[GAMEPAD_ID_BACK] || waitState.buttons[GAMEPAD_ID_DPAD_DOWN]);
 
                 return true;
