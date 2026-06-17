@@ -75,20 +75,20 @@ void GamepadProcessor::ProcessStandardButtons(const CustomControllerState& state
 }
 
 void GamepadProcessor::ProcessThumbsticksAsButtons(const CustomControllerState& state, bool useLeftStickForMouse, bool useRightStickForMouse) {
+    const float k = 0.41421356f;
+    const float deadzoneSq = stick_as_button_deadzone * stick_as_button_deadzone;
+
     // Left Thumbstick
     if (!useLeftStickForMouse) {
         float normLX = static_cast<float>(state.ThumbLX) / 32767.0f;
         float normLY = static_cast<float>(state.ThumbLY) / 32767.0f;
-        float magnitudeL = static_cast<float>(sqrt(normLX * normLX + normLY * normLY));
         bool isLSU = false, isLSD = false, isLSL = false, isLSR = false;
 
-        if (magnitudeL > stick_as_button_deadzone) {
-            float angleDeg = atan2(normLY, normLX) * 180.0f / 3.1415926535f;
-            if (angleDeg < 0) angleDeg += 360.0f;
-            if (angleDeg > 22.5f && angleDeg < 157.5f) isLSU = true;
-            if (angleDeg > 202.5f && angleDeg < 337.5f) isLSD = true;
-            if (angleDeg > 112.5f && angleDeg < 247.5f) isLSL = true;
-            if (angleDeg > 292.5f || angleDeg < 67.5f) isLSR = true;
+        if ((normLX * normLX + normLY * normLY) > deadzoneSq) {
+            isLSU = normLY > k * std::abs(normLX);
+            isLSD = normLY < -k * std::abs(normLX);
+            isLSR = normLX > k * std::abs(normLY);
+            isLSL = normLX < -k * std::abs(normLY);
         }
         ProcessButton(GAMEPAD_ID_LSU, isLSU);
         ProcessButton(GAMEPAD_ID_LSD, isLSD);
@@ -100,16 +100,13 @@ void GamepadProcessor::ProcessThumbsticksAsButtons(const CustomControllerState& 
     if (!useRightStickForMouse) {
         float normRX = static_cast<float>(state.ThumbRX) / 32767.0f;
         float normRY = static_cast<float>(state.ThumbRY) / 32767.0f;
-        float magnitudeR = static_cast<float>(sqrt(normRX * normRX + normRY * normRY));
         bool isRSU = false, isRSD = false, isRSL = false, isRSR = false;
 
-        if (magnitudeR > stick_as_button_deadzone) {
-            float angleDeg = atan2(normRY, normRX) * 180.0f / 3.1415926535f;
-            if (angleDeg < 0) angleDeg += 360.0f;
-            if (angleDeg > 22.5f && angleDeg < 157.5f) isRSU = true;
-            if (angleDeg > 202.5f && angleDeg < 337.5f) isRSD = true;
-            if (angleDeg > 112.5f && angleDeg < 247.5f) isRSL = true;
-            if (angleDeg > 292.5f || angleDeg < 67.5f) isRSR = true;
+        if ((normRX * normRX + normRY * normRY) > deadzoneSq) {
+            isRSU = normRY > k * std::abs(normRX);
+            isRSD = normRY < -k * std::abs(normRX);
+            isRSR = normRX > k * std::abs(normRY);
+            isRSL = normRX < -k * std::abs(normRY);
         }
         ProcessButton(GAMEPAD_ID_RSU, isRSU);
         ProcessButton(GAMEPAD_ID_RSD, isRSD);
