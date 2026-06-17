@@ -4,6 +4,9 @@
 #include "FakeInput.h"
 #include <array>
 
+#include <cmath>
+#include <algorithm>
+
 // For Controller Button States
 const size_t NO_ACTION = static_cast<size_t>(-1);
 
@@ -230,12 +233,6 @@ POINT TouchpadMouseMove(float touchX, float touchY, bool isActive) {
     static double mouseDeltaAccumulatorX = 0.0;
     static double mouseDeltaAccumulatorY = 0.0;
 
-    // Smoothing Factor
-    // 0.0 to 1.0. Lower = smoother but more delayed. Higher = more responsive but jittery.
-    // 0.35 to 0.5 is usually the "sweet spot" for touchpads.
-    const double smoothing_factor = 0.4;
-
-    // Reset smoothing when finger lifts
     if (!isActive) {
         wasActive = false;
         smoothedDeltaX = 0.0;
@@ -252,22 +249,25 @@ POINT TouchpadMouseMove(float touchX, float touchY, bool isActive) {
         return { 0, 0 };
     }
 
-    float rawDeltaX = touchX - lastTouchX;
-    float rawDeltaY = touchY - lastTouchY;
+    double rawDeltaX = static_cast<double>(touchX - lastTouchX);
+    double rawDeltaY = static_cast<double>(touchY - lastTouchY);
 
     lastTouchX = touchX;
     lastTouchY = touchY;
 
-    // Micro-Deadzone
-    // Ignore hardware capacitive noise (usually < 0.0001) when resting your finger.
-    if (std::abs(rawDeltaX) < touchpad_deadzone) rawDeltaX = 0.0f;
-    if (std::abs(rawDeltaY) < touchpad_deadzone) rawDeltaY = 0.0f;
+    double magnitude = std::sqrt((rawDeltaX * rawDeltaX) + (rawDeltaY * rawDeltaY));
+    bool inDeadzone = magnitude < touchpad_deadzone;
 
-    // EMA Smoothing
-    // Blend the new raw delta into the existing smoothed delta
-    double safe_smoothing = std::max(0.0f, std::min(0.99f, touchpad_smoothing));
-    smoothedDeltaX = smoothedDeltaX + safe_smoothing * (rawDeltaX - smoothedDeltaX);
-    smoothedDeltaY = smoothedDeltaY + safe_smoothing * (rawDeltaY - smoothedDeltaY);
+    if (inDeadzone) {
+        rawDeltaX = 0.0;
+        rawDeltaY = 0.0;
+    }
+
+    double clamped_ini_smoothing = std::max(0.0, std::min(0.99, static_cast<double>(touchpad_smoothing)));
+    double alpha = 1.0 - clamped_ini_smoothing;
+
+    smoothedDeltaX = smoothedDeltaX + alpha * (rawDeltaX - smoothedDeltaX);
+    smoothedDeltaY = smoothedDeltaY + alpha * (rawDeltaY - smoothedDeltaY);
 
     double finalSpeedX = touchpad_sensitivity * (1.0 + touchpad_horizontal_sensitivity);
     double finalSpeedY = touchpad_sensitivity * (1.0 + touchpad_vertical_sensitivity);
