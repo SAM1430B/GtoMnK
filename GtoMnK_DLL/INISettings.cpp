@@ -29,7 +29,7 @@ int startUpDelay = 0;
 char waitForDllName[256] = { 0 };
 bool recheckHWND = true;
 bool disableOverlayOptions = false;
-bool g_EnableOpenXinput = false;
+bool g_EnableOpenXinput = true;
 
 // Drawing & cursor state
 int drawProtoFakeCursor = 0; // From ProtoInput also for the Cursor visibility hooks
@@ -158,14 +158,14 @@ void LoadIniSettings() {
     }
 	LOG("Using Gamepad Method: %s", (g_GamepadMethod == GamepadMethod::SDL2) ? "SDL2" : "XInput");
 
-    g_EnableOpenXinput = GetPrivateProfileIntA("API", "EnableOpenXinput", 0, iniPath.c_str()) == 1;
+    g_EnableOpenXinput = GetPrivateProfileIntA("API", "EnableOpenXinput", 1, iniPath.c_str()) == 1;
 
     gamepadMaskHook = GetPrivateProfileIntA("API", "GamepadMaskHook", 0, iniPath.c_str());
 
     // [Hooks]
     getCursorPosHook = GetPrivateProfileIntA("Hooks", "GetCursorposHook", 1, iniPath.c_str());
     setCursorPosHook = GetPrivateProfileIntA("Hooks", "SetCursorposHook", 1, iniPath.c_str());
-    clipCursorHook = GetPrivateProfileIntA("Hooks", "ClipCursorHook", 0, iniPath.c_str());
+    clipCursorHook = GetPrivateProfileIntA("Hooks", "ClipCursorHook", 1, iniPath.c_str());
     getKeyStateHook = GetPrivateProfileIntA("Hooks", "GetKeystateHook", 1, iniPath.c_str());
     getAsyncKeyStateHook = GetPrivateProfileIntA("Hooks", "GetAsynckeystateHook", 1, iniPath.c_str());
     getKeyboardStateHook = GetPrivateProfileIntA("Hooks", "GetKeyboardstateHook", 1, iniPath.c_str());
@@ -201,16 +201,16 @@ void LoadIniSettings() {
     global_thumbStickToMouse = GetPrivateProfileIntA("StickToMouse", "ThumbStickToMouse", -1, iniPath.c_str());
     g_UseLegacyMouseMovement = GetPrivateProfileIntA("StickToMouse", "UseLegacyMouseMovement", 0, iniPath.c_str()) == 1;
     LegacyMouseOption();
-    GetPrivateProfileStringA("StickToMouse", "Sensitivity", "5.00", buffer, sizeof(buffer), iniPath.c_str()); sensitivity = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Sensitivity", "2.60", buffer, sizeof(buffer), iniPath.c_str()); sensitivity = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Sensitivity_Multiplier", "2.40", buffer, sizeof(buffer), iniPath.c_str()); sensitivity_multiplier = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Horizontal_Sensitivity", "0.00", buffer, sizeof(buffer), iniPath.c_str()); horizontal_sensitivity = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Vertical_Sensitivity", "0.00", buffer, sizeof(buffer), iniPath.c_str()); vertical_sensitivity = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Max_Threshold", "0.045", buffer, sizeof(buffer), iniPath.c_str()); max_threshold = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Radial_Deadzone", "0.15", buffer, sizeof(buffer), iniPath.c_str()); radial_deadzone = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Max_Threshold", "0.150", buffer, sizeof(buffer), iniPath.c_str()); max_threshold = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Radial_Deadzone", "0.10", buffer, sizeof(buffer), iniPath.c_str()); radial_deadzone = std::stof(buffer);
     GetPrivateProfileStringA("StickToMouse", "Axial_Deadzone", "0.0", buffer, sizeof(buffer), iniPath.c_str()); axial_deadzone = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Look_Accel_Multiplier", "1.15", buffer, sizeof(buffer), iniPath.c_str()); look_accel_multiplier = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Curve_Slope", "0.16", buffer, sizeof(buffer), iniPath.c_str()); curve_slope = std::stof(buffer);
-    GetPrivateProfileStringA("StickToMouse", "Curve_Exponent", "1.85", buffer, sizeof(buffer), iniPath.c_str()); curve_exponent = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Look_Accel_Multiplier", "1.380", buffer, sizeof(buffer), iniPath.c_str()); look_accel_multiplier = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Curve_Slope", "0.145", buffer, sizeof(buffer), iniPath.c_str()); curve_slope = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Curve_Exponent", "1.660", buffer, sizeof(buffer), iniPath.c_str()); curve_exponent = std::stof(buffer);
 
     // [TouchToMouse]
     global_touchPadToMouse = GetPrivateProfileIntA("TouchToMouse", "TouchpadToMouse", 1, iniPath.c_str()) == 1;
@@ -218,7 +218,7 @@ void LoadIniSettings() {
     GetPrivateProfileStringA("TouchToMouse", "Horizontal_Sensitivity", "0.00", buffer, sizeof(buffer), iniPath.c_str()); touchpad_horizontal_sensitivity = std::stof(buffer);
     GetPrivateProfileStringA("TouchToMouse", "Vertical_Sensitivity", "0.00", buffer, sizeof(buffer), iniPath.c_str()); touchpad_vertical_sensitivity = std::stof(buffer);
     GetPrivateProfileStringA("TouchToMouse", "Deadzone", "0.0015", buffer, sizeof(buffer), iniPath.c_str()); touchpad_deadzone = std::stof(buffer);
-    GetPrivateProfileStringA("TouchToMouse", "Smoothing", "0.40", buffer, sizeof(buffer), iniPath.c_str()); touchpad_smoothing = std::stof(buffer);
+    GetPrivateProfileStringA("TouchToMouse", "Smoothing", "0.65", buffer, sizeof(buffer), iniPath.c_str()); touchpad_smoothing = std::stof(buffer);
 
     // [KeyMapping]
     g_EnableMouseDoubleClick = GetPrivateProfileIntA("KeyMapping", "EnableMouseDoubleClick", 0, iniPath.c_str()) == 1;
@@ -265,20 +265,20 @@ void ParseKey(const char* section, const char* key, const char* defaultVal, UINT
 
 void LoadButtonLayer(const char* section, int offset, bool isBaseLayer, const char* iniPath) {
 	// Face Buttons
-    ParseKey(section, "A", isBaseLayer ? "13" : "0", GAMEPAD_ID_A, offset, iniPath);
+    ParseKey(section, "A", isBaseLayer ? "0" : "0", GAMEPAD_ID_A, offset, iniPath);
     ParseKey(section, "B", isBaseLayer ? "0" : "0", GAMEPAD_ID_B, offset, iniPath);
-    ParseKey(section, "X", isBaseLayer ? "42" : "0", GAMEPAD_ID_X, offset, iniPath);
+    ParseKey(section, "X", isBaseLayer ? "0" : "0", GAMEPAD_ID_X, offset, iniPath);
     ParseKey(section, "Y", isBaseLayer ? "0" : "0", GAMEPAD_ID_Y, offset, iniPath);
 
     // D-Pad
-    ParseKey(section, "D_UP", isBaseLayer ? "14" : "0", GAMEPAD_ID_DPAD_UP, offset, iniPath);
-    ParseKey(section, "D_DOWN", isBaseLayer ? "15" : "0", GAMEPAD_ID_DPAD_DOWN, offset, iniPath);
-    ParseKey(section, "D_LEFT", isBaseLayer ? "16" : "0", GAMEPAD_ID_DPAD_LEFT, offset, iniPath);
-    ParseKey(section, "D_RIGHT", isBaseLayer ? "17" : "0", GAMEPAD_ID_DPAD_RIGHT, offset, iniPath);
+    ParseKey(section, "D_UP", isBaseLayer ? "0" : "0", GAMEPAD_ID_DPAD_UP, offset, iniPath);
+    ParseKey(section, "D_DOWN", isBaseLayer ? "0" : "0", GAMEPAD_ID_DPAD_DOWN, offset, iniPath);
+    ParseKey(section, "D_LEFT", isBaseLayer ? "0" : "0", GAMEPAD_ID_DPAD_LEFT, offset, iniPath);
+    ParseKey(section, "D_RIGHT", isBaseLayer ? "0" : "0", GAMEPAD_ID_DPAD_RIGHT, offset, iniPath);
 
     // Start & Back
-    ParseKey(section, "Start", isBaseLayer ? "1" : "0", GAMEPAD_ID_START, offset, iniPath);
-    ParseKey(section, "Back", isBaseLayer ? "3" : "0", GAMEPAD_ID_BACK, offset, iniPath);
+    ParseKey(section, "Start", isBaseLayer ? "0" : "0", GAMEPAD_ID_START, offset, iniPath);
+    ParseKey(section, "Back", isBaseLayer ? "0" : "0", GAMEPAD_ID_BACK, offset, iniPath);
 
     // Extended Buttons
     ParseKey(section, "Guide", isBaseLayer ? "0" : "0", GAMEPAD_ID_GUIDE, offset, iniPath);
@@ -293,21 +293,21 @@ void LoadButtonLayer(const char* section, int offset, bool isBaseLayer, const ch
 
     // Stick Buttons
     ParseKey(section, "RSB", isBaseLayer ? "0" : "0", GAMEPAD_ID_RSB, offset, iniPath);
-    ParseKey(section, "LSB", isBaseLayer ? "4" : "0", GAMEPAD_ID_LSB, offset, iniPath);
+    ParseKey(section, "LSB", isBaseLayer ? "0" : "0", GAMEPAD_ID_LSB, offset, iniPath);
 
     // Shoulder Buttons
     ParseKey(section, "RB", isBaseLayer ? "0" : "0", GAMEPAD_ID_RB, offset, iniPath);
     ParseKey(section, "LB", isBaseLayer ? "0" : "0", GAMEPAD_ID_LB, offset, iniPath);
 
     // Triggers
-    ParseKey(section, "LT", isBaseLayer ? "-2" : "0", GAMEPAD_ID_LT, offset, iniPath);
-    ParseKey(section, "RT", isBaseLayer ? "-1" : "0", GAMEPAD_ID_RT, offset, iniPath);
+    ParseKey(section, "LT", isBaseLayer ? "0" : "0", GAMEPAD_ID_LT, offset, iniPath);
+    ParseKey(section, "RT", isBaseLayer ? "0" : "0", GAMEPAD_ID_RT, offset, iniPath);
 
     // Left Stick As Buttons
-    ParseKey(section, "LSU", isBaseLayer ? "47" : "0", GAMEPAD_ID_LSU, offset, iniPath);
-    ParseKey(section, "LSD", isBaseLayer ? "43" : "0", GAMEPAD_ID_LSD, offset, iniPath);
-    ParseKey(section, "LSL", isBaseLayer ? "25" : "0", GAMEPAD_ID_LSL, offset, iniPath);
-    ParseKey(section, "LSR", isBaseLayer ? "28" : "0", GAMEPAD_ID_LSR, offset, iniPath);
+    ParseKey(section, "LSU", isBaseLayer ? "0" : "0", GAMEPAD_ID_LSU, offset, iniPath);
+    ParseKey(section, "LSD", isBaseLayer ? "0" : "0", GAMEPAD_ID_LSD, offset, iniPath);
+    ParseKey(section, "LSL", isBaseLayer ? "0" : "0", GAMEPAD_ID_LSL, offset, iniPath);
+    ParseKey(section, "LSR", isBaseLayer ? "0" : "0", GAMEPAD_ID_LSR, offset, iniPath);
 
     // Right Stick As Buttons
     ParseKey(section, "RSU", isBaseLayer ? "0" : "0", GAMEPAD_ID_RSU, offset, iniPath);
