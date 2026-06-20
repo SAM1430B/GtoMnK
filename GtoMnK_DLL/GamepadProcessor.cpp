@@ -82,6 +82,10 @@ void GamepadProcessor::ProcessThumbsticksAsButtons(const CustomControllerState& 
     if (!useLeftStickForMouse) {
         float normLX = static_cast<float>(state.ThumbLX) / 32767.0f;
         float normLY = static_cast<float>(state.ThumbLY) / 32767.0f;
+
+        if (std::abs(normLX) < stick_as_button_axial_deadzone) normLX = 0.0f;
+        if (std::abs(normLY) < stick_as_button_axial_deadzone) normLY = 0.0f;
+
         bool isLSU = false, isLSD = false, isLSL = false, isLSR = false;
 
         if ((normLX * normLX + normLY * normLY) > deadzoneSq) {
@@ -100,6 +104,10 @@ void GamepadProcessor::ProcessThumbsticksAsButtons(const CustomControllerState& 
     if (!useRightStickForMouse) {
         float normRX = static_cast<float>(state.ThumbRX) / 32767.0f;
         float normRY = static_cast<float>(state.ThumbRY) / 32767.0f;
+
+        if (std::abs(normRX) < stick_as_button_axial_deadzone) normRX = 0.0f;
+        if (std::abs(normRY) < stick_as_button_axial_deadzone) normRY = 0.0f;
+
         bool isRSU = false, isRSD = false, isRSL = false, isRSR = false;
 
         if ((normRX * normRX + normRY * normRY) > deadzoneSq) {

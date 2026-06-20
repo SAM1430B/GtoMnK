@@ -19,6 +19,7 @@ int controllerID = 0;
 GamepadMethod g_GamepadMethod = GamepadMethod::SDL2;
 float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, sensitivity_multiplier, horizontal_sensitivity, vertical_sensitivity, look_accel_multiplier;
 float stick_as_button_deadzone;
+float stick_as_button_axial_deadzone;
 float g_TriggerThreshold = 40;
 float touchpad_sensitivity, touchpad_horizontal_sensitivity, touchpad_vertical_sensitivity, touchpad_deadzone, touchpad_smoothing;
 int global_touchPadToMouse, g_touchPadToMouse[3];
@@ -223,6 +224,7 @@ void LoadIniSettings() {
     g_EnableMouseDoubleClick = GetPrivateProfileIntA("KeyMapping", "EnableMouseDoubleClick", 0, iniPath.c_str()) == 1;
     GetPrivateProfileStringA("KeyMapping", "TriggerThreshold", "40", buffer, sizeof(buffer), iniPath.c_str()); g_TriggerThreshold = std::stof(buffer);
     GetPrivateProfileStringA("KeyMapping", "StickAsButtonDeadzone", "0.25", buffer, sizeof(buffer), iniPath.c_str()); stick_as_button_deadzone = std::stof(buffer);
+	GetPrivateProfileStringA("KeyMapping", "StickAsButtonAxialDeadzone", "0.00", buffer, sizeof(buffer), iniPath.c_str()); stick_as_button_axial_deadzone = std::stof(buffer);
     
     g_Fn1_ButtonID = -1; g_Fn2_ButtonID = -1;
 

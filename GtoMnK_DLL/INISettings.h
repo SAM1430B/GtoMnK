@@ -60,6 +60,7 @@ extern int g_touchPadToMouse[3];
 // KeyMapping
 extern bool g_EnableMouseDoubleClick;
 extern float stick_as_button_deadzone;
+extern float stick_as_button_axial_deadzone;
 extern float g_TriggerThreshold;
 extern std::array<ButtonState, 256> buttonStates;
 
