@@ -86,7 +86,7 @@ namespace GtoMnK {
             if (FAILED(result)) LOG("Failed to install hook for RegisterRawInputDevices: %S", RtlGetLastErrorString());
         }
         // From ProtoInput
-        if (drawProtoFakeCursor == 1) {
+        if (drawProtoFakeCursor) {
             LOG("Installing hooks for ProtoInput Fake Cursor...");
 
 			LOG("Installing Hook_ShowCursor...");
@@ -250,7 +250,7 @@ namespace GtoMnK {
             LhSetExclusiveACL(threadIdList, 1, &g_setRectHookHandle);
             LhSetExclusiveACL(threadIdList, 1, &g_adjustWindowRectHookHandle);
         }
-        if (drawProtoFakeCursor == 1) {
+        if (drawProtoFakeCursor) {
             LhSetExclusiveACL(threadIdList, 1, &g_HookShowCursorHandle);
             LhSetExclusiveACL(threadIdList, 1, &g_HookSetCursorHandle);
             LhSetExclusiveACL(threadIdList, 1, &g_HookSetSystemCursorHandle);

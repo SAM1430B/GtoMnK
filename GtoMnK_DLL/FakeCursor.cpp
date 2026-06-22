@@ -360,6 +360,12 @@ namespace GtoMnK
     DWORD WINAPI FakeCursorThreadStart(LPVOID lpParameter)
     {
         LOG("Fake Cursor thread start");
+
+        if (drawProtoFakeCursor == 2)
+        {
+            LOG("Fake Cursor Fix is enabled");
+		}
+
         FakeCursor::state.StartInternal();
         return 0;
     }

@@ -98,7 +98,7 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     LOG("Initial window handle acquired: 0x%p", hwnd);
 
     // Initialize Fake Cursor
-    if (drawProtoFakeCursor == 1) {
+    if (drawProtoFakeCursor) {
         LOG("ProtoInput Fake Cursor is enabled. Initializing...");
         FakeCursor::Initialise();
         if (!createdWindowIsOwned)

@@ -153,7 +153,7 @@ void GamepadProcessor::ProcessMouseMovement(const CustomControllerState& state, 
             FakeMouse::Xf = (std::max)((LONG)m_clientRect.left, (std::min)((LONG)FakeMouse::Xf, (LONG)m_clientRect.right - 1));
             FakeMouse::Yf = (std::max)((LONG)m_clientRect.top, (std::min)((LONG)FakeMouse::Yf, (LONG)m_clientRect.bottom - 1));
             // ProtoInput Fake Cursor update
-            if (drawProtoFakeCursor == 1) {
+            if (drawProtoFakeCursor) {
                 FakeCursor::NotifyUpdatedCursorPosition();
             }
 
@@ -183,7 +183,7 @@ void GamepadProcessor::ProcessMouseMovement(const CustomControllerState& state, 
             FakeMouse::Xf = (std::max)((LONG)m_clientRect.left, (std::min)((LONG)FakeMouse::Xf, (LONG)m_clientRect.right - 1));
             FakeMouse::Yf = (std::max)((LONG)m_clientRect.top, (std::min)((LONG)FakeMouse::Yf, (LONG)m_clientRect.bottom - 1));
 
-            if (drawProtoFakeCursor == 1) {
+            if (drawProtoFakeCursor) {
                 FakeCursor::NotifyUpdatedCursorPosition();
             }
 
