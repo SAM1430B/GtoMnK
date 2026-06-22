@@ -282,8 +282,12 @@ bool SDL2_GetState(CustomControllerState& outState) {
     // Triggers
     Sint16 leftTrig = RoutedGetAxis(SDL_CONTROLLER_AXIS_TRIGGERLEFT);
     Sint16 rightTrig = RoutedGetAxis(SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
-    outState.LeftTrigger = (BYTE)(leftTrig >> 7);
-    outState.RightTrigger = (BYTE)(rightTrig >> 7);
+
+    if (leftTrig < 0) leftTrig = 0;
+    if (rightTrig < 0) rightTrig = 0;
+
+    outState.LeftTrigger = static_cast<BYTE>(leftTrig / 128);
+    outState.RightTrigger = static_cast<BYTE>(rightTrig / 128);
 
 	// Fix for SDL2 axis range being -32768 to 32767
 
