@@ -23,6 +23,40 @@
             --overlay-bg: rgba(0, 0, 0, 0.6);
         }
 
+        .hidden-context-menu {
+            display: none;
+            position: absolute;
+            background: rgb(45, 45, 45);
+            border: 1px solid #555;
+            border-radius: 6px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow: hidden;
+            min-width: 120px;
+        }
+
+            .hidden-context-menu.show {
+                display: block;
+                animation: fadeIn 0.15s ease-out;
+            }
+
+        .menu-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            color: #eee;
+            font-size: 14px;
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+            .menu-item:hover {
+                background: rgba(255, 255, 255, 0.1);
+            }
+
+            .menu-item.clear-item:hover {
+                background: rgba(211, 47, 47, 0.8); /* Turns red on hover */
+            }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
@@ -173,11 +207,23 @@
             }
 
             .btn-overlay.flash-red {
-                background-color: rgb(116, 0, 0, 0.65);
-                border-color: #ff8a80 !important;
-                transform: scale(1.1);
+                animation: breathRed 0.5s ease-in-out 2; /* 0.5s per breath, runs 2 times */
                 z-index: 20;
             }
+
+        @keyframes breathRed {
+            0%, 100% {
+                background-color: var(--overlay-bg);
+                border-color: rgba(255, 255, 255, 0.4);
+                transform: scale(1);
+            }
+
+            50% {
+                background-color: rgb(180, 0, 0, 0.8);
+                border-color: #ff8a80;
+                transform: scale(1.15);
+            }
+        }
 
             .btn-overlay.disabled {
                 background-color: rgba(50, 50, 50, 0.5);
@@ -360,21 +406,21 @@
         }
 
             button.download-btn {
-                background-color: var(--accent);
+                background-color: var(--success);
                 flex: 2;
             }
 
                 button.download-btn:hover {
-                    background-color: #005fa3;
+                    background-color: #388E3C;
                 }
 
             button.upload-btn {
-                background-color: var(--success);
+                background-color: var(--accent);
                 flex: 1;
             }
 
                 button.upload-btn:hover {
-                    background-color: #388E3C;
+                    background-color: #005fa3;
                 }
 
             button.reset-btn {
@@ -418,6 +464,11 @@
     <h1>GtoMnK Configuration</h1>
     <div id="gp-status" class="disconnected">Waiting for Controller... Press a button.</div>
 
+    <div id="custom-context-menu" class="hidden-context-menu">
+        <div class="menu-item" id="menu-item-map">Map</div>
+        <div class="menu-item clear-item" id="menu-item-clear">Clear</div>
+    </div>
+
     <textarea id="virtual-key-input" style="position: absolute; opacity: 0; width: 1px; height: 1px; font-size: 16px; z-index: -1;"
               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
 
@@ -455,8 +506,8 @@
                 <div class="input-group">
                     <div class="arrow-btn" onclick="toggleSection(this, 'sens-options')" title="Advanced Mouse Options">▼</div>
                     <div class="hybrid-input">
-                        <input type="range" id="Sensitivity_slider" min="0" max="20" step="0.1" value="5.00" oninput="syncHybrid('Sensitivity')">
-                        <input type="number" id="Sensitivity" title="The base speed of the mouse move.&#10;Higher values make the cursor move faster." value="5.00" step="0.1" oninput="syncHybrid('Sensitivity', true)">
+                        <input type="range" id="Sensitivity_slider" min="0" max="20" step="0.1" value="2.60" oninput="syncHybrid('Sensitivity')">
+                        <input type="number" id="Sensitivity" title="The base speed of the mouse move.&#10;Higher values make the cursor move faster." value="2.60" step="0.1" oninput="syncHybrid('Sensitivity', true)">
                     </div>
                 </div>
             </div>
@@ -465,8 +516,8 @@
                 <div class="setting-row">
                     <label title="Sensitivity Multiplier. 1.0 uses global Sensitivity.">Sensitivity Multiplier</label>
                     <div class="hybrid-input">
-                        <input type="range" id="Sensitivity_Multiplier_slider" min="0" max="20" step="0.1" value="2.40" oninput="syncHybrid('Sensitivity_Multiplier')">
-                        <input type="number" id="Sensitivity_Multiplier" title="Further scales the base sensitivity." value="2.40" step="0.1" oninput="syncHybrid('Sensitivity_Multiplier', true)">
+                        <input type="range" id="Sensitivity_Multiplier_slider" min="0" max="20" step="0.01" value="2.40" oninput="syncHybrid('Sensitivity_Multiplier')">
+                        <input type="number" id="Sensitivity_Multiplier" title="Further scales the base sensitivity." value="2.40" step="0.01" oninput="syncHybrid('Sensitivity_Multiplier', true)">
                     </div>
                 </div>
                 <div class="setting-row">
@@ -486,29 +537,29 @@
                 <div class="setting-row">
                     <label>Max Threshold</label>
                     <div class="hybrid-input">
-                        <input type="range" id="Max_Threshold_slider" min="0" max="0.15" step="0.005" value="0.045" oninput="syncHybrid('Max_Threshold')">
-                        <input type="number" id="Max_Threshold" title="An outer deadzone. Allows the mouse to reach max speed before the stick is fully pushed.&#10;Range: 0.0 to 0.15 (15%)." value="0.045" step="0.001" oninput="syncHybrid('Max_Threshold', true)">
+                        <input type="range" id="Max_Threshold_slider" min="0" max="0.15" step="0.005" value="0.150" oninput="syncHybrid('Max_Threshold')">
+                        <input type="number" id="Max_Threshold" title="An outer deadzone. Allows the mouse to reach max speed before the stick is fully pushed.&#10;Range: 0.0 to 0.15 (15%)." value="0.150" step="0.001" oninput="syncHybrid('Max_Threshold', true)">
                     </div>
                 </div>
                 <div class="setting-row">
                     <label title="Look Accel Multiplier. 1.0 uses global Sensitivity.">Look Accel</label>
                     <div class="hybrid-input">
-                        <input type="range" id="Look_Accel_Multiplier_slider" min="1" max="2" step="0.005" value="1.15" oninput="syncHybrid('Look_Accel_Multiplier')">
-                        <input type="number" id="Look_Accel_Multiplier" title="Boosts speed when stick is near the edge." value="1.15" step="0.05" oninput="syncHybrid('Look_Accel_Multiplier', true)">
+                        <input type="range" id="Look_Accel_Multiplier_slider" min="1" max="2" step="0.005" value="1.380" oninput="syncHybrid('Look_Accel_Multiplier')">
+                        <input type="number" id="Look_Accel_Multiplier" title="Boosts speed when stick is near the edge." value="1.380" step="0.05" oninput="syncHybrid('Look_Accel_Multiplier', true)">
                     </div>
                 </div>
                 <div class="setting-row">
                     <label>Curve Slope</label>
                     <div class="hybrid-input">
-                        <input type="range" id="Curve_Slope_slider" min="0" max="1" step="0.005" value="0.16" oninput="syncHybrid('Curve_Slope')">
-                        <input type="number" id="Curve_Slope" title="The initial, linear part of the movement." value="0.16" step="0.01" oninput="syncHybrid('Curve_Slope', true)">
+                        <input type="range" id="Curve_Slope_slider" min="0" max="1" step="0.005" value="0.145" oninput="syncHybrid('Curve_Slope')">
+                        <input type="number" id="Curve_Slope" title="The initial, linear part of the movement." value="0.145" step="0.01" oninput="syncHybrid('Curve_Slope', true)">
                     </div>
                 </div>
                 <div class="setting-row">
                     <label>Curve Exponent</label>
                     <div class="hybrid-input">
-                        <input type="range" id="Curve_Exponent_slider" min="1" max="5" step="0.005" value="1.85" oninput="syncHybrid('Curve_Exponent')">
-                        <input type="number" id="Curve_Exponent" title="How sharply the speed ramps up." value="1.85" step="0.05" oninput="syncHybrid('Curve_Exponent', true)">
+                        <input type="range" id="Curve_Exponent_slider" min="1" max="5" step="0.005" value="1.660" oninput="syncHybrid('Curve_Exponent')">
+                        <input type="number" id="Curve_Exponent" title="How sharply the speed ramps up." value="1.660" step="0.05" oninput="syncHybrid('Curve_Exponent', true)">
                     </div>
                 </div>
 
@@ -525,8 +576,8 @@
                 <div class="input-group">
                     <div class="arrow-btn" onclick="toggleSection(this, 'deadzone-options')" title="Advanced Deadzone Options">▼</div>
                     <div class="hybrid-input">
-                        <input type="range" id="Radial_Deadzone_slider" min="0" max="1" step="0.01" value="0.15" oninput="syncHybrid('Radial_Deadzone')">
-                        <input type="number" id="Radial_Deadzone" title="The circular deadzone with no guiding.&#10;Range: 0.0 to 1.0 (100%)." value="0.15" step="0.01" oninput="syncHybrid('Radial_Deadzone', true)">
+                        <input type="range" id="Radial_Deadzone_slider" min="0" max="1" step="0.01" value="0.10" oninput="syncHybrid('Radial_Deadzone')">
+                        <input type="number" id="Radial_Deadzone" title="The circular deadzone with no guiding.&#10;Range: 0.0 to 1.0 (100%)." value="0.10" step="0.01" oninput="syncHybrid('Radial_Deadzone', true)">
                     </div>
                 </div>
             </div>
@@ -558,7 +609,7 @@
                 <label>API Hooks</label>
                 <div class="input-group">
                     <div class="arrow-btn" onclick="toggleSection(this, 'hooks-options')" title="API Hook Options">▼</div>
-                    <span style="font-size:0.8em; color:#777; line-height: 28px;">(Advanced)</span>
+                    <span style="font-size:0.8em; color:#777; line-height: 28px;"><!--(Advanced)>--></span>
                 </div>
             </div>
             <div id="hooks-options" class="hidden-content">
@@ -574,7 +625,7 @@
                 <label>Message Filters</label>
                 <div class="input-group">
                     <div class="arrow-btn" onclick="toggleSection(this, 'filters-options')" title="Message Filter Options">▼</div>
-                    <span style="font-size:0.8em; color:#777; line-height: 28px;">(Advanced)</span>
+                    <span style="font-size:0.8em; color:#777; line-height: 28px;"><!--(Advanced)>--></span>
                 </div>
             </div>
             <div id="filters-options" class="hidden-content">
@@ -638,8 +689,8 @@
 
     <div class="button-row">
         <input type="file" id="ini-upload" accept=".ini" style="display: none;" onchange="handleFileUpload(event)">
-        <button class="download-btn" onclick="generateINI()">Download GtoMnK.ini</button>
-        <button class="upload-btn" onclick="document.getElementById('ini-upload').click()">Import INI</button>
+        <button class="download-btn" onclick="generateINI()">Export</button>
+        <button class="upload-btn" onclick="document.getElementById('ini-upload').click()">Import</button>
         <button class="reset-btn" onclick="resetToDefaults()">Reset</button>
     </div>
 
@@ -702,10 +753,11 @@
             "RT": { t: 8, l: 71.7, w: 6, h: 8, s: 'rect' }
         };
 
+        // Default button mapping for controllers
         const xinputButtons = [
             { id: "A", idx: 0, val: "13" }, { id: "B", idx: 1, val: "0" },
             { id: "X", idx: 2, val: "42" }, { id: "Y", idx: 3, val: "0" },
-            { id: "LB", idx: 4, val: "Fn2" }, { id: "RB", idx: 5, val: "Fn1" },
+            { id: "LB", idx: 4, val: "0" }, { id: "RB", idx: 5, val: "0" },
             { id: "LT", idx: 6, val: "-2" }, { id: "RT", idx: 7, val: "-1" },
             { id: "Back", idx: 8, val: "3" }, { id: "Start", idx: 9, val: "1" },
             { id: "LSB", idx: 10, val: "4" }, { id: "RSB", idx: 11, val: "0" },
@@ -905,6 +957,20 @@
                 }
             };
 
+            // Right Click to Open Custom Menu
+            div.oncontextmenu = (e) => {
+                if (div.classList.contains('disabled')) return;
+                e.preventDefault();
+                e.stopPropagation();
+
+                targetButtonForMenu = btn.id; // Remember which button we right-clicked
+
+                const menu = document.getElementById('custom-context-menu');
+                menu.style.left = e.pageX + 'px';
+                menu.style.top = e.pageY + 'px';
+                menu.classList.add('show');
+            };
+
             // Middle Click to Flash Red and Reset
             div.onmousedown = (e) => {
                 if (div.classList.contains('disabled')) return;
@@ -917,7 +983,9 @@
                     if (pendingModifier) return;
 
                     div.classList.add('flash-red');
-                    setTimeout(() => { div.classList.remove('flash-red'); }, 200);
+
+                    // CHANGE THIS LINE: Set the timeout to 1000ms to match the new animation duration
+                    setTimeout(() => { div.classList.remove('flash-red'); }, 1000);
 
                     div.dataset.value = "0";
                     div.innerText = "None";
@@ -984,6 +1052,57 @@
                 });
             }
         }
+
+        let targetButtonForMenu = null;
+
+        // Map Button Logic
+        document.getElementById('menu-item-map').onclick = () => {
+            const menu = document.getElementById('custom-context-menu');
+            menu.classList.remove('show'); // Hide menu
+
+            if (targetButtonForMenu) {
+                if (pendingModifier) {
+                    assignModifier(targetButtonForMenu, pendingModifier);
+                } else {
+                    startRecording(targetButtonForMenu);
+                }
+            }
+        };
+
+        // Clear Button Logic
+        document.getElementById('menu-item-clear').onclick = () => {
+            const menu = document.getElementById('custom-context-menu');
+            menu.classList.remove('show'); // Hide menu
+
+            if (targetButtonForMenu && !pendingModifier) {
+                const div = document.getElementById(`btn-${targetButtonForMenu}`);
+
+                // Trigger your red flash animation (Using 1000ms if you added the breathing effect)
+                div.classList.add('flash-red');
+                setTimeout(() => { div.classList.remove('flash-red'); }, 1000);
+
+                // Reset Values
+                div.dataset.value = "0";
+                div.innerText = "None";
+                div.title = "None";
+
+                if (activeLayer === 'Basic') { div.dataset.valBasic = "0"; div.dataset.txtBasic = "None"; }
+                else if (activeLayer === 'Fn1') { div.dataset.valFn1 = "0"; div.dataset.txtFn1 = "None"; }
+                else if (activeLayer === 'Fn2') { div.dataset.valFn2 = "0"; div.dataset.txtFn2 = "None"; }
+
+                if (currentRecordingId === targetButtonForMenu) {
+                    finishRecording(div);
+                }
+            }
+        };
+
+        // Hide the menu if the user left-clicks anywhere else
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('custom-context-menu');
+            if (menu && menu.classList.contains('show')) {
+                menu.classList.remove('show');
+            }
+        });
 
         function startRecording(btnId) {
             const el = document.getElementById(`btn-${btnId}`);
@@ -1204,7 +1323,13 @@
                 setMapping((e.deltaY < 0) ? -6 : -7);
             }
         }, { passive: false });
-        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('contextmenu', e => {
+            if (!e.target.closest('.btn-overlay')) {
+                e.preventDefault();
+                const menu = document.getElementById('custom-context-menu');
+                if (menu) menu.classList.remove('show');
+            }
+        });
 
         window.addEventListener("gamepadconnected", (e) => {
             gamepadIndex = e.gamepad.index;
@@ -1286,16 +1411,16 @@
             document.getElementById('ThumbstickToMouse').value = "0";
             document.getElementById('DrawProtoFakeCursor').checked = false;
 
-            document.getElementById('Sensitivity').value = "5.00";
+            document.getElementById('Sensitivity').value = "2.60";
             document.getElementById('Sensitivity_Multiplier').value = "2.40";
             document.getElementById('Horizontal_Sensitivity').value = "0.00";
             document.getElementById('Vertical_Sensitivity').value = "0.00";
-            document.getElementById('Max_Threshold').value = "0.045";
-            document.getElementById('Look_Accel_Multiplier').value = "1.15";
-            document.getElementById('Curve_Slope').value = "0.16";
-            document.getElementById('Curve_Exponent').value = "1.85";
+            document.getElementById('Max_Threshold').value = "0.150";
+            document.getElementById('Look_Accel_Multiplier').value = "1.380";
+            document.getElementById('Curve_Slope').value = "0.145";
+            document.getElementById('Curve_Exponent').value = "1.660";
 
-            document.getElementById('Radial_Deadzone').value = "0.15";
+            document.getElementById('Radial_Deadzone').value = "0.10";
             document.getElementById('Axial_Deadzone').value = "0.0";
             document.getElementById('StickAsButtonDeadzone').value = "0.25";
             document.getElementById('TriggerThreshold').value = "40";
@@ -1547,14 +1672,26 @@
                 ).join('\n\n');
             };
 
+            // Check if Fn1 or Fn2 modifiers actually exist on the Basic layer
+            const buttons = Array.from(document.querySelectorAll('.btn-overlay'));
+            const hasFn1 = buttons.some(el => el.dataset.valBasic === 'Fn1');
+            const hasFn2 = buttons.some(el => el.dataset.valBasic === 'Fn2');
+
+            // Build the extra layers string conditionally
+            let extraLayers = "";
+            if (hasFn1) {
+                extraLayers += `\n[Fn1]\n${buildSection('Fn1')}\n`;
+            }
+            if (hasFn2) {
+                extraLayers += `\n[Fn2]\n${buildSection('Fn2')}\n`;
+            }
+
             const iniContent = `[Info]
 Name=${getSet('GameName')}
 Ver=1.4.0
 
 [API]
 InputMethod=${getSet('InputMethod')}
-GamepadMethod=0
-EnableOpenXinput=0
 
 [Hooks]
 GetCursorposHook=${getSet('GetCursorposHook')}
@@ -1575,15 +1712,9 @@ MouseWheelFilter=${getSet('MouseWheelFilter')}
 MouseButtonFilter=${getSet('MouseButtonFilter')}
 KeyboardButtonFilter=${getSet('KeyboardButtonFilter')}
 
-[dinput8]
-NoJoy=1
-CooperativeLevelUnlocker=1
-
 [Settings]
 Controllerid=0
-
 DrawProtoFakeCursor=${getSet('DrawProtoFakeCursor')}
-Responsetime=4
 StartUpDelay=0
 
 [StickToMouse]
@@ -1608,13 +1739,8 @@ StickAsButtonDeadzone=${getSet('StickAsButtonDeadzone')}
 TriggerThreshold=${getSet('TriggerThreshold')}
 
 ${buildSection('Basic')}
+${extraLayers}`;
 
-[Fn1]
-${buildSection('Fn1')}
-
-[Fn2]
-${buildSection('Fn2')}
-`;
             const blob = new Blob([iniContent], { type: 'text/plain' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
