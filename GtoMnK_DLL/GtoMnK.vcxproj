@@ -338,7 +338,7 @@ copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;SDL_MAIN_HANDLED;USE_SDL2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;SDL_MAIN_HANDLED;USE_SDL3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
