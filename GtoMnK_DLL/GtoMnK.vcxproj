@@ -5,24 +5,32 @@
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Profile|Win32">
-      <Configuration>Profile</Configuration>
+    <ProjectConfiguration Include="Release_SDL2|Win32">
+      <Configuration>Release_SDL2</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Profile|x64">
-      <Configuration>Profile</Configuration>
+    <ProjectConfiguration Include="Release_SDL2|x64">
+      <Configuration>Release_SDL2</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
+    <ProjectConfiguration Include="Release_SDL3|Win32">
+      <Configuration>Release_SDL3</Configuration>
       <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_SDL3|x64">
+      <Configuration>Release_SDL3</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_XInput|Win32">
+      <Configuration>Release_XInput</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_XInput|x64">
+      <Configuration>Release_XInput</Configuration>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|x64">
-      <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
@@ -41,14 +49,21 @@
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_XInput|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
@@ -61,14 +76,21 @@
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_XInput|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
@@ -83,39 +105,55 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'" Label="PropertySheets">
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_XInput|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'" Label="PropertySheets">
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_XInput|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|Win32'">
     <IntDir>$(PlatformShortName)\$(Configuration)\</IntDir>
     <TargetName>$(SolutionName)$(PlatformArchitecture)</TargetName>
-    <OutDir>$(SolutionDir)$(Configuration)\$(PlatformName)</OutDir>
+    <OutDir>$(SolutionDir)Release\$(Configuration)\$(PlatformName)</OutDir>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|Win32'">
     <IntDir>$(PlatformShortName)\$(Configuration)\</IntDir>
     <TargetName>$(SolutionName)$(PlatformArchitecture)</TargetName>
-    <OutDir>$(SolutionDir)$(Configuration)\$(PlatformName)</OutDir>
+    <OutDir>$(SolutionDir)Release\$(Configuration)\$(PlatformName)</OutDir>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)$(Configuration)\$(PlatformName)</OutDir>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_XInput|Win32'">
+    <IntDir>$(PlatformShortName)\$(Configuration)\</IntDir>
+    <TargetName>$(SolutionName)$(PlatformArchitecture)</TargetName>
+    <OutDir>$(SolutionDir)Release\$(Configuration)\$(PlatformName)</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|x64'">
+    <OutDir>$(SolutionDir)Release\$(Configuration)\$(PlatformName)</OutDir>
     <IntDir>$(PlatformShortName)\$(Configuration)\</IntDir>
     <TargetName>$(SolutionName)$(PlatformArchitecture)</TargetName>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
-    <OutDir>$(SolutionDir)$(Configuration)\$(PlatformName)</OutDir>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|x64'">
+    <OutDir>$(SolutionDir)Release\$(Configuration)\$(PlatformName)</OutDir>
+    <IntDir>$(PlatformShortName)\$(Configuration)\</IntDir>
+    <TargetName>$(SolutionName)$(PlatformArchitecture)</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_XInput|x64'">
+    <OutDir>$(SolutionDir)Release\$(Configuration)\$(PlatformName)</OutDir>
     <IntDir>$(PlatformShortName)\$(Configuration)\</IntDir>
     <TargetName>$(SolutionName)$(PlatformArchitecture)</TargetName>
   </PropertyGroup>
@@ -162,17 +200,17 @@ copy "$(ProjectDir)Documents\GtoMnK_Keys.txt" "$(TargetDir)"
 copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);SDL_MAIN_HANDLED</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;SDL_MAIN_HANDLED;USE_SDL3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook\Public;$(SolutionDir)include\OpenXinput1_4;$(SolutionDir)include\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook\Public;$(SolutionDir)include\SDL3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -181,13 +219,8 @@ copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>EasyHook32.lib;OpenXinput32.lib;SDL2-static.lib;winmm.lib;imm32.lib;setupapi.lib;version.lib;gdi32.lib;user32.lib;ole32.lib;oleaut32.lib;
-shell32.lib;
-advapi32.lib;libcmt.lib;
-libcpmt.lib;
-libvcruntime.lib;
-libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)include\OpenXinput1_4\Release;$(SolutionDir)include\SDL2\VisualC\SDL-static\Release\Win32;$(SolutionDir)include\EasyHook\Build\x86\netfx4-Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>EasyHook32.lib;SDL3-static.lib;winmm.lib;imm32.lib;setupapi.lib;version.lib;gdi32.lib;user32.lib;ole32.lib;oleaut32.lib;shell32.lib;advapi32.lib;libcmt.lib;libcpmt.lib;libvcruntime.lib;libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\OpenXinput1_4\Release;$(SolutionDir)include\SDL3\VisualC\SDL-static\Release\$(Platform);$(SolutionDir)include\EasyHook\Build\x86\netfx4-Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
@@ -195,22 +228,22 @@ libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying...
-copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)Release\$(Configuration)\GtoMnK.ini"
 robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x$(PlatformArchitecture)" "$(TargetDir)Loader.x$(PlatformArchitecture)" /E /MIR
 exit /b 0</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;ENABLE_LOGGING;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);SDL_MAIN_HANDLED</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;SDL_MAIN_HANDLED;USE_SDL2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook\Public;$(SolutionDir)include\OpenXinput1_4;$(SolutionDir)include\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook\Public;$(SolutionDir)include\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -219,13 +252,8 @@ exit /b 0</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>EasyHook32.lib;OpenXinput32.lib;SDL2-static.lib;winmm.lib;imm32.lib;setupapi.lib;version.lib;gdi32.lib;user32.lib;ole32.lib;oleaut32.lib;
-shell32.lib;
-advapi32.lib;libcmt.lib;
-libcpmt.lib;
-libvcruntime.lib;
-libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)include\OpenXinput1_4\Release;$(SolutionDir)include\SDL2\VisualC\SDL-static\Release\Win32;$(SolutionDir)include\EasyHook\Build\x86\netfx4-Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>EasyHook32.lib;SDL2-static.lib;winmm.lib;imm32.lib;setupapi.lib;version.lib;gdi32.lib;user32.lib;ole32.lib;oleaut32.lib;shell32.lib;advapi32.lib;libcmt.lib;libcpmt.lib;libvcruntime.lib;libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\OpenXinput1_4\Release;$(SolutionDir)include\SDL2\VisualC\SDL-static\Release\$(Platform);$(SolutionDir)include\EasyHook\Build\x86\netfx4-Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
@@ -233,9 +261,41 @@ libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying...
-copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"
-robocopy "$(ProjectDir)Documents" ""$(SolutionDir)$(Configuration)\Config"
-robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x$(PlatformArchitecture)" "$(TargetDir)Loader.x$(PlatformArchitecture)"
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)Release\$(Configuration)\GtoMnK.ini"
+robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x$(PlatformArchitecture)" "$(TargetDir)Loader.x$(PlatformArchitecture)" /E /MIR
+exit /b 0</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_XInput|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;USE_XINPUT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook\Public;$(SolutionDir)include\OpenXinput1_4;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalDependencies>EasyHook32.lib;OpenXinput32.lib;winmm.lib;gdi32.lib;user32.lib;setupapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\OpenXinput1_4\Release;$(SolutionDir)include\EasyHook\Build\x86\netfx4-Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+    </Link>
+    <PostBuildEvent>
+      <Command>echo Copying...
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)Release\$(Configuration)\GtoMnK.ini"
+robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x$(PlatformArchitecture)" "$(TargetDir)Loader.x$(PlatformArchitecture)" /E /MIR
 exit /b 0</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -272,17 +332,17 @@ copy "$(ProjectDir)Documents\GtoMnK_Keys.txt" "$(TargetDir)"
 copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);SDL_MAIN_HANDLED</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;SDL_MAIN_HANDLED;USE_SDL2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook\Public;$(SolutionDir)include\OpenXinput1_4;$(SolutionDir)include\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook\Public;$(SolutionDir)include\SDL3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -291,13 +351,8 @@ copy "$(ProjectDir)INI\GtoMnK.ini" "$(TargetDir)"</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>EasyHook64.lib;OpenXinput64.lib;SDL2-static.lib;winmm.lib;imm32.lib;setupapi.lib;version.lib;gdi32.lib;user32.lib;ole32.lib;oleaut32.lib;
-shell32.lib;
-advapi32.lib;libcmt.lib;
-libcpmt.lib;
-libvcruntime.lib;
-libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)include\OpenXinput1_4\Release;$(SolutionDir)include\SDL2\VisualC\SDL-static\Release\x64;$(SolutionDir)include\EasyHook\Build\x64\netfx4-Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>EasyHook64.lib;SDL3-static.lib;winmm.lib;imm32.lib;setupapi.lib;version.lib;gdi32.lib;user32.lib;ole32.lib;oleaut32.lib;shell32.lib;advapi32.lib;libcmt.lib;libcpmt.lib;libvcruntime.lib;libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\OpenXinput1_4\Release;$(SolutionDir)include\SDL3\VisualC\SDL-static\Release\$(Platform);$(SolutionDir)include\EasyHook\Build\x64\netfx4-Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
@@ -305,22 +360,22 @@ libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying...
-copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)Release\$(Configuration)\GtoMnK.ini"
 robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x$(PlatformArchitecture)" "$(TargetDir)Loader.x$(PlatformArchitecture)" /E /MIR
 exit /b 0</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;ENABLE_LOGGING;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);SDL_MAIN_HANDLED</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;SDL_MAIN_HANDLED;USE_SDL2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook\Public;$(SolutionDir)include\OpenXinput1_4;$(SolutionDir)include\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook\Public;$(SolutionDir)include\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -329,13 +384,8 @@ exit /b 0</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>EasyHook64.lib;OpenXinput64.lib;SDL2-static.lib;winmm.lib;imm32.lib;setupapi.lib;version.lib;gdi32.lib;user32.lib;ole32.lib;oleaut32.lib;
-shell32.lib;
-advapi32.lib;libcmt.lib;
-libcpmt.lib;
-libvcruntime.lib;
-libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)include\OpenXinput1_4\Release;$(SolutionDir)include\SDL2\VisualC\SDL-static\Release\x64;$(SolutionDir)include\EasyHook\Build\x64\netfx4-Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>EasyHook64.lib;SDL2-static.lib;winmm.lib;imm32.lib;setupapi.lib;version.lib;gdi32.lib;user32.lib;ole32.lib;oleaut32.lib;shell32.lib;advapi32.lib;libcmt.lib;libcpmt.lib;libvcruntime.lib;libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\OpenXinput1_4\Release;$(SolutionDir)include\SDL2\VisualC\SDL-static\Release\$(Platform);$(SolutionDir)include\EasyHook\Build\x64\netfx4-Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
@@ -343,9 +393,41 @@ libucrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>echo Copying...
-copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)$(Configuration)\GtoMnK.ini"
-robocopy "$(ProjectDir)Documents" "$(SolutionDir)$(Configuration)\Config"
-robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x$(PlatformArchitecture)" "$(TargetDir)Loader.x$(PlatformArchitecture)"
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)Release\$(Configuration)\GtoMnK.ini"
+robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x$(PlatformArchitecture)" "$(TargetDir)Loader.x$(PlatformArchitecture)" /E /MIR
+exit /b 0</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_XInput|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;SCREENSHOTINPUT_EXPORTS;_WINDOWS;_USRDLL;USE_XINPUT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\EasyHook\Public;$(SolutionDir)include\OpenXinput1_4;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalDependencies>EasyHook64.lib;OpenXinput64.lib;winmm.lib;gdi32.lib;user32.lib;setupapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\OpenXinput1_4\Release;$(SolutionDir)include\EasyHook\Build\x64\netfx4-Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+    </Link>
+    <PostBuildEvent>
+      <Command>echo Copying...
+copy "$(ProjectDir)INI\GtoMnK.ini" "$(SolutionDir)Release\$(Configuration)\GtoMnK.ini"
+robocopy "$(SolutionDir)include\DirectX-Wrappers\Loader.x$(PlatformArchitecture)" "$(TargetDir)Loader.x$(PlatformArchitecture)" /E /MIR
 exit /b 0</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -376,21 +458,90 @@ exit /b 0</Command>
     <ClInclude Include="pch.h" />
     <ClInclude Include="RawInput.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="SDL2_Gamepad.h" />
-    <ClInclude Include="SDL2_GamepadHooks.h" />
-    <ClInclude Include="XInput_Gamepad.h" />
-    <ClInclude Include="XInput_GamepadHooks.h" />
+    <ClInclude Include="SDL2_Gamepad.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="SDL2_GamepadHooks.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="SDL3_Gamepad.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="SDL3_GamepadHooks.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="XInput_Gamepad.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="XInput_GamepadHooks.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|x64'">true</ExcludedFromBuild>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GamepadMasking.cpp" />
     <ClCompile Include="GamepadProcessor.cpp" />
     <ClCompile Include="OverlayNotification.cpp" />
     <ClCompile Include="GtoMnKMutex.cpp" />
-    <ClCompile Include="SDL2_Gamepad.cpp" />
-    <ClCompile Include="SDL2_GamepadHooks.cpp" />
-    <ClCompile Include="XInput_Gamepad.cpp" />
-    <ClCompile Include="XInput_GamepadHooks.cpp" />
-    <ClInclude Include="EnableOpenXinput.h" />
+    <ClCompile Include="SDL2_Gamepad.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="SDL2_GamepadHooks.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="SDL3_Gamepad.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="SDL3_GamepadHooks.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="XInput_Gamepad.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="XInput_GamepadHooks.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="EnableOpenXinput.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClCompile Include="GamepadState.cpp" />
     <ClCompile Include="HandleMainWindow.cpp" />
     <ClCompile Include="INISettings.cpp" />
@@ -409,10 +560,12 @@ exit /b 0</Command>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Profile|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_XInput|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_SDL3|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_SDL2|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_XInput|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="RawInput.cpp" />
   </ItemGroup>
@@ -422,13 +575,19 @@ exit /b 0</Command>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Documents\GtoMnK_Keys.txt" />
-    <Text Include="Resources\gamecontrollerdb.txt" />
+    <Text Include="Resources\gamecontrollerdb.txt">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|x64'">true</ExcludedFromBuild>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Documents\GtoMnK_Config.png" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="SDL_Resource.rc" />
+    <ResourceCompile Include="SDL_Resource.rc">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_XInput|x64'">true</ExcludedFromBuild>
+    </ResourceCompile>
     <ResourceCompile Include="Version.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
