@@ -16,7 +16,6 @@ bool g_UseLegacyMouseMovement = false;
 
 // For Controller Setting
 int controllerID = 0;
-GamepadMethod g_GamepadMethod = GamepadMethod::SDL2;
 float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, sensitivity_multiplier, horizontal_sensitivity, vertical_sensitivity, look_accel_multiplier;
 float stick_as_button_deadzone;
 float stick_as_button_axial_deadzone;
@@ -139,24 +138,6 @@ void LoadIniSettings() {
         g_FakeInputMethod = FakeInputMethod::Hybrid;
     }
 
-	// Log the chosen fake input method
-    const char* methodName = "Hybrid";
-    if (g_FakeInputMethod == FakeInputMethod::RawInput) {
-        methodName = "RawInput";
-    }
-    else if (g_FakeInputMethod == FakeInputMethod::PostMessage) {
-        methodName = "PostMessage";
-    }
-    LOG("Using Input Method: %s", methodName);
-
-    int gamepadMethod = GetPrivateProfileIntA("API", "GamepadMethod", 0, iniPath.c_str());
-    if (gamepadMethod == 1) {
-        g_GamepadMethod = GamepadMethod::SDL2;
-    }
-    else {
-        g_GamepadMethod = GamepadMethod::XInput;
-    }
-	LOG("Using Gamepad Method: %s", (g_GamepadMethod == GamepadMethod::SDL2) ? "SDL2" : "XInput");
 
     g_EnableOpenXinput = GetPrivateProfileIntA("API", "EnableOpenXinput", 1, iniPath.c_str()) == 1;
 

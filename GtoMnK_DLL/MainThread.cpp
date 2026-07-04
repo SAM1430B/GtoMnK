@@ -22,7 +22,7 @@ using namespace GtoMnK;
 
 // For Initialization and Thread state
 bool hooksinited = false;
-bool loop = true;
+std::atomic<bool> loop{ true };
 
 // For Keyboard States
 int keystatesend = 0;

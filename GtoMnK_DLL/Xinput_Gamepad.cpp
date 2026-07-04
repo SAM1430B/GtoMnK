@@ -1,4 +1,13 @@
 #include "pch.h"
+
+#if defined(USE_XINPUT)
+#include <Xinput.h>
+
+namespace OXI {
+#define OPENXINPUT_XUSER_MAX_COUNT 64
+#include "OpenXinput.h"
+}
+
 #include "XInput_Gamepad.h"
 #include "GamepadInputIDs.h"
 #include "INISettings.h"
@@ -18,6 +27,11 @@ void XInput_Initialize() {
     else {
         pXInputGetState = nullptr;
     }
+}
+
+void XInput_Cleanup() {
+    // OpenXinput doesn't strictly require a teardown call, so we leave this empty 
+    // to satisfy the GamepadBackend wrapper API.
 }
 
 // Helper grabs a pure, unhooked pointer straight from Windows to bypass the MaskHook
@@ -59,13 +73,13 @@ bool XInput_GetState(CustomControllerState& outState) {
         return false;
     }
 
-	// Face Buttons
+    // Face Buttons
     outState.buttons[GAMEPAD_ID_A] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_A);
     outState.buttons[GAMEPAD_ID_B] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_B);
     outState.buttons[GAMEPAD_ID_X] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_X);
     outState.buttons[GAMEPAD_ID_Y] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_Y);
 
-	// D-Pad
+    // D-Pad
     outState.buttons[GAMEPAD_ID_DPAD_UP] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_UP);
     outState.buttons[GAMEPAD_ID_DPAD_DOWN] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_DOWN);
     outState.buttons[GAMEPAD_ID_DPAD_LEFT] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_DPAD_LEFT);
@@ -76,7 +90,7 @@ bool XInput_GetState(CustomControllerState& outState) {
     outState.buttons[GAMEPAD_ID_BACK] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_BACK);
 
     // Extended Buttons
-	// Extended buttons are not supported in XInput.
+    // Extended buttons are not supported in XInput.
     outState.buttons[GAMEPAD_ID_GUIDE] = false;
     outState.buttons[GAMEPAD_ID_MISC1] = false;
     outState.buttons[GAMEPAD_ID_PADDLE1] = false;
@@ -84,7 +98,7 @@ bool XInput_GetState(CustomControllerState& outState) {
     outState.buttons[GAMEPAD_ID_PADDLE3] = false;
     outState.buttons[GAMEPAD_ID_PADDLE4] = false;
 
-	// Touchpad Button
+    // Touchpad Button
 	// Touchpad is not supported in XInput.
     outState.buttons[GAMEPAD_ID_TOUCHPAD_BUTTON] = false;
 
@@ -92,7 +106,7 @@ bool XInput_GetState(CustomControllerState& outState) {
     outState.buttons[GAMEPAD_ID_LSB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_LEFT_THUMB);
     outState.buttons[GAMEPAD_ID_RSB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_RIGHT_THUMB);
 
-	// Shoulder Buttons
+    // Shoulder Buttons
     outState.buttons[GAMEPAD_ID_LB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_LEFT_SHOULDER);
     outState.buttons[GAMEPAD_ID_RB] = IsXInputBtnPressed(state, XINPUT_GAMEPAD_RIGHT_SHOULDER);
 
@@ -100,11 +114,11 @@ bool XInput_GetState(CustomControllerState& outState) {
     outState.LeftTrigger = state.Gamepad.bLeftTrigger;
     outState.RightTrigger = state.Gamepad.bRightTrigger;
 
-	// Left Thumbsticks
+    // Left Thumbsticks
     outState.ThumbLX = state.Gamepad.sThumbLX;
     outState.ThumbLY = state.Gamepad.sThumbLY;
 
-	// Right Thumbsticks
+    // Right Thumbsticks
     outState.ThumbRX = state.Gamepad.sThumbRX;
     outState.ThumbRY = state.Gamepad.sThumbRY;
 
@@ -117,3 +131,5 @@ bool XInput_GetState(CustomControllerState& outState) {
 
     return true;
 }
+
+#endif // USE_XINPUT

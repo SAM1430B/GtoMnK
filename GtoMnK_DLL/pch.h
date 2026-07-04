@@ -25,9 +25,6 @@
 #include <cstdio>
 #include <cstdlib>
 
-// Other Libraries
-#include <Xinput.h>
-
 #include <dwmapi.h>
 #include <psapi.h>
 #include <tchar.h>
@@ -37,13 +34,4 @@
 //#include "MinHook.h"
 #include <easyhook.h>
 
-// SDL2
-#include <SDL.h>
-
-// OpenXinput
-namespace OXI {
-#define OPENXINPUT_XUSER_MAX_COUNT 64
-#include "OpenXinput.h"
-}
-
-#endif
+#endif // PCH_H

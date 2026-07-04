@@ -1,4 +1,7 @@
 #include "pch.h"
+
+#if defined(USE_XINPUT)
+
 #include "XInput_GamepadHooks.h"
 #include "GamepadMasking.h"
 #include "GamepadInputIDs.h"
@@ -78,3 +81,5 @@ namespace GtoMnK {
         }
     }
 }
+
+#endif // USE_XINPUT

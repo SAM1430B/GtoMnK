@@ -7,19 +7,12 @@
 
 using namespace GtoMnK;
 
-// Gamepad Input Method
-enum class GamepadMethod {
-    XInput, // 0
-    SDL2 // 1
-};
-
 // Find Window
 extern char iniWindowName[256];
 extern char iniClassName[256];
 
 // API
 extern FakeInputMethod g_FakeInputMethod;
-extern GamepadMethod g_GamepadMethod;
 
 // Hooks
 extern int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setRectHook;

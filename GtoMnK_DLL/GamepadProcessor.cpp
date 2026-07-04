@@ -136,13 +136,15 @@ void GamepadProcessor::ProcessMouseMovement(const CustomControllerState& state, 
         totalDelta.y += thumbDelta.y;
     }
 
-    // Touchpad As Mouse (SDL2 only)
+    // Touchpad As Mouse (SDL only)
+#if defined(USE_SDL2) || defined(USE_SDL3)
     bool useTouchpadForMouse = (GetActiveTouchPadToMouse() == 1);
-    if (g_GamepadMethod == GamepadMethod::SDL2 && useTouchpadForMouse) {
+    if (useTouchpadForMouse) {
         POINT touchDelta = TouchpadMouseMove(state.TouchpadX, state.TouchpadY, state.TouchpadActive);
         totalDelta.x += touchDelta.x;
         totalDelta.y += touchDelta.y;
     }
+#endif
 
     // Apply Movement
     if (g_UseLegacyMouseMovement) {

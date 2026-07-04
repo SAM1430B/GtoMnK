@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include "FakeInput.h"
+#include <atomic>
 
 struct ButtonState {
     bool isPhysicallyPressed = false;
@@ -15,7 +16,7 @@ struct ButtonState {
 };
 
 extern HMODULE g_hModule;
-extern bool loop;
+extern std::atomic<bool> loop;
 extern bool hooksinited;
 extern bool IsOverlayNotificationEnabled;
 extern std::array<ButtonState, 256> buttonStates;
