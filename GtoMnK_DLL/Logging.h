@@ -20,14 +20,8 @@ namespace GtoMnK {
 
 }
 
-#if defined(_DEBUG) || defined(ENABLE_LOGGING)
-#define INIT_LOGGER()     GtoMnK::Logging::InitializeLogger()
-#define SHUTDOWN_LOGGER() GtoMnK::Logging::ShutdownLogger()
-#define LOG(...)          GtoMnK::Logging::Log(__FILE__, __LINE__, __VA_ARGS__)
+extern bool enableDev;
 
-#else
-#define INIT_LOGGER()
-#define SHUTDOWN_LOGGER()
-#define LOG(...)
-
-#endif
+#define INIT_LOGGER()     do { if (enableDev) GtoMnK::Logging::InitializeLogger(); } while(0)
+#define SHUTDOWN_LOGGER() do { if (enableDev) GtoMnK::Logging::ShutdownLogger(); } while(0)
+#define LOG(...)          do { if (enableDev) GtoMnK::Logging::Log(__FILE__, __LINE__, __VA_ARGS__); } while(0)

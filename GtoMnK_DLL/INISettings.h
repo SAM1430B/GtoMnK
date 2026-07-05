@@ -31,6 +31,7 @@ extern bool g_filterKeyboardButton;
 extern int startUpDelay;
 extern char waitForDllName[256];
 extern bool recheckHWND;
+extern bool enableDev;
 extern bool disableOverlayOptions;
 extern int controllerID;
 extern bool g_EnableOpenXinput;
@@ -57,4 +58,5 @@ extern float stick_as_button_axial_deadzone;
 extern float g_TriggerThreshold;
 extern std::array<ButtonState, 256> buttonStates;
 
+void LoadEarlySettings();
 void LoadIniSettings();

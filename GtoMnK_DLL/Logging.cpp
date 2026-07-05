@@ -1,9 +1,6 @@
 #include "pch.h"
 #include "Logging.h"
 
-// Only compile the contents of this file if _DEBUG is defined
-#if defined(_DEBUG) || defined(ENABLE_LOGGING)
-
 #include <cstdarg>
 #include <chrono>
 #include <iomanip>
@@ -64,5 +61,3 @@ namespace GtoMnK {
     }
 
 }
-
-#endif

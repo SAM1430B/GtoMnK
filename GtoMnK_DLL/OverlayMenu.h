@@ -6,6 +6,7 @@
 namespace GtoMnK {
 
     struct OverlayOption {
+        bool isDevOnly;      // Is this option only for dev? (Hidden if not in dev mode)
         const char* name;
         float* value;        // Pointer to the real variable in MainThread
         float step;          // Increment/Decrement amount

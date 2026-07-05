@@ -29,38 +29,26 @@ namespace GtoMnK {
     }
 
     void OverlayMenu::SetupOptions() {
-
         options = {
-            // { Name,           Value,                                                       Step,     Min,       Max,   ID, ParentID, IsExpanded }
-            // It has a value, but also holds children. Starts Collapsed (false).
-
-            { "Sensitivity", &sensitivity,                                                   0.05f,    0.1f,     30.0f,    1,     0, false },
-#if defined(_DEBUG) || defined(ENABLE_LOGGING)
-            { "Sensitivity Multiplier", &sensitivity_multiplier,                             0.05f,    0.1f,     30.0f,    2,     1, false },
-#endif
-            { "Horiz Sens", &horizontal_sensitivity,                                        0.005f,   -1.0f,      1.0f,    3,     1, false },
-            { "Vert Sens", &vertical_sensitivity,                                           0.005f,   -1.0f,      1.0f,    4,     1, false },
-#if defined(_DEBUG) || defined(ENABLE_LOGGING)
-            { "Max Threshold", &max_threshold,                                              0.005f,    0.0f,     0.15f,    5,     1, false },
-#endif  
-            { "Radial Deadzone", &radial_deadzone,                                           0.01f,    0.0f,      1.0f,    6,     0, false },
-            { "Axial Deadzone", &axial_deadzone,                                             0.01f,    0.0f,      1.0f,    7,     6, false },
-            { "Stick As Btn Deadzone", &stick_as_button_deadzone,                            0.01f,    0.0f,      1.0f,    8,     6, false },
-#if defined(_DEBUG) || defined(ENABLE_LOGGING)
-			{ "Stick As Btn Axial Deadzone", &stick_as_button_axial_deadzone,                0.01f,    0.0f,      1.0f,    9,     6, false },
-#endif
-            { "Trigger Threshold", &g_TriggerThreshold,                                      1.00f,    0.0f,    255.0f,   10,     6, false },
-#if defined(_DEBUG) || defined(ENABLE_LOGGING)
-            { "LookAccel Multiplier", &look_accel_multiplier,                               0.005f,    0.1f,      2.0f,   11,     0, false },
-            { "Curve Slope", &curve_slope,                                                  0.005f,    0.0f,      1.0f,   12,    11, false },
-            { "Curve Exponent", &curve_exponent,                                            0.005f,    0.0f,     10.0f,   13,    11, false },
-
-            { "Touch Sensitivity", &touchpad_sensitivity,                                   5.000f,    0.0f,  10000.0f,   14,     0, false },
-            { "Touch Horiz Sens", &touchpad_horizontal_sensitivity,                         0.005f,   -1.0f,      1.0f,   15,    14, false },
-            { "Touch Vert Sens", &touchpad_vertical_sensitivity,                            0.005f,   -1.0f,      1.0f,   16,    14, false },
-            { "Touch Deadzone", &touchpad_deadzone,                                        0.0005f, 0.0000f,      1.0f,   17,    14, false },
-			{ "Touch Smoothing", &touchpad_smoothing,                                       0.001f,   0.00f,      1.0f,   18,    14, false },
-#endif
+         // { isDev          Name,                             Value,                            Step,     Min,      Max,       ID, ParentID, IsExpanded }
+            { false,        "Sensitivity",                     &sensitivity,                     0.05f,    0.1f,     30.0f,     1,  0,        false },
+            { true,         "Sensitivity Multiplier",          &sensitivity_multiplier,          0.05f,    0.1f,     30.0f,     2,  1,        false },
+            { false,        "Horiz Sens",                      &horizontal_sensitivity,          0.005f,  -1.0f,     1.0f,      3,  1,        false },
+            { false,        "Vert Sens",                       &vertical_sensitivity,            0.005f,  -1.0f,     1.0f,      4,  1,        false },
+            { true,         "Max Threshold",                   &max_threshold,                   0.005f,   0.0f,     0.15f,     5,  1,        false },
+            { false,        "Radial Deadzone",                 &radial_deadzone,                 0.01f,    0.0f,     1.0f,      6,  0,        false },
+            { true,         "Axial Deadzone",                  &axial_deadzone,                  0.01f,    0.0f,     1.0f,      7,  6,        false },
+            { false,        "Stick As Btn Deadzone",           &stick_as_button_deadzone,        0.01f,    0.0f,     1.0f,      8,  6,        false },
+            { true,         "Stick As Btn Axial Deadzone",     &stick_as_button_axial_deadzone,  0.01f,    0.0f,     1.0f,      9,  6,        false },
+            { false,        "Trigger Threshold",               &g_TriggerThreshold,              1.00f,    0.0f,     255.0f,    10, 6,        false },
+            { true,         "LookAccel Multiplier",            &look_accel_multiplier,           0.005f,   0.1f,     2.0f,      11, 0,        false },
+            { true,         "Curve Slope",                     &curve_slope,                     0.005f,   0.0f,     1.0f,      12, 11,       false },
+            { true,         "Curve Exponent",                  &curve_exponent,                  0.005f,   0.0f,     10.0f,     13, 11,       false },
+            { true,         "Touch Sensitivity",               &touchpad_sensitivity,            5.000f,   0.0f,     10000.0f,  14, 0,        false },
+            { true,         "Touch Horiz Sens",                &touchpad_horizontal_sensitivity, 0.005f,  -1.0f,     1.0f,      15, 14,       false },
+            { true,         "Touch Vert Sens",                 &touchpad_vertical_sensitivity,   0.005f,  -1.0f,     1.0f,      16, 14,       false },
+            { true,         "Touch Deadzone",                  &touchpad_deadzone,               0.0005f,  0.0f,     1.0f,      17, 14,       false },
+            { true,         "Touch Smoothing",                 &touchpad_smoothing,              0.001f,   0.0f,     1.0f,      18, 14,       false },
         };
     }
 
@@ -231,6 +219,8 @@ namespace GtoMnK {
     }
 
     bool OverlayMenu::IsOptionVisible(int index) {
+        if (options[index].isDevOnly && !enableDev) return false;
+
         int pId = options[index].parentId;
 
         // If no parent, it's always visible
@@ -239,6 +229,8 @@ namespace GtoMnK {
         // Find the parent to check its 'isExpanded' status
         for (const auto& opt : options) {
             if (opt.id == pId) {
+                // Also hide if the parent is a dev option and dev mode is off
+                if (opt.isDevOnly && !enableDev) return false;
                 return opt.isExpanded;
             }
         }
@@ -317,11 +309,9 @@ namespace GtoMnK {
         // Title
         int textX = scaledBoxX + scaledIndent;
         int textY = scaledBoxY + (int)(10 * scale);
-#if defined(_DEBUG) || defined(ENABLE_LOGGING)
-        const char* title = "Controller Options (Advanced)";
-#else
-        const char* title = "Controller Options";
-#endif
+
+        const char* title = enableDev ? "Controller Options (Advanced)" : "Controller Options";
+
         TextOutA(hdc, textX, textY, title, (int)strlen(title));
 
         int currentY = scaledBoxY + headerHeight;

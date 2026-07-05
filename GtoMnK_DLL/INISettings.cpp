@@ -27,6 +27,7 @@ int global_touchPadToMouse, g_touchPadToMouse[3];
 int startUpDelay = 0;
 char waitForDllName[256] = { 0 };
 bool recheckHWND = true;
+bool enableDev = false;
 bool disableOverlayOptions = false;
 bool g_EnableOpenXinput = true;
 
@@ -166,6 +167,7 @@ void LoadIniSettings() {
     startUpDelay = GetPrivateProfileIntA("Settings", "StartUpDelay", 0, iniPath.c_str());
     GetPrivateProfileStringA("Settings", "WaitForDllName", "", waitForDllName, sizeof(waitForDllName), iniPath.c_str());
     recheckHWND = GetPrivateProfileIntA("Settings", "RecheckHWND", 1, iniPath.c_str()) == 1;
+    enableDev = GetPrivateProfileIntA("Settings", "EnableDev", 0, iniPath.c_str()) == 1;
     disableOverlayOptions = (GetPrivateProfileIntA("Settings", "DisableOverlayOptions", 0, iniPath.c_str()) != 0);
     controllerID = GetPrivateProfileIntA("Settings", "Controllerid", 0, iniPath.c_str());
     mode = GetPrivateProfileIntA("Settings", "Mode", -1, iniPath.c_str()); // This is replaced with ThumbStickToMouse in v1.4.0
@@ -311,5 +313,26 @@ void LegacyMouseOption() {
         else {
             global_thumbStickToMouse = 0;
         }
+    }
+}
+
+// We need to initialize the logging at the very beginning of the DLL load by enabling the dev mode.
+void LoadEarlySettings() {
+    std::string iniPath = "";
+
+    std::string exeIniPath = UGetExecutableFolder_main() + "\\GtoMnK.ini";
+
+    if (GetFileAttributesA(exeIniPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+        iniPath = exeIniPath;
+    }
+    else {
+        std::string dllIniPath = UGetDllFolder_main() + "\\GtoMnK.ini";
+        if (GetFileAttributesA(dllIniPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+            iniPath = dllIniPath;
+        }
+    }
+
+    if (!iniPath.empty()) {
+        enableDev = GetPrivateProfileIntA("Settings", "EnableDev", 0, iniPath.c_str()) == 1;
     }
 }

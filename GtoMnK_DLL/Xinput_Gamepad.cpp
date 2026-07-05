@@ -19,6 +19,8 @@ XInputGetStateFunc pXInputGetState = nullptr;
 extern "C" BOOL WINAPI OpenXinputDllMain(HINSTANCE hInstDll, DWORD fdwReason, LPVOID lpvReserved);
 
 void XInput_Initialize() {
+    LOG("Initializing XInput...");
+
     if (g_EnableOpenXinput) {
         LOG("Initializing OpenXinput...");
         OpenXinputDllMain(GetModuleHandle(NULL), DLL_PROCESS_ATTACH, NULL);

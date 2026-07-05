@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Logging.h"
+#include "INISettings.h"
 #include "InstallHooks.h"
 #include <map>
 #include "RawInput.h"
@@ -35,6 +36,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         g_hModule = hModule;
         DisableThreadLibraryCalls(hModule);
 
+        LoadEarlySettings();
         INIT_LOGGER();
         LOG("================== DLL Attached (PID: %lu) ==================", GetCurrentProcessId());
 
