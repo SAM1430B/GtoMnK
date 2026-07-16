@@ -19,6 +19,8 @@ int controllerID = 0;
 float radial_deadzone, axial_deadzone, sensitivity, max_threshold, curve_slope, curve_exponent, sensitivity_multiplier, horizontal_sensitivity, vertical_sensitivity, look_accel_multiplier;
 float stick_as_button_deadzone;
 float stick_as_button_axial_deadzone;
+float inner_ring_threshold;
+float outer_ring_threshold;
 float g_TriggerThreshold = 40;
 float touchpad_sensitivity, touchpad_horizontal_sensitivity, touchpad_vertical_sensitivity, touchpad_deadzone, touchpad_smoothing;
 int global_touchPadToMouse, g_touchPadToMouse[3];
@@ -208,6 +210,9 @@ void LoadIniSettings() {
     GetPrivateProfileStringA("KeyMapping", "TriggerThreshold", "40", buffer, sizeof(buffer), iniPath.c_str()); g_TriggerThreshold = std::stof(buffer);
     GetPrivateProfileStringA("KeyMapping", "StickAsButtonDeadzone", "0.25", buffer, sizeof(buffer), iniPath.c_str()); stick_as_button_deadzone = std::stof(buffer);
 	GetPrivateProfileStringA("KeyMapping", "StickAsButtonAxialDeadzone", "0.00", buffer, sizeof(buffer), iniPath.c_str()); stick_as_button_axial_deadzone = std::stof(buffer);
+
+    GetPrivateProfileStringA("KeyMapping", "InnerRingThreshold", "0.10", buffer, sizeof(buffer), iniPath.c_str()); inner_ring_threshold = std::stof(buffer);
+    GetPrivateProfileStringA("KeyMapping", "OuterRingThreshold", "0.10", buffer, sizeof(buffer), iniPath.c_str()); outer_ring_threshold = std::stof(buffer);
     
     g_Fn1_ButtonID = -1; g_Fn2_ButtonID = -1;
 
@@ -292,11 +297,19 @@ void LoadButtonLayer(const char* section, int offset, bool isBaseLayer, const ch
     ParseKey(section, "LSL", isBaseLayer ? "0" : "0", GAMEPAD_ID_LSL, offset, iniPath);
     ParseKey(section, "LSR", isBaseLayer ? "0" : "0", GAMEPAD_ID_LSR, offset, iniPath);
 
+    // Left Stick Rings
+    ParseKey(section, "LS_Inner", isBaseLayer ? "0" : "0", GAMEPAD_ID_LS_INNER, offset, iniPath);
+    ParseKey(section, "LS_Outer", isBaseLayer ? "0" : "0", GAMEPAD_ID_LS_OUTER, offset, iniPath);
+
     // Right Stick As Buttons
     ParseKey(section, "RSU", isBaseLayer ? "0" : "0", GAMEPAD_ID_RSU, offset, iniPath);
     ParseKey(section, "RSD", isBaseLayer ? "0" : "0", GAMEPAD_ID_RSD, offset, iniPath);
     ParseKey(section, "RSL", isBaseLayer ? "0" : "0", GAMEPAD_ID_RSL, offset, iniPath);
     ParseKey(section, "RSR", isBaseLayer ? "0" : "0", GAMEPAD_ID_RSR, offset, iniPath);
+
+    // Right Stick Rings
+    ParseKey(section, "RS_Inner", isBaseLayer ? "0" : "0", GAMEPAD_ID_RS_INNER, offset, iniPath);
+    ParseKey(section, "RS_Outer", isBaseLayer ? "0" : "0", GAMEPAD_ID_RS_OUTER, offset, iniPath);
 }
 
 // This function is to handle the legacy "Mode" and "Righthanded" options for the ThumbStickToMouse setting, to avoid breaking existing INI configurations.

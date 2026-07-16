@@ -1,20 +1,21 @@
 #pragma once
 #include "pch.h"
+#include "GamepadInputIDs.h"
 #include <map>
 
 struct CustomControllerState {
     // Use a map or fixed array to store the state of every GAMEPAD_ID
     // Simple boolean state: Is GAMEPAD_ID_X pressed?
-    bool buttons[30];
+    bool buttons[GAMEPAD_ID_COUNT] = { false };
 
     // Analog values for sticks/triggers
-    SHORT ThumbLX, ThumbLY, ThumbRX, ThumbRY;
-    BYTE LeftTrigger, RightTrigger;
+    SHORT ThumbLX = 0, ThumbLY = 0, ThumbRX = 0, ThumbRY = 0;
+    BYTE LeftTrigger = 0, RightTrigger = 0;
 
     // Touchpad state
-    bool TouchpadActive;
-    float TouchpadX, TouchpadY;
-    float TouchpadPressure;
+    bool TouchpadActive = false;
+    float TouchpadX = 0.0f, TouchpadY = 0.0f;
+    float TouchpadPressure = 0.0f;
 };
 
 extern int g_Fn1_ButtonID;
