@@ -25,6 +25,10 @@ permissions:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        platform: [x64, x86]
+
     runs-on: windows-latest
 
     steps:
@@ -34,10 +38,28 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: nuget restore ${{env.SOLUTION_FILE_PATH}}
 
+    - name: Inject Build Properties
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        $props = @"
+        <Project>
+          <ItemDefinitionGroup>
+            <Link>
+              <AdditionalLibraryDirectories>`$(MSBuildThisFileDirectory)include\EasyHook\Build\x86\netfx3.5-Release;`$(MSBuildThisFileDirectory)include\EasyHook\Build\x64\netfx3.5-Release;`$(MSBuildThisFileDirectory)include\EasyHook\Build\x86\netfx4-Release;`$(MSBuildThisFileDirectory)include\EasyHook\Build\x64\netfx4-Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+            </Link>
+            <ClCompile>
+              <AdditionalIncludeDirectories>`$(VC_ATLMFC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+            </ClCompile>
+          </ItemDefinitionGroup>
+        </Project>
+        "@
+        Set-Content -Path "Directory.Build.props" -Value $props
+
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
         $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
         $devenv = & $vswhere -latest -find Common7\IDE\devenv.com
-        & $devenv GtoMnK.sln /Build "${{env.BUILD_CONFIGURATION}}|x64"
+        & $devenv GtoMnK.sln /Upgrade
+        & $devenv GtoMnK.sln /Build "${{env.BUILD_CONFIGURATION}}|${{matrix.platform}}"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
