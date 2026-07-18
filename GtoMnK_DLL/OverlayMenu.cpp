@@ -287,10 +287,14 @@ namespace GtoMnK {
         RECT clientRect;
         GetClientRect(menuWindow, &clientRect);
 
-        FillRect(hdc, &clientRect, transparencyBrush);
-
         int winW = clientRect.right;
         int winH = clientRect.bottom;
+
+        HDC memDC = CreateCompatibleDC(hdc);
+        HBITMAP memBitmap = CreateCompatibleBitmap(hdc, winW, winH);
+        HBITMAP oldBitmap = (HBITMAP)SelectObject(memDC, memBitmap);
+
+        FillRect(memDC, &clientRect, transparencyBrush);
 
         const float REFERENCE_HEIGHT = 1080.0f;
 
@@ -298,7 +302,7 @@ namespace GtoMnK {
 
         if (scale < 0.3f) scale = 0.3f;
 
-        int baseBoxW = 430;
+        int baseBoxW = 450;
         int baseBoxX = 50;
         int baseBoxY = 50;
         int baseRowH = 30;
@@ -326,8 +330,8 @@ namespace GtoMnK {
         RECT bgRect = { scaledBoxX, scaledBoxY, scaledBoxX + scaledBoxW, scaledBoxY + scaledBoxH };
 
         // Draw background
-        FillRect(hdc, &bgRect, backgroundBrush);
-        FrameRect(hdc, &bgRect, (HBRUSH)GetStockObject(WHITE_BRUSH));
+        FillRect(memDC, &bgRect, backgroundBrush);
+        FrameRect(memDC, &bgRect, (HBRUSH)GetStockObject(WHITE_BRUSH));
 
         // For the text highlight
         HBRUSH highlightBrush = CreateSolidBrush(RGB(60, 60, 60));
@@ -345,10 +349,10 @@ namespace GtoMnK {
             OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
             DEFAULT_PITCH | FF_DONTCARE, "Arial");
 
-        HFONT hOldFont = (HFONT)SelectObject(hdc, hNewFont);
+        HFONT hOldFont = (HFONT)SelectObject(memDC, hNewFont);
 
-        SetBkMode(hdc, TRANSPARENT);
-        SetTextColor(hdc, RGB(255, 255, 0));
+        SetBkMode(memDC, TRANSPARENT);
+        SetTextColor(memDC, RGB(255, 255, 0));
 
         // Title
         int textX = scaledBoxX + scaledIndent;
@@ -356,7 +360,7 @@ namespace GtoMnK {
 
         const char* title = enableDev ? "Controller Options (Advanced)" : "Controller Options";
 
-        TextOutA(hdc, textX, textY, title, (int)strlen(title));
+        TextOutA(memDC, textX, textY, title, (int)strlen(title));
 
         int currentY = scaledBoxY + headerHeight;
 
@@ -367,7 +371,7 @@ namespace GtoMnK {
             // Highlight the text
             if (options[i].id == activeFamilyId || options[i].parentId == activeFamilyId) {
                 RECT rowRect = { scaledBoxX + 1, currentY, scaledBoxX + scaledBoxW - 1, currentY + scaledRowH };
-                FillRect(hdc, &rowRect, highlightBrush);
+                FillRect(memDC, &rowRect, highlightBrush);
             }
 
             char buffer[128];
@@ -421,27 +425,27 @@ namespace GtoMnK {
             }
 
             // Draw the name
-            SetTextColor(hdc, nameColor);
-            TextOutA(hdc, textX + xOffset, currentY, nameBuffer, (int)strlen(nameBuffer));
+            SetTextColor(memDC, nameColor);
+            TextOutA(memDC, textX + xOffset, currentY, nameBuffer, (int)strlen(nameBuffer));
 
             // Draw the value
             if (valBuffer[0] != '\0') {
                 SIZE size;
-                GetTextExtentPoint32A(hdc, nameBuffer, (int)strlen(nameBuffer), &size);
+                GetTextExtentPoint32A(memDC, nameBuffer, (int)strlen(nameBuffer), &size);
 
-                SetTextColor(hdc, valColor);
-                TextOutA(hdc, textX + xOffset + size.cx, currentY, valBuffer, (int)strlen(valBuffer));
+                SetTextColor(memDC, valColor);
+                TextOutA(memDC, textX + xOffset + size.cx, currentY, valBuffer, (int)strlen(valBuffer));
             }
 
             currentY += scaledRowH;
         }
 
         // Footer
-        SetTextColor(hdc, RGB(150, 150, 150)); // Gray
+        SetTextColor(memDC, RGB(150, 150, 150)); // Gray
         const char* footerLine1 = "(X): Expand | (D-PAD): Adjust";
 
         int line1Y = bgRect.bottom - (enableDev ? (int)(70 * scale) : (int)(40 * scale));
-        TextOutA(hdc, textX, line1Y, footerLine1, (int)strlen(footerLine1));
+        TextOutA(memDC, textX, line1Y, footerLine1, (int)strlen(footerLine1));
 
         if (enableDev)
         {
@@ -477,14 +481,20 @@ namespace GtoMnK {
                 strcpy_s(footerLine2, "Hold (Y): Reload  |  Hold (A): Save");
             }
 
-            SetTextColor(hdc, footerColor2);
+            SetTextColor(memDC, footerColor2);
             int line2Y = bgRect.bottom - (int)(40 * scale); // Positioned below Line 1
-            TextOutA(hdc, textX, line2Y, footerLine2, (int)strlen(footerLine2));
+            TextOutA(memDC, textX, line2Y, footerLine2, (int)strlen(footerLine2));
         }
 
-        SelectObject(hdc, hOldFont);
+        BitBlt(hdc, 0, 0, winW, winH, memDC, 0, 0, SRCCOPY);
+
+        SelectObject(memDC, hOldFont);
         DeleteObject(hNewFont);
         DeleteObject(highlightBrush);
+
+        SelectObject(memDC, oldBitmap);
+        DeleteObject(memBitmap);
+        DeleteDC(memDC);
     }
 
     void OverlayMenu::StartInternal() {
