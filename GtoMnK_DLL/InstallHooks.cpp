@@ -9,15 +9,20 @@
 #include "RawInputHooks.h"
 #include "CursorVisibilityHooks.h"
 #include "MessageFilterHooks.h"
+
+#if defined(USE_XINPUT)
 #include "XInput_GamepadHooks.h"
+#elif defined(USE_SDL2)
 #include "SDL2_GamepadHooks.h"
+#elif defined(USE_SDL3)
+#include "SDL3_GamepadHooks.h"
+#endif
 
 // External global variables from dllmain.cpp
 extern int leftrect, toprect, rightrect, bottomrect;
 extern int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setRectHook;
 
 extern GtoMnK::FakeInputMethod g_FakeInputMethod;
-extern GamepadMethod g_GamepadMethod;
 extern int drawProtoFakeCursor;
 extern bool g_filterRawInput, g_filterMouseMove, g_filterMouseActivate, g_filterWindowActivate, g_filterWindowActivateApp, g_filterMouseWheel, g_filterMouseButton, g_filterKeyboardButton;
 
@@ -48,15 +53,22 @@ HOOK_TRACE_INFO g_HookPeekMessageAHandle = { NULL };
 HOOK_TRACE_INFO g_HookPeekMessageWHandle = { NULL };
 
 // Gamepad Mask Hooks
+#if defined(USE_XINPUT)
 HOOK_TRACE_INFO g_xinputGetStateMaskHook = { NULL };
 HOOK_TRACE_INFO g_xinputGetStateExMaskHook = { NULL };
-
+#elif defined(USE_SDL2)
 HOOK_TRACE_INFO g_sdlPollEventMaskHook = { NULL };
-
 HOOK_TRACE_INFO g_sdlGetButtonMaskHook = { NULL };
 HOOK_TRACE_INFO g_sdlGetAxisMaskHook = { NULL };
 HOOK_TRACE_INFO g_sdlGetNumTouchpadsMaskHook = { NULL };
 HOOK_TRACE_INFO g_sdlGetTouchpadFingerMaskHook = { NULL };
+#elif defined(USE_SDL3)
+HOOK_TRACE_INFO g_sdl3PollEventMaskHook = { NULL };
+HOOK_TRACE_INFO g_sdl3GetGamepadButtonMaskHook = { NULL };
+HOOK_TRACE_INFO g_sdl3GetGamepadAxisMaskHook = { NULL };
+HOOK_TRACE_INFO g_sdl3GetNumGamepadTouchpadsMaskHook = { NULL };
+HOOK_TRACE_INFO g_sdl3GetGamepadTouchpadFingerMaskHook = { NULL };
+#endif
 
 namespace GtoMnK {
 
@@ -160,77 +172,120 @@ namespace GtoMnK {
             result = LhInstallHook(GetProcAddress(hUser32, "AdjustWindowRect"), AdjustWindowRectHook, NULL, &g_adjustWindowRectHookHandle);
             if (FAILED(result)) LOG("Failed to install hook for AdjustWindowRect: %S", RtlGetLastErrorString());
         }
-		// Gamepad Mask Hooks
+        // Gamepad Mask Hooks
         if (gamepadMaskHook) {
             LOG("Gamepad Mask Hook is enabled");
 
-            if (g_GamepadMethod == GamepadMethod::XInput) {
-                LOG("Installing XInput Mask Hooks...");
-                HMODULE hXInput = GetModuleHandleA("xinput1_4.dll");
-                if (!hXInput) hXInput = GetModuleHandleA("xinput1_3.dll");
-                if (!hXInput) hXInput = GetModuleHandleA("xinput9_1_0.dll");
+#if defined(USE_XINPUT)
+            LOG("Installing XInput Mask Hooks...");
+            HMODULE hXInput = GetModuleHandleA("xinput1_4.dll");
+            if (!hXInput) hXInput = GetModuleHandleA("xinput1_3.dll");
+            if (!hXInput) hXInput = GetModuleHandleA("xinput9_1_0.dll");
 
-                if (hXInput) {
-                    GtoMnK::XInputHooks::TrueXInputGetState = (GtoMnK::XInputHooks::XInputGetState_t)GetProcAddress(hXInput, "XInputGetState");
-                    if (GtoMnK::XInputHooks::TrueXInputGetState) {
-                        result = LhInstallHook(GetProcAddress(hXInput, "XInputGetState"), GtoMnK::XInputHooks::MaskHook_XInputGetState, NULL, &g_xinputGetStateMaskHook);
-                        if (FAILED(result)) LOG("Failed to hook XInputGetState: %S", RtlGetLastErrorString());
-                    }
-
-                    GtoMnK::XInputHooks::TrueXInputGetStateEx = (GtoMnK::XInputHooks::XInputGetState_t)GetProcAddress(hXInput, (LPCSTR)100);
-                    if (GtoMnK::XInputHooks::TrueXInputGetStateEx) {
-                        result = LhInstallHook(GetProcAddress(hXInput, (LPCSTR)100), GtoMnK::XInputHooks::MaskHook_XInputGetStateEx, NULL, &g_xinputGetStateExMaskHook);
-                        if (FAILED(result)) LOG("Failed to hook XInputGetStateEx (Ordinal 100): %S", RtlGetLastErrorString());
-                    }
+            if (hXInput) {
+                GtoMnK::XInputHooks::TrueXInputGetState = (GtoMnK::XInputHooks::XInputGetState_t)GetProcAddress(hXInput, "XInputGetState");
+                if (GtoMnK::XInputHooks::TrueXInputGetState) {
+                    result = LhInstallHook(GetProcAddress(hXInput, "XInputGetState"), GtoMnK::XInputHooks::MaskHook_XInputGetState, NULL, &g_xinputGetStateMaskHook);
+                    if (FAILED(result)) LOG("Failed to hook XInputGetState: %S", RtlGetLastErrorString());
                 }
-                else {
-                    LOG("XInput module not found; skipped hooking.");
+
+                GtoMnK::XInputHooks::TrueXInputGetStateEx = (GtoMnK::XInputHooks::XInputGetState_t)GetProcAddress(hXInput, (LPCSTR)100);
+                if (GtoMnK::XInputHooks::TrueXInputGetStateEx) {
+                    result = LhInstallHook(GetProcAddress(hXInput, (LPCSTR)100), GtoMnK::XInputHooks::MaskHook_XInputGetStateEx, NULL, &g_xinputGetStateExMaskHook);
+                    if (FAILED(result)) LOG("Failed to hook XInputGetStateEx (Ordinal 100): %S", RtlGetLastErrorString());
                 }
             }
-            else if (g_GamepadMethod == GamepadMethod::SDL2) {
-                LOG("Installing SDL2 Mask Hooks...");
+            else {
+                LOG("XInput module not found; skipped hooking.");
+            }
 
-                HMODULE hSDL2 = GetModuleHandleA("SDL2.dll");
-                if (!hSDL2) {
-                    LOG("SDL2.dll not in memory yet. Forcing load...");
-                    hSDL2 = LoadLibraryA("SDL2.dll");
+#elif defined(USE_SDL2)
+            LOG("Installing SDL2 Mask Hooks...");
+            HMODULE hSDL2 = GetModuleHandleA("SDL2.dll");
+            if (!hSDL2) {
+                LOG("SDL2.dll not in memory yet. Forcing load...");
+                hSDL2 = LoadLibraryA("SDL2.dll");
+            }
+
+            if (hSDL2) {
+                GtoMnK::SDL2Hooks::TrueSDL_PollEvent = (GtoMnK::SDL2Hooks::SDL_PollEvent_t)GetProcAddress(hSDL2, "SDL_PollEvent");
+                if (GtoMnK::SDL2Hooks::TrueSDL_PollEvent) {
+                    result = LhInstallHook(GetProcAddress(hSDL2, "SDL_PollEvent"), GtoMnK::SDL2Hooks::Hook_SDL_PollEvent, NULL, &g_sdlPollEventMaskHook);
+                    if (FAILED(result)) LOG("Failed to hook SDL_PollEvent: %S", RtlGetLastErrorString());
                 }
 
-                if (hSDL2) {
-                    GtoMnK::SDL2Hooks::TrueSDL_PollEvent = (GtoMnK::SDL2Hooks::SDL_PollEvent_t)GetProcAddress(hSDL2, "SDL_PollEvent");
-                    if (GtoMnK::SDL2Hooks::TrueSDL_PollEvent) {
-                        result = LhInstallHook(GetProcAddress(hSDL2, "SDL_PollEvent"), GtoMnK::SDL2Hooks::Hook_SDL_PollEvent, NULL, &g_sdlPollEventMaskHook);
-                        if (FAILED(result)) LOG("Failed to hook SDL_PollEvent: %S", RtlGetLastErrorString());
-                    }
-
-                    GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetButton = (GtoMnK::SDL2Hooks::SDL_GameControllerGetButton_t)GetProcAddress(hSDL2, "SDL_GameControllerGetButton");
-                    if (GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetButton) {
-                        result = LhInstallHook(GetProcAddress(hSDL2, "SDL_GameControllerGetButton"), GtoMnK::SDL2Hooks::Hook_SDL_GameControllerGetButton, NULL, &g_sdlGetButtonMaskHook);
-                        if (FAILED(result)) LOG("Failed to hook SDL_GameControllerGetButton: %S", RtlGetLastErrorString());
-                    }
-
-                    GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetAxis = (GtoMnK::SDL2Hooks::SDL_GameControllerGetAxis_t)GetProcAddress(hSDL2, "SDL_GameControllerGetAxis");
-                    if (GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetAxis) {
-                        result = LhInstallHook(GetProcAddress(hSDL2, "SDL_GameControllerGetAxis"), GtoMnK::SDL2Hooks::Hook_SDL_GameControllerGetAxis, NULL, &g_sdlGetAxisMaskHook);
-                        if (FAILED(result)) LOG("Failed to hook SDL_GameControllerGetAxis: %S", RtlGetLastErrorString());
-                    }
-
-                    GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetNumTouchpads = (GtoMnK::SDL2Hooks::SDL_GameControllerGetNumTouchpads_t)GetProcAddress(hSDL2, "SDL_GameControllerGetNumTouchpads");
-                    if (GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetNumTouchpads) {
-                        result = LhInstallHook(GetProcAddress(hSDL2, "SDL_GameControllerGetNumTouchpads"), GtoMnK::SDL2Hooks::Hook_SDL_GameControllerGetNumTouchpads, NULL, &g_sdlGetNumTouchpadsMaskHook);
-                        if (FAILED(result)) LOG("Failed to hook SDL_GameControllerGetNumTouchpads: %S", RtlGetLastErrorString());
-                    }
-
-                    GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetTouchpadFinger = (GtoMnK::SDL2Hooks::SDL_GameControllerGetTouchpadFinger_t)GetProcAddress(hSDL2, "SDL_GameControllerGetTouchpadFinger");
-                    if (GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetTouchpadFinger) {
-                        result = LhInstallHook(GetProcAddress(hSDL2, "SDL_GameControllerGetTouchpadFinger"), GtoMnK::SDL2Hooks::Hook_SDL_GameControllerGetTouchpadFinger, NULL, &g_sdlGetTouchpadFingerMaskHook);
-                        if (FAILED(result)) LOG("Failed to hook SDL_GameControllerGetTouchpadFinger: %S", RtlGetLastErrorString());
-                    }
+                GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetButton = (GtoMnK::SDL2Hooks::SDL_GameControllerGetButton_t)GetProcAddress(hSDL2, "SDL_GameControllerGetButton");
+                if (GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetButton) {
+                    result = LhInstallHook(GetProcAddress(hSDL2, "SDL_GameControllerGetButton"), GtoMnK::SDL2Hooks::Hook_SDL_GameControllerGetButton, NULL, &g_sdlGetButtonMaskHook);
+                    if (FAILED(result)) LOG("Failed to hook SDL_GameControllerGetButton: %S", RtlGetLastErrorString());
                 }
-                else {
-                    LOG("SDL2 module could not be found or loaded; skipped hooking.");
+
+                GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetAxis = (GtoMnK::SDL2Hooks::SDL_GameControllerGetAxis_t)GetProcAddress(hSDL2, "SDL_GameControllerGetAxis");
+                if (GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetAxis) {
+                    result = LhInstallHook(GetProcAddress(hSDL2, "SDL_GameControllerGetAxis"), GtoMnK::SDL2Hooks::Hook_SDL_GameControllerGetAxis, NULL, &g_sdlGetAxisMaskHook);
+                    if (FAILED(result)) LOG("Failed to hook SDL_GameControllerGetAxis: %S", RtlGetLastErrorString());
+                }
+
+                GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetNumTouchpads = (GtoMnK::SDL2Hooks::SDL_GameControllerGetNumTouchpads_t)GetProcAddress(hSDL2, "SDL_GameControllerGetNumTouchpads");
+                if (GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetNumTouchpads) {
+                    result = LhInstallHook(GetProcAddress(hSDL2, "SDL_GameControllerGetNumTouchpads"), GtoMnK::SDL2Hooks::Hook_SDL_GameControllerGetNumTouchpads, NULL, &g_sdlGetNumTouchpadsMaskHook);
+                    if (FAILED(result)) LOG("Failed to hook SDL_GameControllerGetNumTouchpads: %S", RtlGetLastErrorString());
+                }
+
+                GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetTouchpadFinger = (GtoMnK::SDL2Hooks::SDL_GameControllerGetTouchpadFinger_t)GetProcAddress(hSDL2, "SDL_GameControllerGetTouchpadFinger");
+                if (GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetTouchpadFinger) {
+                    result = LhInstallHook(GetProcAddress(hSDL2, "SDL_GameControllerGetTouchpadFinger"), GtoMnK::SDL2Hooks::Hook_SDL_GameControllerGetTouchpadFinger, NULL, &g_sdlGetTouchpadFingerMaskHook);
+                    if (FAILED(result)) LOG("Failed to hook SDL_GameControllerGetTouchpadFinger: %S", RtlGetLastErrorString());
                 }
             }
+            else {
+                LOG("SDL2 module could not be found or loaded; skipped hooking.");
+            }
+
+#elif defined(USE_SDL3)
+            LOG("Installing SDL3 Mask Hooks...");
+            HMODULE hSDL3 = GetModuleHandleA("SDL3.dll");
+            if (!hSDL3) {
+                LOG("SDL3.dll not in memory yet. Forcing load...");
+                hSDL3 = LoadLibraryA("SDL3.dll");
+            }
+
+            if (hSDL3) {
+                GtoMnK::SDL3Hooks::TrueSDL_PollEvent = (GtoMnK::SDL3Hooks::SDL_PollEvent_t)GetProcAddress(hSDL3, "SDL_PollEvent");
+                if (GtoMnK::SDL3Hooks::TrueSDL_PollEvent) {
+                    result = LhInstallHook(GetProcAddress(hSDL3, "SDL_PollEvent"), GtoMnK::SDL3Hooks::Hook_SDL_PollEvent, NULL, &g_sdl3PollEventMaskHook);
+                    if (FAILED(result)) LOG("Failed to hook SDL_PollEvent: %S", RtlGetLastErrorString());
+                }
+
+                GtoMnK::SDL3Hooks::TrueSDL_GetGamepadButton = (GtoMnK::SDL3Hooks::SDL_GetGamepadButton_t)GetProcAddress(hSDL3, "SDL_GetGamepadButton");
+                if (GtoMnK::SDL3Hooks::TrueSDL_GetGamepadButton) {
+                    result = LhInstallHook(GetProcAddress(hSDL3, "SDL_GetGamepadButton"), GtoMnK::SDL3Hooks::Hook_SDL_GetGamepadButton, NULL, &g_sdl3GetGamepadButtonMaskHook);
+                    if (FAILED(result)) LOG("Failed to hook SDL_GetGamepadButton: %S", RtlGetLastErrorString());
+                }
+
+                GtoMnK::SDL3Hooks::TrueSDL_GetGamepadAxis = (GtoMnK::SDL3Hooks::SDL_GetGamepadAxis_t)GetProcAddress(hSDL3, "SDL_GetGamepadAxis");
+                if (GtoMnK::SDL3Hooks::TrueSDL_GetGamepadAxis) {
+                    result = LhInstallHook(GetProcAddress(hSDL3, "SDL_GetGamepadAxis"), GtoMnK::SDL3Hooks::Hook_SDL_GetGamepadAxis, NULL, &g_sdl3GetGamepadAxisMaskHook);
+                    if (FAILED(result)) LOG("Failed to hook SDL_GetGamepadAxis: %S", RtlGetLastErrorString());
+                }
+
+                GtoMnK::SDL3Hooks::TrueSDL_GetNumGamepadTouchpads = (GtoMnK::SDL3Hooks::SDL_GetNumGamepadTouchpads_t)GetProcAddress(hSDL3, "SDL_GetNumGamepadTouchpads");
+                if (GtoMnK::SDL3Hooks::TrueSDL_GetNumGamepadTouchpads) {
+                    result = LhInstallHook(GetProcAddress(hSDL3, "SDL_GetNumGamepadTouchpads"), GtoMnK::SDL3Hooks::Hook_SDL_GetNumGamepadTouchpads, NULL, &g_sdl3GetNumGamepadTouchpadsMaskHook);
+                    if (FAILED(result)) LOG("Failed to hook SDL_GetNumGamepadTouchpads: %S", RtlGetLastErrorString());
+                }
+
+                GtoMnK::SDL3Hooks::TrueSDL_GetGamepadTouchpadFinger = (GtoMnK::SDL3Hooks::SDL_GetGamepadTouchpadFinger_t)GetProcAddress(hSDL3, "SDL_GetGamepadTouchpadFinger");
+                if (GtoMnK::SDL3Hooks::TrueSDL_GetGamepadTouchpadFinger) {
+                    result = LhInstallHook(GetProcAddress(hSDL3, "SDL_GetGamepadTouchpadFinger"), GtoMnK::SDL3Hooks::Hook_SDL_GetGamepadTouchpadFinger, NULL, &g_sdl3GetGamepadTouchpadFingerMaskHook);
+                    if (FAILED(result)) LOG("Failed to hook SDL_GetGamepadTouchpadFinger: %S", RtlGetLastErrorString());
+                }
+            }
+            else {
+                LOG("SDL3 module could not be found or loaded; skipped hooking.");
+            }
+#endif
+
         }
 
         LOG("Activating installed hooks...");
@@ -262,19 +317,23 @@ namespace GtoMnK {
             LhSetExclusiveACL(threadIdList, 1, &g_HookPeekMessageWHandle);
         }
         if (gamepadMaskHook) {
-            if (g_GamepadMethod == GamepadMethod::XInput) {
-                 if (g_xinputGetStateMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_xinputGetStateMaskHook);
-                if (g_xinputGetStateExMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_xinputGetStateExMaskHook);
-            }
-            else if (g_GamepadMethod == GamepadMethod::SDL2) {
-                if (g_sdlPollEventMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_sdlPollEventMaskHook);
-
-                if (g_sdlGetButtonMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_sdlGetButtonMaskHook);
-                if (g_sdlGetAxisMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_sdlGetAxisMaskHook);
-                if (g_sdlGetNumTouchpadsMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_sdlGetNumTouchpadsMaskHook);
-                if (g_sdlGetTouchpadFingerMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_sdlGetTouchpadFingerMaskHook);
-            }
-		}
+#if defined(USE_XINPUT)
+            if (g_xinputGetStateMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_xinputGetStateMaskHook);
+            if (g_xinputGetStateExMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_xinputGetStateExMaskHook);
+#elif defined(USE_SDL2)
+            if (g_sdlPollEventMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_sdlPollEventMaskHook);
+            if (g_sdlGetButtonMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_sdlGetButtonMaskHook);
+            if (g_sdlGetAxisMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_sdlGetAxisMaskHook);
+            if (g_sdlGetNumTouchpadsMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_sdlGetNumTouchpadsMaskHook);
+            if (g_sdlGetTouchpadFingerMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_sdlGetTouchpadFingerMaskHook);
+#elif defined(USE_SDL3)
+            if (g_sdl3PollEventMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_sdl3PollEventMaskHook);
+            if (g_sdl3GetGamepadButtonMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_sdl3GetGamepadButtonMaskHook);
+            if (g_sdl3GetGamepadAxisMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_sdl3GetGamepadAxisMaskHook);
+            if (g_sdl3GetNumGamepadTouchpadsMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_sdl3GetNumGamepadTouchpadsMaskHook);
+            if (g_sdl3GetGamepadTouchpadFingerMaskHook.Link) LhSetExclusiveACL(threadIdList, 1, &g_sdl3GetGamepadTouchpadFingerMaskHook);
+#endif
+        }
         LOG("All selected hooks are now enabled.");
     }
 

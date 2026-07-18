@@ -6,6 +6,7 @@
 namespace GtoMnK {
 
     struct OverlayOption {
+        bool isDevOnly;      // Is this option only for dev? (Hidden if not in dev mode)
         const char* name;
         float* value;        // Pointer to the real variable in MainThread
         float step;          // Increment/Decrement amount
@@ -39,7 +40,7 @@ namespace GtoMnK {
         void DrawUI();
         bool IsOptionVisible(int index);
 
-		//  Process the toggle input for the overlay menu.
+        //  Process the toggle input for the overlay menu.
         ULONGLONG m_menuToggleTimer = 0;
         bool m_menuTogglePending = false;
 
@@ -60,5 +61,16 @@ namespace GtoMnK {
         int menuSelection = 0;
         ULONGLONG lastInputTime = 0;
         std::vector<OverlayOption> options;
+
+		// Hold duration
+        static const ULONGLONG ACTION_HOLD_DURATION_MS = 1000;
+
+        // Save settings state
+        ULONGLONG m_aHoldStartTime = 0;
+        bool m_aHoldProcessed = false;
+
+		//Reload settings state
+        ULONGLONG m_yHoldStartTime = 0;
+        bool m_yHoldProcessed = false;
     };
 }

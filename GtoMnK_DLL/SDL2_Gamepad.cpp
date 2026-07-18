@@ -1,4 +1,7 @@
 #include "pch.h"
+
+#if defined(USE_SDL2)
+
 #include "SDL2_Gamepad.h"
 #include "SDL2_GamepadHooks.h"
 #include "GamepadInputIDs.h"
@@ -111,7 +114,7 @@ void AttemptInitialConnect() {
 
     g_GameController = OpenControllerByVirtualIndex(controllerID);
 
-	// To keep track of the specific used controller.
+    // To keep track of the specific used controller.
     if (g_GameController) {
         SDL_Joystick* joy = SDL_GameControllerGetJoystick(g_GameController);
         g_JoyID = SDL_JoystickInstanceID(joy);
@@ -134,49 +137,49 @@ void AttemptInitialConnect() {
             g_JoySerialNum.empty() ? "NONE" : g_JoySerialNum.c_str());
         LOG("Joystick Path: [%s]",
             g_JoyHardwarePath.empty() ? "NONE" : g_JoyHardwarePath.c_str());
-            
+
     }
 }
 
 // These routing functions check if we're in Parasitic Mode (hooked game controller) or Standalone Mode (GtoMnK) and call the appropriate function.
 inline SDL_GameController* GetRoutedController() {
-    if (SDL2Hooks::TrueSDL_GameControllerGetButton && SDL2Hooks::SnatchedGameController) {
-        return SDL2Hooks::SnatchedGameController;
+    if (GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetButton && GtoMnK::SDL2Hooks::SnatchedGameController) {
+        return GtoMnK::SDL2Hooks::SnatchedGameController;
     }
     return g_GameController;
 }
 
 inline Uint8 RoutedGetButton(SDL_GameControllerButton button) {
-    if (SDL2Hooks::TrueSDL_GameControllerGetButton && SDL2Hooks::SnatchedGameController) {
-        return SDL2Hooks::TrueSDL_GameControllerGetButton(SDL2Hooks::SnatchedGameController, button);
+    if (GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetButton && GtoMnK::SDL2Hooks::SnatchedGameController) {
+        return GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetButton(GtoMnK::SDL2Hooks::SnatchedGameController, button);
     }
     return SDL_GameControllerGetButton(g_GameController, button);
 }
 
 inline Sint16 RoutedGetAxis(SDL_GameControllerAxis axis) {
-    if (SDL2Hooks::TrueSDL_GameControllerGetAxis && SDL2Hooks::SnatchedGameController) {
-        return SDL2Hooks::TrueSDL_GameControllerGetAxis(SDL2Hooks::SnatchedGameController, axis);
+    if (GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetAxis && GtoMnK::SDL2Hooks::SnatchedGameController) {
+        return GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetAxis(GtoMnK::SDL2Hooks::SnatchedGameController, axis);
     }
     return SDL_GameControllerGetAxis(g_GameController, axis);
 }
 
 inline int RoutedGetNumTouchpads(SDL_GameController* gc) {
-    if (SDL2Hooks::TrueSDL_GameControllerGetNumTouchpads && SDL2Hooks::SnatchedGameController) {
-        return SDL2Hooks::TrueSDL_GameControllerGetNumTouchpads(gc);
+    if (GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetNumTouchpads && GtoMnK::SDL2Hooks::SnatchedGameController) {
+        return GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetNumTouchpads(gc);
     }
     return SDL_GameControllerGetNumTouchpads(gc);
 }
 
 inline int RoutedGetTouchpadFinger(SDL_GameController* gc, int touchpad, int finger, Uint8* state, float* x, float* y, float* pressure) {
-    if (SDL2Hooks::TrueSDL_GameControllerGetTouchpadFinger && SDL2Hooks::SnatchedGameController) {
-        return SDL2Hooks::TrueSDL_GameControllerGetTouchpadFinger(gc, touchpad, finger, state, x, y, pressure);
+    if (GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetTouchpadFinger && GtoMnK::SDL2Hooks::SnatchedGameController) {
+        return GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetTouchpadFinger(gc, touchpad, finger, state, x, y, pressure);
     }
     return SDL_GameControllerGetTouchpadFinger(gc, touchpad, finger, state, x, y, pressure);
 }
 
 bool SDL2_GetState(CustomControllerState& outState) {
 
-	// If the MaskHook is enabled, we are in PARASITIC MODE and rely on the game to open the controller and passed its pointer to the hook.
+    // If the MaskHook is enabled, we are in PARASITIC MODE and rely on the game to open the controller and passed its pointer to the hook.
     if (GtoMnK::SDL2Hooks::TrueSDL_GameControllerGetButton != nullptr) {
         if (!GtoMnK::SDL2Hooks::SnatchedGameController) {
             return false;
@@ -269,7 +272,7 @@ bool SDL2_GetState(CustomControllerState& outState) {
     outState.buttons[GAMEPAD_ID_PADDLE3] = RoutedGetButton(SDL_CONTROLLER_BUTTON_PADDLE3);
     outState.buttons[GAMEPAD_ID_PADDLE4] = RoutedGetButton(SDL_CONTROLLER_BUTTON_PADDLE4);
 
-	// Touchpad Button
+    // Touchpad Button
     outState.buttons[GAMEPAD_ID_TOUCHPAD_BUTTON] = RoutedGetButton(SDL_CONTROLLER_BUTTON_TOUCHPAD);
 
     // Stick Buttons
@@ -278,7 +281,7 @@ bool SDL2_GetState(CustomControllerState& outState) {
     // Shoulder Buttons
     outState.buttons[GAMEPAD_ID_LB] = RoutedGetButton(SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
     outState.buttons[GAMEPAD_ID_RB] = RoutedGetButton(SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
-    
+
     // Triggers
     Sint16 leftTrig = RoutedGetAxis(SDL_CONTROLLER_AXIS_TRIGGERLEFT);
     Sint16 rightTrig = RoutedGetAxis(SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
@@ -289,23 +292,23 @@ bool SDL2_GetState(CustomControllerState& outState) {
     outState.LeftTrigger = static_cast<BYTE>(leftTrig / 128);
     outState.RightTrigger = static_cast<BYTE>(rightTrig / 128);
 
-	// Fix for SDL2 axis range being -32768 to 32767
+    // Fix for SDL2 axis range being -32768 to 32767
 
     // Left Stick Y Axis
     int leftY = -RoutedGetAxis(SDL_CONTROLLER_AXIS_LEFTY);
     if (leftY > 32767) leftY = 32767;
     if (leftY < -32768) leftY = -32768;
 
-	// Right Stick Y Axis
+    // Right Stick Y Axis
     int rightY = -RoutedGetAxis(SDL_CONTROLLER_AXIS_RIGHTY);
     if (rightY > 32767) rightY = 32767;
     if (rightY < -32768) rightY = -32768;
 
-	// Left Stick X Axis
+    // Left Stick X Axis
     outState.ThumbLX = RoutedGetAxis(SDL_CONTROLLER_AXIS_LEFTX);
     outState.ThumbLY = (SHORT)leftY;
 
-	// Right Stick X Axis
+    // Right Stick X Axis
     outState.ThumbRX = RoutedGetAxis(SDL_CONTROLLER_AXIS_RIGHTX);
     outState.ThumbRY = (SHORT)rightY;
 
@@ -333,3 +336,5 @@ bool SDL2_GetState(CustomControllerState& outState) {
 
     return true;
 }
+
+#endif // USE_SDL2

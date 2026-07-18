@@ -79,10 +79,29 @@ void GamepadProcessor::ProcessThumbsticksAsButtons(const CustomControllerState& 
     const float deadzoneSq = stick_as_button_deadzone * stick_as_button_deadzone;
 
     // Left Thumbstick
-    if (!useLeftStickForMouse) {
-        float normLX = static_cast<float>(state.ThumbLX) / 32767.0f;
-        float normLY = static_cast<float>(state.ThumbLY) / 32767.0f;
+    float normLX = static_cast<float>(state.ThumbLX) / 32767.0f;
+    float normLY = static_cast<float>(state.ThumbLY) / 32767.0f;
 
+    float magL = std::sqrt(normLX * normLX + normLY * normLY);
+    bool isLSInner = false;
+    bool isLSOuter = false;
+
+    // Calculate Inner and Outer Ring logic
+    if (magL > stick_as_button_deadzone) {
+        float effectiveRangeL = 1.0f - stick_as_button_deadzone;
+        float activeRadiusL = (magL - stick_as_button_deadzone) / effectiveRangeL;
+        activeRadiusL = std::max(0.0f, std::min(1.0f, activeRadiusL));
+
+        isLSInner = (activeRadiusL <= inner_ring_threshold);
+        isLSOuter = (activeRadiusL >= (1.0f - outer_ring_threshold));
+    }
+
+    // Inner Ring
+    ProcessButton(GAMEPAD_ID_LS_INNER, isLSInner);
+    // Outer Ring
+    ProcessButton(GAMEPAD_ID_LS_OUTER, isLSOuter);
+
+    if (!useLeftStickForMouse) {
         if (std::abs(normLX) < stick_as_button_axial_deadzone) normLX = 0.0f;
         if (std::abs(normLY) < stick_as_button_axial_deadzone) normLY = 0.0f;
 
@@ -101,10 +120,29 @@ void GamepadProcessor::ProcessThumbsticksAsButtons(const CustomControllerState& 
     }
 
     // Right Thumbstick
-    if (!useRightStickForMouse) {
-        float normRX = static_cast<float>(state.ThumbRX) / 32767.0f;
-        float normRY = static_cast<float>(state.ThumbRY) / 32767.0f;
+    float normRX = static_cast<float>(state.ThumbRX) / 32767.0f;
+    float normRY = static_cast<float>(state.ThumbRY) / 32767.0f;
 
+    // Calculate Inner and Outer Ring logic
+    float magR = std::sqrt(normRX * normRX + normRY * normRY);
+    bool isRSInner = false;
+    bool isRSOuter = false;
+
+    if (magR > stick_as_button_deadzone) {
+        float effectiveRangeR = 1.0f - stick_as_button_deadzone;
+        float activeRadiusR = (magR - stick_as_button_deadzone) / effectiveRangeR;
+        activeRadiusR = std::max(0.0f, std::min(1.0f, activeRadiusR));
+
+        isRSInner = (activeRadiusR <= inner_ring_threshold);
+        isRSOuter = (activeRadiusR >= (1.0f - outer_ring_threshold));
+    }
+
+    // Inner Ring
+    ProcessButton(GAMEPAD_ID_RS_INNER, isRSInner);
+    // Outer Ring
+    ProcessButton(GAMEPAD_ID_RS_OUTER, isRSOuter);
+
+    if (!useRightStickForMouse) {
         if (std::abs(normRX) < stick_as_button_axial_deadzone) normRX = 0.0f;
         if (std::abs(normRY) < stick_as_button_axial_deadzone) normRY = 0.0f;
 
@@ -136,13 +174,15 @@ void GamepadProcessor::ProcessMouseMovement(const CustomControllerState& state, 
         totalDelta.y += thumbDelta.y;
     }
 
-    // Touchpad As Mouse (SDL2 only)
+    // Touchpad As Mouse (SDL only)
+#if defined(USE_SDL2) || defined(USE_SDL3)
     bool useTouchpadForMouse = (GetActiveTouchPadToMouse() == 1);
-    if (g_GamepadMethod == GamepadMethod::SDL2 && useTouchpadForMouse) {
+    if (useTouchpadForMouse) {
         POINT touchDelta = TouchpadMouseMove(state.TouchpadX, state.TouchpadY, state.TouchpadActive);
         totalDelta.x += touchDelta.x;
         totalDelta.y += touchDelta.y;
     }
+#endif
 
     // Apply Movement
     if (g_UseLegacyMouseMovement) {

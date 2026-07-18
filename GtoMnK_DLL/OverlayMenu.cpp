@@ -29,38 +29,26 @@ namespace GtoMnK {
     }
 
     void OverlayMenu::SetupOptions() {
-
         options = {
-            // { Name,           Value,                                                       Step,     Min,       Max,   ID, ParentID, IsExpanded }
-            // It has a value, but also holds children. Starts Collapsed (false).
-
-            { "Sensitivity", &sensitivity,                                                   0.05f,    0.1f,     30.0f,    1,     0, false },
-#if defined(_DEBUG) || defined(ENABLE_LOGGING)
-            { "Sensitivity Multiplier", &sensitivity_multiplier,                             0.05f,    0.1f,     30.0f,    2,     1, false },
-#endif
-            { "Horiz Sens", &horizontal_sensitivity,                                        0.005f,   -1.0f,      1.0f,    3,     1, false },
-            { "Vert Sens", &vertical_sensitivity,                                           0.005f,   -1.0f,      1.0f,    4,     1, false },
-#if defined(_DEBUG) || defined(ENABLE_LOGGING)
-            { "Max Threshold", &max_threshold,                                              0.005f,    0.0f,     0.15f,    5,     1, false },
-#endif  
-            { "Radial Deadzone", &radial_deadzone,                                           0.01f,    0.0f,      1.0f,    6,     0, false },
-            { "Axial Deadzone", &axial_deadzone,                                             0.01f,    0.0f,      1.0f,    7,     6, false },
-            { "Stick As Btn Deadzone", &stick_as_button_deadzone,                            0.01f,    0.0f,      1.0f,    8,     6, false },
-#if defined(_DEBUG) || defined(ENABLE_LOGGING)
-			{ "Stick As Btn Axial Deadzone", &stick_as_button_axial_deadzone,                0.01f,    0.0f,      1.0f,    9,     6, false },
-#endif
-            { "Trigger Threshold", &g_TriggerThreshold,                                      1.00f,    0.0f,    255.0f,   10,     6, false },
-#if defined(_DEBUG) || defined(ENABLE_LOGGING)
-            { "LookAccel Multiplier", &look_accel_multiplier,                               0.005f,    0.1f,      2.0f,   11,     0, false },
-            { "Curve Slope", &curve_slope,                                                  0.005f,    0.0f,      1.0f,   12,    11, false },
-            { "Curve Exponent", &curve_exponent,                                            0.005f,    0.0f,     10.0f,   13,    11, false },
-
-            { "Touch Sensitivity", &touchpad_sensitivity,                                   5.000f,    0.0f,  10000.0f,   14,     0, false },
-            { "Touch Horiz Sens", &touchpad_horizontal_sensitivity,                         0.005f,   -1.0f,      1.0f,   15,    14, false },
-            { "Touch Vert Sens", &touchpad_vertical_sensitivity,                            0.005f,   -1.0f,      1.0f,   16,    14, false },
-            { "Touch Deadzone", &touchpad_deadzone,                                        0.0005f, 0.0000f,      1.0f,   17,    14, false },
-			{ "Touch Smoothing", &touchpad_smoothing,                                       0.001f,   0.00f,      1.0f,   18,    14, false },
-#endif
+         // { isDev          Name,                             Value,                            Step,     Min,      Max,       ID, ParentID, IsExpanded }
+            { false,        "Sensitivity",                     &sensitivity,                     0.05f,    0.1f,     30.0f,     1,  0,        false },
+            { true,         "Sensitivity Multiplier",          &sensitivity_multiplier,          0.05f,    0.1f,     30.0f,     2,  1,        false },
+            { false,        "Horiz Sens",                      &horizontal_sensitivity,          0.005f,  -1.0f,     1.0f,      3,  1,        false },
+            { false,        "Vert Sens",                       &vertical_sensitivity,            0.005f,  -1.0f,     1.0f,      4,  1,        false },
+            { true,         "Max Threshold",                   &max_threshold,                   0.005f,   0.0f,     0.15f,     5,  1,        false },
+            { false,        "Radial Deadzone",                 &radial_deadzone,                 0.01f,    0.0f,     1.0f,      6,  0,        false },
+            { true,         "Axial Deadzone",                  &axial_deadzone,                  0.01f,    0.0f,     1.0f,      7,  6,        false },
+            { false,        "Stick As Btn Deadzone",           &stick_as_button_deadzone,        0.01f,    0.0f,     1.0f,      8,  6,        false },
+            { true,         "Stick As Btn Axial Deadzone",     &stick_as_button_axial_deadzone,  0.01f,    0.0f,     1.0f,      9,  6,        false },
+            { false,        "Trigger Threshold",               &g_TriggerThreshold,              1.00f,    0.0f,     255.0f,    10, 6,        false },
+            { true,         "LookAccel Multiplier",            &look_accel_multiplier,           0.005f,   0.1f,     2.0f,      11, 0,        false },
+            { true,         "Curve Slope",                     &curve_slope,                     0.005f,   0.0f,     1.0f,      12, 11,       false },
+            { true,         "Curve Exponent",                  &curve_exponent,                  0.005f,   0.0f,     10.0f,     13, 11,       false },
+            { true,         "Touch Sensitivity",               &touchpad_sensitivity,            5.000f,   0.0f,     10000.0f,  14, 0,        false },
+            { true,         "Touch Horiz Sens",                &touchpad_horizontal_sensitivity, 0.005f,  -1.0f,     1.0f,      15, 14,       false },
+            { true,         "Touch Vert Sens",                 &touchpad_vertical_sensitivity,   0.005f,  -1.0f,     1.0f,      16, 14,       false },
+            { true,         "Touch Deadzone",                  &touchpad_deadzone,               0.0005f,  0.0f,     1.0f,      17, 14,       false },
+            { true,         "Touch Smoothing",                 &touchpad_smoothing,              0.001f,   0.0f,     1.0f,      18, 14,       false },
         };
     }
 
@@ -142,6 +130,50 @@ namespace GtoMnK {
 
         // Delay between presses
         ULONGLONG now = GetTickCount64();
+        
+        // Reload settings state
+        if (state.buttons[GAMEPAD_ID_Y])
+        {
+            if (m_yHoldStartTime == 0)
+            {
+                m_yHoldStartTime = now;
+                m_yHoldProcessed = false;
+            }
+            else if (!m_yHoldProcessed && (now - m_yHoldStartTime >= ACTION_HOLD_DURATION_MS))
+            {
+                ReloadIniSettings();
+                m_yHoldProcessed = true;
+            }
+        }
+        else
+        {
+            m_yHoldStartTime = 0;
+            m_yHoldProcessed = false;
+        }
+
+		// Save settings state
+        if (enableDev)
+        {
+            if (state.buttons[GAMEPAD_ID_A])
+            {
+                if (m_aHoldStartTime == 0)
+                {
+                    m_aHoldStartTime = now;
+                    m_aHoldProcessed = false;
+                }
+                else if (!m_aHoldProcessed && (now - m_aHoldStartTime >= ACTION_HOLD_DURATION_MS))
+                {
+                    SaveIniSettings();
+                    m_aHoldProcessed = true;
+                }
+            }
+            else
+            {
+                m_aHoldStartTime = 0;
+                m_aHoldProcessed = false;
+            }
+        }
+
         if (now - lastInputTime < 200) return;
 
         bool input = false;
@@ -231,6 +263,8 @@ namespace GtoMnK {
     }
 
     bool OverlayMenu::IsOptionVisible(int index) {
+        if (options[index].isDevOnly && !enableDev) return false;
+
         int pId = options[index].parentId;
 
         // If no parent, it's always visible
@@ -239,6 +273,8 @@ namespace GtoMnK {
         // Find the parent to check its 'isExpanded' status
         for (const auto& opt : options) {
             if (opt.id == pId) {
+                // Also hide if the parent is a dev option and dev mode is off
+                if (opt.isDevOnly && !enableDev) return false;
                 return opt.isExpanded;
             }
         }
@@ -251,10 +287,14 @@ namespace GtoMnK {
         RECT clientRect;
         GetClientRect(menuWindow, &clientRect);
 
-        FillRect(hdc, &clientRect, transparencyBrush);
-
         int winW = clientRect.right;
         int winH = clientRect.bottom;
+
+        HDC memDC = CreateCompatibleDC(hdc);
+        HBITMAP memBitmap = CreateCompatibleBitmap(hdc, winW, winH);
+        HBITMAP oldBitmap = (HBITMAP)SelectObject(memDC, memBitmap);
+
+        FillRect(memDC, &clientRect, transparencyBrush);
 
         const float REFERENCE_HEIGHT = 1080.0f;
 
@@ -262,7 +302,7 @@ namespace GtoMnK {
 
         if (scale < 0.3f) scale = 0.3f;
 
-        int baseBoxW = 400;
+        int baseBoxW = 450;
         int baseBoxX = 50;
         int baseBoxY = 50;
         int baseRowH = 30;
@@ -284,14 +324,14 @@ namespace GtoMnK {
         }
 
         int headerHeight = (int)(50 * scale);
-        int footerHeight = (int)(60 * scale);
+        int footerHeight = enableDev ? (int)(90 * scale) : (int)(60 * scale);
         int scaledBoxH = headerHeight + (visibleLines * scaledRowH) + footerHeight;
 
         RECT bgRect = { scaledBoxX, scaledBoxY, scaledBoxX + scaledBoxW, scaledBoxY + scaledBoxH };
 
         // Draw background
-        FillRect(hdc, &bgRect, backgroundBrush);
-        FrameRect(hdc, &bgRect, (HBRUSH)GetStockObject(WHITE_BRUSH));
+        FillRect(memDC, &bgRect, backgroundBrush);
+        FrameRect(memDC, &bgRect, (HBRUSH)GetStockObject(WHITE_BRUSH));
 
         // For the text highlight
         HBRUSH highlightBrush = CreateSolidBrush(RGB(60, 60, 60));
@@ -309,20 +349,18 @@ namespace GtoMnK {
             OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
             DEFAULT_PITCH | FF_DONTCARE, "Arial");
 
-        HFONT hOldFont = (HFONT)SelectObject(hdc, hNewFont);
+        HFONT hOldFont = (HFONT)SelectObject(memDC, hNewFont);
 
-        SetBkMode(hdc, TRANSPARENT);
-        SetTextColor(hdc, RGB(255, 255, 0));
+        SetBkMode(memDC, TRANSPARENT);
+        SetTextColor(memDC, RGB(255, 255, 0));
 
         // Title
         int textX = scaledBoxX + scaledIndent;
         int textY = scaledBoxY + (int)(10 * scale);
-#if defined(_DEBUG) || defined(ENABLE_LOGGING)
-        const char* title = "Controller Options (Advanced)";
-#else
-        const char* title = "Controller Options";
-#endif
-        TextOutA(hdc, textX, textY, title, (int)strlen(title));
+
+        const char* title = enableDev ? "Controller Options (Advanced)" : "Controller Options";
+
+        TextOutA(memDC, textX, textY, title, (int)strlen(title));
 
         int currentY = scaledBoxY + headerHeight;
 
@@ -333,7 +371,7 @@ namespace GtoMnK {
             // Highlight the text
             if (options[i].id == activeFamilyId || options[i].parentId == activeFamilyId) {
                 RECT rowRect = { scaledBoxX + 1, currentY, scaledBoxX + scaledBoxW - 1, currentY + scaledRowH };
-                FillRect(hdc, &rowRect, highlightBrush);
+                FillRect(memDC, &rowRect, highlightBrush);
             }
 
             char buffer[128];
@@ -387,29 +425,76 @@ namespace GtoMnK {
             }
 
             // Draw the name
-            SetTextColor(hdc, nameColor);
-            TextOutA(hdc, textX + xOffset, currentY, nameBuffer, (int)strlen(nameBuffer));
+            SetTextColor(memDC, nameColor);
+            TextOutA(memDC, textX + xOffset, currentY, nameBuffer, (int)strlen(nameBuffer));
 
             // Draw the value
             if (valBuffer[0] != '\0') {
                 SIZE size;
-                GetTextExtentPoint32A(hdc, nameBuffer, (int)strlen(nameBuffer), &size);
+                GetTextExtentPoint32A(memDC, nameBuffer, (int)strlen(nameBuffer), &size);
 
-                SetTextColor(hdc, valColor);
-                TextOutA(hdc, textX + xOffset + size.cx, currentY, valBuffer, (int)strlen(valBuffer));
+                SetTextColor(memDC, valColor);
+                TextOutA(memDC, textX + xOffset + size.cx, currentY, valBuffer, (int)strlen(valBuffer));
             }
 
             currentY += scaledRowH;
         }
 
         // Footer
-        SetTextColor(hdc, RGB(150, 150, 150));
-        const char* footerText = "(X): Expand | (D-PAD): Adjust";
-        TextOutA(hdc, textX, bgRect.bottom - (int)(40 * scale), footerText, (int)strlen(footerText));
+        SetTextColor(memDC, RGB(150, 150, 150)); // Gray
+        const char* footerLine1 = "(X): Expand | (D-PAD): Adjust";
 
-        SelectObject(hdc, hOldFont);
+        int line1Y = bgRect.bottom - (enableDev ? (int)(70 * scale) : (int)(40 * scale));
+        TextOutA(memDC, textX, line1Y, footerLine1, (int)strlen(footerLine1));
+
+        if (enableDev)
+        {
+            char footerLine2[128];
+            COLORREF footerColor2 = RGB(150, 150, 150); // Default Gray
+
+            if (m_aHoldProcessed)
+            {
+                footerColor2 = RGB(0, 255, 0); // Green for Save Success
+                strcpy_s(footerLine2, "Settings Saved Successfully!");
+            }
+            else if (m_yHoldProcessed)
+            {
+                footerColor2 = RGB(0, 255, 255); // Cyan for Reload Success
+                strcpy_s(footerLine2, "Settings Reloaded Successfully!");
+            }
+            else if (m_aHoldStartTime > 0)
+            {
+                footerColor2 = RGB(255, 165, 0); // Orange for Progress
+                int msLeft = (int)ACTION_HOLD_DURATION_MS - (int)(GetTickCount64() - m_aHoldStartTime);
+                if (msLeft < 0) msLeft = 0;
+                sprintf_s(footerLine2, "Saving... %.1f", msLeft / 1000.0f);
+            }
+            else if (m_yHoldStartTime > 0)
+            {
+                footerColor2 = RGB(255, 165, 0); // Orange for Progress
+                int msLeft = (int)ACTION_HOLD_DURATION_MS - (int)(GetTickCount64() - m_yHoldStartTime);
+                if (msLeft < 0) msLeft = 0;
+                sprintf_s(footerLine2, "Reloading... %.1f", msLeft / 1000.0f);
+            }
+            else
+            {
+                strcpy_s(footerLine2, "Hold (Y): Reload  |  Hold (A): Save");
+            }
+
+            SetTextColor(memDC, footerColor2);
+            int line2Y = bgRect.bottom - (int)(40 * scale); // Positioned below Line 1
+            TextOutA(memDC, textX, line2Y, footerLine2, (int)strlen(footerLine2));
+        }
+
+        BitBlt(hdc, 0, 0, winW, winH, memDC, 0, 0, SRCCOPY);
+
+        SelectObject(memDC, hOldFont);
         DeleteObject(hNewFont);
         DeleteObject(highlightBrush);
+
+        SelectObject(memDC, oldBitmap);
+        DeleteObject(memBitmap);
+        DeleteDC(memDC);
     }
 
     void OverlayMenu::StartInternal() {

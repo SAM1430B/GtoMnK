@@ -1,4 +1,7 @@
 #include "pch.h"
+
+#if defined(USE_SDL2)
+
 #include "SDL2_GamepadHooks.h"
 #include "GamepadMasking.h"
 #include "GamepadInputIDs.h"
@@ -192,3 +195,5 @@ namespace GtoMnK {
         }
     }
 }
+
+#endif // USE_SDL2

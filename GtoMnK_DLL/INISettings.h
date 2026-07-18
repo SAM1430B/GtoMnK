@@ -7,19 +7,12 @@
 
 using namespace GtoMnK;
 
-// Gamepad Input Method
-enum class GamepadMethod {
-    XInput, // 0
-    SDL2 // 1
-};
-
 // Find Window
 extern char iniWindowName[256];
 extern char iniClassName[256];
 
 // API
 extern FakeInputMethod g_FakeInputMethod;
-extern GamepadMethod g_GamepadMethod;
 
 // Hooks
 extern int getCursorPosHook, setCursorPosHook, clipCursorHook, getKeyStateHook, getAsyncKeyStateHook, getKeyboardStateHook, setRectHook;
@@ -38,6 +31,7 @@ extern bool g_filterKeyboardButton;
 extern int startUpDelay;
 extern char waitForDllName[256];
 extern bool recheckHWND;
+extern bool enableDev;
 extern bool disableOverlayOptions;
 extern int controllerID;
 extern bool g_EnableOpenXinput;
@@ -61,7 +55,12 @@ extern int g_touchPadToMouse[3];
 extern bool g_EnableMouseDoubleClick;
 extern float stick_as_button_deadzone;
 extern float stick_as_button_axial_deadzone;
+extern float inner_ring_threshold;
+extern float outer_ring_threshold;
 extern float g_TriggerThreshold;
 extern std::array<ButtonState, 256> buttonStates;
 
+void LoadEarlySettings();
 void LoadIniSettings();
+void ReloadIniSettings();
+void SaveIniSettings();
