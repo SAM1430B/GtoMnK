@@ -62,3 +62,5 @@ extern std::array<ButtonState, 256> buttonStates;
 
 void LoadEarlySettings();
 void LoadIniSettings();
+void ReloadIniSettings();
+void SaveIniSettings();

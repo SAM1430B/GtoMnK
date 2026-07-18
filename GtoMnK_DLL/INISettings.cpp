@@ -4,8 +4,11 @@
 #include "Logging.h"
 #include "FakeInput.h"
 #include "GamepadState.h"
+#include "InstallHooks.h"
 
 extern HMODULE g_hModule;
+
+std::string g_iniPath = "";
 
 // For Controller Button States
 std::array<ButtonState, 256> buttonStates;
@@ -122,6 +125,8 @@ void LoadIniSettings() {
             LOG("WARNING: No INI file found in next the DLL or the EXE files. Using default values...");
         }
     }
+
+    g_iniPath = iniPath;
 
     char buffer[256];
 
@@ -348,4 +353,166 @@ void LoadEarlySettings() {
     if (!iniPath.empty()) {
         enableDev = GetPrivateProfileIntA("Settings", "EnableDev", 0, iniPath.c_str()) == 1;
     }
+}
+
+void ReloadIniSettings()
+{
+    if (g_iniPath.empty()) return;
+
+    std::string dllIniPath = UGetDllFolder_main() + "\\GtoMnK.ini";
+
+	LOG("Reloading INI settings...");
+
+    char buffer[256];
+
+    // [API]
+    int fakeInputMethod = GetPrivateProfileIntA("API", "InputMethod", 2, g_iniPath.c_str());
+    if (fakeInputMethod == 0) { g_FakeInputMethod = FakeInputMethod::PostMessage;}
+    else if (fakeInputMethod == 1) { g_FakeInputMethod = FakeInputMethod::RawInput;}
+    else { g_FakeInputMethod = FakeInputMethod::Hybrid;}
+
+    gamepadMaskHook = GetPrivateProfileIntA("API", "GamepadMaskHook", 0, g_iniPath.c_str());
+
+    // [Hooks]
+    getCursorPosHook = GetPrivateProfileIntA("Hooks", "GetCursorposHook", 1, g_iniPath.c_str());
+    setCursorPosHook = GetPrivateProfileIntA("Hooks", "SetCursorposHook", 1, g_iniPath.c_str());
+    clipCursorHook = GetPrivateProfileIntA("Hooks", "ClipCursorHook", 1, g_iniPath.c_str());
+    getKeyStateHook = GetPrivateProfileIntA("Hooks", "GetKeystateHook", 1, g_iniPath.c_str());
+    getAsyncKeyStateHook = GetPrivateProfileIntA("Hooks", "GetAsynckeystateHook", 1, g_iniPath.c_str());
+    getKeyboardStateHook = GetPrivateProfileIntA("Hooks", "GetKeyboardstateHook", 1, g_iniPath.c_str());
+    setRectHook = GetPrivateProfileIntA("Hooks", "SetRectHook", 0, g_iniPath.c_str());
+
+    // [MessageFilter]
+    g_filterRawInput = GetPrivateProfileIntA("MessageFilter", "RawInputFilter", 0, g_iniPath.c_str()) == 1;
+    g_filterMouseMove = GetPrivateProfileIntA("MessageFilter", "MouseMoveFilter", 0, g_iniPath.c_str()) == 1;
+    g_filterMouseActivate = GetPrivateProfileIntA("MessageFilter", "MouseActivateFilter", 0, g_iniPath.c_str()) == 1;
+    g_filterWindowActivate = GetPrivateProfileIntA("MessageFilter", "WindowActivateFilter", 0, g_iniPath.c_str()) == 1;
+    g_filterWindowActivateApp = GetPrivateProfileIntA("MessageFilter", "WindowActivateAppFilter", 0, g_iniPath.c_str()) == 1;
+    g_filterMouseWheel = GetPrivateProfileIntA("MessageFilter", "MouseWheelFilter", 0, g_iniPath.c_str()) == 1;
+    g_filterMouseButton = GetPrivateProfileIntA("MessageFilter", "MouseButtonFilter", 0, g_iniPath.c_str()) == 1;
+    g_filterKeyboardButton = GetPrivateProfileIntA("MessageFilter", "KeyboardButtonFilter", 0, g_iniPath.c_str()) == 1;
+
+    // [Settings]
+    enableDev = GetPrivateProfileIntA("Settings", "EnableDev", 0, g_iniPath.c_str()) == 1;
+    DontShowCursorWhenImageUpdated = GetPrivateProfileIntA("Settings", "DontShowCursorWhenImageUpdated", 0, g_iniPath.c_str());
+
+    // [StickToMouse]
+    righthanded = GetPrivateProfileIntA("StickToMouse", "Righthanded", -1, g_iniPath.c_str());
+    global_thumbStickToMouse = GetPrivateProfileIntA("StickToMouse", "ThumbStickToMouse", -1, g_iniPath.c_str());
+    LegacyMouseOption();
+
+    GetPrivateProfileStringA("StickToMouse", "Sensitivity", "2.60", buffer, sizeof(buffer), g_iniPath.c_str()); sensitivity = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Sensitivity_Multiplier", "2.40", buffer, sizeof(buffer), g_iniPath.c_str()); sensitivity_multiplier = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Horizontal_Sensitivity", "0.00", buffer, sizeof(buffer), g_iniPath.c_str()); horizontal_sensitivity = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Vertical_Sensitivity", "0.00", buffer, sizeof(buffer), g_iniPath.c_str()); vertical_sensitivity = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Max_Threshold", "0.150", buffer, sizeof(buffer), g_iniPath.c_str()); max_threshold = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Radial_Deadzone", "0.10", buffer, sizeof(buffer), g_iniPath.c_str()); radial_deadzone = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Axial_Deadzone", "0.0", buffer, sizeof(buffer), g_iniPath.c_str()); axial_deadzone = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Look_Accel_Multiplier", "1.380", buffer, sizeof(buffer), g_iniPath.c_str()); look_accel_multiplier = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Curve_Slope", "0.145", buffer, sizeof(buffer), g_iniPath.c_str()); curve_slope = std::stof(buffer);
+    GetPrivateProfileStringA("StickToMouse", "Curve_Exponent", "1.660", buffer, sizeof(buffer), g_iniPath.c_str()); curve_exponent = std::stof(buffer);
+
+    // [TouchToMouse]
+    global_touchPadToMouse = GetPrivateProfileIntA("TouchToMouse", "TouchpadToMouse", 1, g_iniPath.c_str()) == 1;
+    GetPrivateProfileStringA("TouchToMouse", "Sensitivity", "1500.00", buffer, sizeof(buffer), g_iniPath.c_str()); touchpad_sensitivity = std::stof(buffer);
+    GetPrivateProfileStringA("TouchToMouse", "Horizontal_Sensitivity", "0.00", buffer, sizeof(buffer), g_iniPath.c_str()); touchpad_horizontal_sensitivity = std::stof(buffer);
+    GetPrivateProfileStringA("TouchToMouse", "Vertical_Sensitivity", "0.00", buffer, sizeof(buffer), g_iniPath.c_str()); touchpad_vertical_sensitivity = std::stof(buffer);
+    GetPrivateProfileStringA("TouchToMouse", "Deadzone", "0.0015", buffer, sizeof(buffer), g_iniPath.c_str()); touchpad_deadzone = std::stof(buffer);
+    GetPrivateProfileStringA("TouchToMouse", "Smoothing", "0.65", buffer, sizeof(buffer), g_iniPath.c_str()); touchpad_smoothing = std::stof(buffer);
+
+    // [KeyMapping]
+    g_EnableMouseDoubleClick = GetPrivateProfileIntA("KeyMapping", "EnableMouseDoubleClick", 0, g_iniPath.c_str()) == 1;
+    GetPrivateProfileStringA("KeyMapping", "TriggerThreshold", "40", buffer, sizeof(buffer), g_iniPath.c_str()); g_TriggerThreshold = std::stof(buffer);
+    GetPrivateProfileStringA("KeyMapping", "StickAsButtonDeadzone", "0.25", buffer, sizeof(buffer), g_iniPath.c_str()); stick_as_button_deadzone = std::stof(buffer);
+    GetPrivateProfileStringA("KeyMapping", "StickAsButtonAxialDeadzone", "0.00", buffer, sizeof(buffer), g_iniPath.c_str()); stick_as_button_axial_deadzone = std::stof(buffer);
+    GetPrivateProfileStringA("KeyMapping", "InnerRingThreshold", "0.10", buffer, sizeof(buffer), g_iniPath.c_str()); inner_ring_threshold = std::stof(buffer);
+    GetPrivateProfileStringA("KeyMapping", "OuterRingThreshold", "0.10", buffer, sizeof(buffer), g_iniPath.c_str()); outer_ring_threshold = std::stof(buffer);
+
+    g_Fn1_ButtonID = -1; g_Fn2_ButtonID = -1;
+
+    LoadButtonLayer("KeyMapping", 0, true, g_iniPath.c_str());
+    g_thumbStickToMouse[0] = GetPrivateProfileIntA("KeyMapping", "ThumbstickToMouse", global_thumbStickToMouse, g_iniPath.c_str());
+    g_touchPadToMouse[0] = GetPrivateProfileIntA("KeyMapping", "TouchpadToMouse", global_touchPadToMouse ? 1 : 0, g_iniPath.c_str()) == 1;
+
+    // [Fn1]
+    LoadButtonLayer("Fn1", 100, false, g_iniPath.c_str());
+    g_thumbStickToMouse[1] = GetPrivateProfileIntA("Fn1", "ThumbstickToMouse", global_thumbStickToMouse, g_iniPath.c_str());
+    g_touchPadToMouse[1] = GetPrivateProfileIntA("Fn1", "TouchpadToMouse", global_touchPadToMouse ? 1 : 0, g_iniPath.c_str()) == 1;
+
+    // [Fn2]
+    LoadButtonLayer("Fn2", 200, false, g_iniPath.c_str());
+    g_thumbStickToMouse[2] = GetPrivateProfileIntA("Fn2", "ThumbstickToMouse", global_thumbStickToMouse, g_iniPath.c_str());
+    g_touchPadToMouse[2] = GetPrivateProfileIntA("Fn2", "TouchpadToMouse", global_touchPadToMouse ? 1 : 0, g_iniPath.c_str()) == 1;
+
+    // Re-Apply Hooks
+    GtoMnK::InstallHooks::RemoveHooks();
+    GtoMnK::InstallHooks::SetupHooks();
+
+    LOG("INI Settings successfully reloaded from: %s", getShortenedPath_Manual(dllIniPath).c_str());
+}
+
+void SaveIniSettings()
+{
+    if (g_iniPath.empty()) return;
+
+    std::string dllIniPath = UGetDllFolder_main() + "\\GtoMnK.ini";
+
+    LOG("Saving INI settings...");
+
+    char buffer[64];
+
+    // Check if a key actually exists in the INI
+    auto KeyExists = [&](const char* section, const char* key) -> bool {
+        char checkBuf[32];
+        // "MissingOption" as the default. If the key doesn't exist, it returns this string.
+        GetPrivateProfileStringA(section, key, "MissingOption", checkBuf, sizeof(checkBuf), g_iniPath.c_str());
+        return strcmp(checkBuf, "MissingOption") != 0;
+        };
+
+    // Helper lambdas to format and save data
+    auto SaveFloat = [&](const char* section, const char* key, float val, int precision) {
+        if (!KeyExists(section, key)) return;
+
+        if (precision == 4) sprintf_s(buffer, "%.4f", val);
+        else if (precision == 3) sprintf_s(buffer, "%.3f", val);
+        else if (precision == 2) sprintf_s(buffer, "%.2f", val);
+        else sprintf_s(buffer, "%.0f", val);
+        WritePrivateProfileStringA(section, key, buffer, g_iniPath.c_str());
+        };
+
+    auto SaveInt = [&](const char* section, const char* key, int val) {
+        if (!KeyExists(section, key)) return;
+
+        sprintf_s(buffer, "%d", val);
+        WritePrivateProfileStringA(section, key, buffer, g_iniPath.c_str());
+        };
+
+    // [Settings]
+    SaveInt("Settings", "EnableDev", enableDev ? 1 : 0);
+
+    // [StickToMouse]
+    SaveFloat("StickToMouse", "Sensitivity", sensitivity, 2);
+    SaveFloat("StickToMouse", "Sensitivity_Multiplier", sensitivity_multiplier, 2);
+    SaveFloat("StickToMouse", "Horizontal_Sensitivity", horizontal_sensitivity, 2);
+    SaveFloat("StickToMouse", "Vertical_Sensitivity", vertical_sensitivity, 2);
+    SaveFloat("StickToMouse", "Max_Threshold", max_threshold, 3);
+    SaveFloat("StickToMouse", "Radial_Deadzone", radial_deadzone, 2);
+    SaveFloat("StickToMouse", "Axial_Deadzone", axial_deadzone, 2);
+    SaveFloat("StickToMouse", "Look_Accel_Multiplier", look_accel_multiplier, 3);
+    SaveFloat("StickToMouse", "Curve_Slope", curve_slope, 3);
+    SaveFloat("StickToMouse", "Curve_Exponent", curve_exponent, 3);
+
+    // [KeyMapping]
+    SaveFloat("KeyMapping", "TriggerThreshold", g_TriggerThreshold, 0);
+    SaveFloat("KeyMapping", "StickAsButtonDeadzone", stick_as_button_deadzone, 2);
+    SaveFloat("KeyMapping", "StickAsButtonAxialDeadzone", stick_as_button_axial_deadzone, 2);
+
+    // [TouchToMouse]
+    SaveFloat("TouchToMouse", "Sensitivity", touchpad_sensitivity, 2);
+    SaveFloat("TouchToMouse", "Horizontal_Sensitivity", touchpad_horizontal_sensitivity, 2);
+    SaveFloat("TouchToMouse", "Vertical_Sensitivity", touchpad_vertical_sensitivity, 2);
+    SaveFloat("TouchToMouse", "Deadzone", touchpad_deadzone, 4);
+    SaveFloat("TouchToMouse", "Smoothing", touchpad_smoothing, 2);
+
+    LOG("INI Settings successfully overwritten at: %s", getShortenedPath_Manual(dllIniPath).c_str());
 }

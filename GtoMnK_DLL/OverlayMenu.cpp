@@ -130,6 +130,50 @@ namespace GtoMnK {
 
         // Delay between presses
         ULONGLONG now = GetTickCount64();
+        
+        // Reload settings state
+        if (state.buttons[GAMEPAD_ID_Y])
+        {
+            if (m_yHoldStartTime == 0)
+            {
+                m_yHoldStartTime = now;
+                m_yHoldProcessed = false;
+            }
+            else if (!m_yHoldProcessed && (now - m_yHoldStartTime >= ACTION_HOLD_DURATION_MS))
+            {
+                ReloadIniSettings();
+                m_yHoldProcessed = true;
+            }
+        }
+        else
+        {
+            m_yHoldStartTime = 0;
+            m_yHoldProcessed = false;
+        }
+
+		// Save settings state
+        if (enableDev)
+        {
+            if (state.buttons[GAMEPAD_ID_A])
+            {
+                if (m_aHoldStartTime == 0)
+                {
+                    m_aHoldStartTime = now;
+                    m_aHoldProcessed = false;
+                }
+                else if (!m_aHoldProcessed && (now - m_aHoldStartTime >= ACTION_HOLD_DURATION_MS))
+                {
+                    SaveIniSettings();
+                    m_aHoldProcessed = true;
+                }
+            }
+            else
+            {
+                m_aHoldStartTime = 0;
+                m_aHoldProcessed = false;
+            }
+        }
+
         if (now - lastInputTime < 200) return;
 
         bool input = false;
@@ -254,7 +298,7 @@ namespace GtoMnK {
 
         if (scale < 0.3f) scale = 0.3f;
 
-        int baseBoxW = 400;
+        int baseBoxW = 430;
         int baseBoxX = 50;
         int baseBoxY = 50;
         int baseRowH = 30;
@@ -276,7 +320,7 @@ namespace GtoMnK {
         }
 
         int headerHeight = (int)(50 * scale);
-        int footerHeight = (int)(60 * scale);
+        int footerHeight = enableDev ? (int)(90 * scale) : (int)(60 * scale);
         int scaledBoxH = headerHeight + (visibleLines * scaledRowH) + footerHeight;
 
         RECT bgRect = { scaledBoxX, scaledBoxY, scaledBoxX + scaledBoxW, scaledBoxY + scaledBoxH };
@@ -393,9 +437,50 @@ namespace GtoMnK {
         }
 
         // Footer
-        SetTextColor(hdc, RGB(150, 150, 150));
-        const char* footerText = "(X): Expand | (D-PAD): Adjust";
-        TextOutA(hdc, textX, bgRect.bottom - (int)(40 * scale), footerText, (int)strlen(footerText));
+        SetTextColor(hdc, RGB(150, 150, 150)); // Gray
+        const char* footerLine1 = "(X): Expand | (D-PAD): Adjust";
+
+        int line1Y = bgRect.bottom - (enableDev ? (int)(70 * scale) : (int)(40 * scale));
+        TextOutA(hdc, textX, line1Y, footerLine1, (int)strlen(footerLine1));
+
+        if (enableDev)
+        {
+            char footerLine2[128];
+            COLORREF footerColor2 = RGB(150, 150, 150); // Default Gray
+
+            if (m_aHoldProcessed)
+            {
+                footerColor2 = RGB(0, 255, 0); // Green for Save Success
+                strcpy_s(footerLine2, "Settings Saved Successfully!");
+            }
+            else if (m_yHoldProcessed)
+            {
+                footerColor2 = RGB(0, 255, 255); // Cyan for Reload Success
+                strcpy_s(footerLine2, "Settings Reloaded Successfully!");
+            }
+            else if (m_aHoldStartTime > 0)
+            {
+                footerColor2 = RGB(255, 165, 0); // Orange for Progress
+                int msLeft = (int)ACTION_HOLD_DURATION_MS - (int)(GetTickCount64() - m_aHoldStartTime);
+                if (msLeft < 0) msLeft = 0;
+                sprintf_s(footerLine2, "Saving... %.1f", msLeft / 1000.0f);
+            }
+            else if (m_yHoldStartTime > 0)
+            {
+                footerColor2 = RGB(255, 165, 0); // Orange for Progress
+                int msLeft = (int)ACTION_HOLD_DURATION_MS - (int)(GetTickCount64() - m_yHoldStartTime);
+                if (msLeft < 0) msLeft = 0;
+                sprintf_s(footerLine2, "Reloading... %.1f", msLeft / 1000.0f);
+            }
+            else
+            {
+                strcpy_s(footerLine2, "Hold (Y): Reload  |  Hold (A): Save");
+            }
+
+            SetTextColor(hdc, footerColor2);
+            int line2Y = bgRect.bottom - (int)(40 * scale); // Positioned below Line 1
+            TextOutA(hdc, textX, line2Y, footerLine2, (int)strlen(footerLine2));
+        }
 
         SelectObject(hdc, hOldFont);
         DeleteObject(hNewFont);
