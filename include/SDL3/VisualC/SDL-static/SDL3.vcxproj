@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectName>SDL3-static</ProjectName>
     <ProjectGuid>{6E185C27-BD5C-4AF9-B25A-2DB47B1B631E}</ProjectGuid>
-    <RootNamespace>SDL</RootNamespace>
+    <RootNamespace>SDL3</RootNamespace>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
