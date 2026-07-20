@@ -4,10 +4,15 @@
 #include <gdiplus.h>
 #include <string>
 #include "Logging.h"
+#include <mutex>
 
 #pragma comment (lib,"Gdiplus.lib")
 
 bool IsOverlayNotificationEnabled = false;
+
+static ULONGLONG g_StartupTime = 0;
+static int g_CurrentMessage = 0;
+static std::mutex g_DrawMutex;
 
 namespace GtoMnK
 {
@@ -51,6 +56,9 @@ void OverlayNotification::UpdatePositionLoopInternal() {
         if (IsWindow(hwnd)) {
             PostMessage(overlayNotificationWindow, WM_MOVE_overlayNotificationWindow, 0, 0);
         }
+
+        OverlayNotification::state.DrawOverlay(g_CurrentMessage);
+
         Sleep(200);
     }
 }
@@ -58,6 +66,8 @@ void OverlayNotification::UpdatePositionLoopInternal() {
 void OverlayNotification::StartInternal() {
     const auto hInstance = GetModuleHandle(NULL);
     Sleep(2000);
+
+    g_StartupTime = GetTickCount64();
 
     Gdiplus::GdiplusStartupInput gdiplusStartupInput;
     Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
@@ -104,9 +114,13 @@ void OverlayNotification::StartInternal() {
 }
 
 void OverlayNotification::DrawOverlay(int showmessage) {
+    std::lock_guard<std::mutex> lock(g_DrawMutex);
+    g_CurrentMessage = showmessage;
+
     static int lastShowMessage = -1;
     static int lastWidth = -1;
     static int lastHeight = -1;
+    static bool lastWasStartup = false;
 
     if (!overlayNotificationWindow || !IsWindow(overlayNotificationWindow)) return;
 
@@ -115,13 +129,16 @@ void OverlayNotification::DrawOverlay(int showmessage) {
     int targetWidth = rect.right;
     int targetHeight = rect.bottom;
 
-    if (showmessage == lastShowMessage && targetWidth == lastWidth && targetHeight == lastHeight) {
+    bool isStartup = (g_StartupTime != 0 && (GetTickCount64() - g_StartupTime < 20000)); // Timer for welcome message
+
+    if (showmessage == lastShowMessage && targetWidth == lastWidth && targetHeight == lastHeight && isStartup == lastWasStartup) {
         return;
     }
 
     lastShowMessage = showmessage;
     lastWidth = targetWidth;
     lastHeight = targetHeight;
+    lastWasStartup = isStartup;
 
     if (targetWidth <= 0 || targetHeight <= 0) return;
 
@@ -145,7 +162,7 @@ void OverlayNotification::DrawOverlay(int showmessage) {
 
         graphics.Clear(Gdiplus::Color(0, 0, 0, 0));
 
-        if (showmessage != 0) {
+        if (showmessage != 0 || isStartup) {
             graphics.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
             graphics.SetTextRenderingHint(Gdiplus::TextRenderingHintSingleBitPerPixelGridFit);
 
@@ -155,14 +172,25 @@ void OverlayNotification::DrawOverlay(int showmessage) {
             Gdiplus::FontFamily fontFamily(L"Consolas");
             Gdiplus::Font font(&fontFamily, 24.0f * scale, Gdiplus::FontStyleRegular, Gdiplus::UnitPixel);
 
-            std::wstring msgText = L"";
-            if (showmessage == 1) msgText = L"Keyboard Mode";
-            else if (showmessage == 2) msgText = L"Cursor Mode";
-            else if (showmessage == 69) msgText = L"Disabled";
-            else if (showmessage == 70) msgText = L"Enabled";
-            else if (showmessage == 12) msgText = L"Controller disconnected";
+            std::wstring normalText = L"";
+            if (showmessage == 1) normalText = L"Keyboard Mode";
+            else if (showmessage == 2) normalText = L"Cursor Mode";
+            else if (showmessage == 69) normalText = L"Disabled";
+            else if (showmessage == 70) normalText = L"Enabled";
+            else if (showmessage == 12) normalText = L"Controller disconnected";
 
-            if (!msgText.empty()) {
+            std::wstring msgText = L"";
+            if (isStartup)
+            {
+                msgText = L"Press \x29C9 + \x25BC to open overlay";
+            }
+            else
+            {
+                msgText = normalText;
+            }
+
+            if (!msgText.empty())
+            {
                 Gdiplus::RectF boundingBox;
                 Gdiplus::PointF origin(0.0f, 0.0f);
                 graphics.MeasureString(msgText.c_str(), -1, &font, origin, &boundingBox);
