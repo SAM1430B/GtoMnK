@@ -8,6 +8,7 @@
 
 #include "RawInput.h"
 #include "FakeCursor.h"
+#include "FakeMouse.h"
 
 #include "OverlayMenu.h"
 #include "OverlayNotification.h"
@@ -97,6 +98,8 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
     }
     LOG("Initial window handle acquired: 0x%p", hwnd);
 
+    FakeMouse::CenterCursor();
+
     // Initialize Fake Cursor
     if (drawProtoFakeCursor) {
         LOG("ProtoInput Fake Cursor is enabled. Initializing...");
@@ -137,10 +140,18 @@ DWORD WINAPI ThreadFunction(LPVOID lpParam) {
         ULONGLONG currentTime = GetTickCount64();
 
         if (currentTime - lastWindowCheck > 500) {
+            HWND oldHwnd = hwnd;
+
             if (!RecoverMainWindow(hwnd, recheckHWND, iniWindowName, iniClassName)) {
                 loop = false;
                 break;
             }
+
+            if (hwnd != oldHwnd)
+            {
+                FakeMouse::CenterCursor();
+            }
+
             RECT rect;
             if (GetClientRect(hwnd, &rect)) {
                 gamepadProcessor.UpdateWindowInfo(hwnd, rect);

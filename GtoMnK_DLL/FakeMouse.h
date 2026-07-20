@@ -9,6 +9,8 @@ namespace GtoMnK {
         static int Yf;
         static HICON hCursor;
 
+        static void CenterCursor();
+
         static BOOL WINAPI GetCursorPosHook(PPOINT lpPoint);
         static BOOL WINAPI SetCursorPosHook(int X, int Y);
         static BOOL WINAPI ClipCursorHook(const RECT* lpRect);

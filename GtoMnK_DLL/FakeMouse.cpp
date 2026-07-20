@@ -44,4 +44,16 @@ namespace GtoMnK {
     BOOL WINAPI FakeMouse::ClipCursorHook(const RECT* lpRect) {
         return TRUE;
     }
+
+    void FakeMouse::CenterCursor()
+    {
+        if (!hwnd) return;
+
+        RECT rc;
+        if (GetClientRect(hwnd, &rc))
+        {
+            Xf = rc.right / 2;
+            Yf = rc.bottom / 2;
+        }
+    }
 }
