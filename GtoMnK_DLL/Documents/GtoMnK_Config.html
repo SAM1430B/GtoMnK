@@ -225,13 +225,13 @@
             }
         }
 
-            .btn-overlay.disabled {
-                background-color: rgba(50, 50, 50, 0.5);
-                border-color: #444;
-                color: #777;
-                pointer-events: none;
-                cursor: not-allowed;
-            }
+        .btn-overlay.disabled {
+            background-color: rgba(50, 50, 50, 0.5);
+            border-color: #444;
+            color: #777;
+            pointer-events: none;
+            cursor: not-allowed;
+        }
 
         .shape-rect {
             border-radius: 8px;
@@ -499,7 +499,13 @@
                 </select>
             </div>
 
-            <div class="setting-row"><label>Draw Cursor</label><input type="checkbox" id="DrawProtoFakeCursor" title="Enable this if the game doesn't have a cursor."></div>
+            <div class="setting-row">
+                <label>Draw Cursor</label>
+                <select id="DrawProtoFakeCursor" title="Enable this if the game doesn't have a cursor.">
+                    <option value="0" selected>Disabled</option>
+                    <option value="1">Enabled</option>
+                </select>
+            </div>
 
             <div class="setting-row">
                 <label>Sensitivity</label>
@@ -695,6 +701,10 @@
     </div>
 
     <script>
+        // GLOBAL DATA to preserve unknown INI options/sections
+        let importedINIData = {};
+        let originalINILines = [];
+
         //TOGGLE SECTIONS
         function toggleSection(btn, sectionId) {
             const content = document.getElementById(sectionId);
@@ -1406,10 +1416,14 @@
         function resetToDefaults() {
             if (!confirm("Reset all your configuration?")) return;
 
+            // Clear preserved data
+            importedINIData = {};
+            originalINILines = [];
+
             document.getElementById('GameName').value = "";
             document.getElementById('InputMethod').value = "2";
             document.getElementById('ThumbstickToMouse').value = "0";
-            document.getElementById('DrawProtoFakeCursor').checked = false;
+            document.getElementById('DrawProtoFakeCursor').value = "0";
 
             document.getElementById('Sensitivity').value = "2.60";
             document.getElementById('Sensitivity_Multiplier').value = "2.40";
@@ -1487,6 +1501,9 @@
 
         // INI IMPORT
         function parseINI(data) {
+            // Store raw lines exactly as they are so we don't lose comments
+            originalINILines = data.split(/\r?\n/);
+
             const regex = {
                 section: /^\s*\[\s*([^\]]*)\s*\]\s*$/,
                 param: /^\s*([^=]+?)\s*=\s*(.*?)\s*$/
@@ -1532,6 +1549,9 @@
         }
 
         function loadINI(data) {
+            // Preserve the data for exporting later
+            importedINIData = JSON.parse(JSON.stringify(data));
+
             // Helper to safely set elements if they exist in the uploaded INI
             const setVal = (section, key, elementId) => {
                 if (data[section] && data[section][key] !== undefined) {
@@ -1656,6 +1676,57 @@
                 return "0";
             }
 
+            // Create a deep copy of the imported data to retain unknown keys and sections
+            const out = JSON.parse(JSON.stringify(importedINIData));
+
+            // Ensure our default UI sections exist in the data tree
+            const defaultSections = ['Info', 'API', 'Hooks', 'MessageFilter', 'Settings', 'StickToMouse', 'KeyMapping'];
+            defaultSections.forEach(s => {
+                if (!out[s]) out[s] = {};
+            });
+
+            // Set UI Values (Overwrites known keys if they exist, leaving unknown keys untouched)
+            out['Info']['Name'] = getSet('GameName');
+            out['Info']['Ver'] = '1.4.0';
+
+            out['API']['InputMethod'] = getSet('InputMethod');
+
+            out['Hooks']['GetCursorposHook'] = getSet('GetCursorposHook');
+            out['Hooks']['SetCursorposHook'] = getSet('SetCursorposHook');
+            out['Hooks']['ClipCursorHook'] = getSet('ClipCursorHook');
+            out['Hooks']['GetKeystateHook'] = getSet('GetKeystateHook');
+            out['Hooks']['GetAsynckeystateHook'] = getSet('GetAsynckeystateHook');
+            out['Hooks']['GetKeyboardstateHook'] = getSet('GetKeyboardstateHook');
+
+            out['MessageFilter']['RawInputFilter'] = getSet('RawInputFilter');
+            out['MessageFilter']['MouseMoveFilter'] = getSet('MouseMoveFilter');
+            out['MessageFilter']['MouseActivateFilter'] = getSet('MouseActivateFilter');
+            out['MessageFilter']['WindowActivateFilter'] = getSet('WindowActivateFilter');
+            out['MessageFilter']['WindowActivateAppFilter'] = getSet('WindowActivateAppFilter');
+            out['MessageFilter']['MouseWheelFilter'] = getSet('MouseWheelFilter');
+            out['MessageFilter']['MouseButtonFilter'] = getSet('MouseButtonFilter');
+            out['MessageFilter']['KeyboardButtonFilter'] = getSet('KeyboardButtonFilter');
+
+            if (out['Settings']['Controllerid'] === undefined) out['Settings']['Controllerid'] = "0";
+            out['Settings']['DrawProtoFakeCursor'] = getSet('DrawProtoFakeCursor');
+            if (out['Settings']['StartUpDelay'] === undefined) out['Settings']['StartUpDelay'] = "0";
+
+            out['StickToMouse']['ThumbStickToMouse'] = getSet('ThumbstickToMouse');
+            out['StickToMouse']['Sensitivity'] = getSet('Sensitivity');
+            out['StickToMouse']['Sensitivity_Multiplier'] = getSet('Sensitivity_Multiplier');
+            out['StickToMouse']['Horizontal_Sensitivity'] = getSet('Horizontal_Sensitivity');
+            out['StickToMouse']['Vertical_Sensitivity'] = getSet('Vertical_Sensitivity');
+            out['StickToMouse']['Max_Threshold'] = getSet('Max_Threshold');
+            out['StickToMouse']['Radial_Deadzone'] = getSet('Radial_Deadzone');
+            out['StickToMouse']['Axial_Deadzone'] = getSet('Axial_Deadzone');
+            out['StickToMouse']['Look_Accel_Multiplier'] = getSet('Look_Accel_Multiplier');
+            out['StickToMouse']['Curve_Slope'] = getSet('Curve_Slope');
+            out['StickToMouse']['Curve_Exponent'] = getSet('Curve_Exponent');
+
+            if (out['KeyMapping']['EnableMouseDoubleClick'] === undefined) out['KeyMapping']['EnableMouseDoubleClick'] = "0";
+            out['KeyMapping']['StickAsButtonDeadzone'] = getSet('StickAsButtonDeadzone');
+            out['KeyMapping']['TriggerThreshold'] = getSet('TriggerThreshold');
+
             const buttonGroups = [
                 ["A", "B", "X", "Y"],
                 ["D_UP", "D_DOWN", "D_LEFT", "D_RIGHT"],
@@ -1665,82 +1736,147 @@
                 ["RSU", "RSD", "RSL", "RSR"],
                 ["Start", "Back"]
             ];
+            const flatButtons = buttonGroups.flat();
 
-            const buildSection = (layer) => {
-                return buttonGroups.map(group =>
-                    group.map(id => `${id}=${getLayerVal(id, layer)}`).join('\n')
-                ).join('\n\n');
-            };
+            // Store Base Buttons
+            flatButtons.forEach(id => {
+                out['KeyMapping'][id] = getLayerVal(id, 'Basic');
+            });
 
             // Check if Fn1 or Fn2 modifiers actually exist on the Basic layer
             const buttons = Array.from(document.querySelectorAll('.btn-overlay'));
             const hasFn1 = buttons.some(el => el.dataset.valBasic === 'Fn1');
             const hasFn2 = buttons.some(el => el.dataset.valBasic === 'Fn2');
 
-            // Build the extra layers string conditionally
-            let extraLayers = "";
             if (hasFn1) {
-                extraLayers += `\n[Fn1]\n${buildSection('Fn1')}\n`;
+                if (!out['Fn1']) out['Fn1'] = {};
+                flatButtons.forEach(id => {
+                    out['Fn1'][id] = getLayerVal(id, 'Fn1');
+                });
+            } else {
+                delete out['Fn1'];
             }
+
             if (hasFn2) {
-                extraLayers += `\n[Fn2]\n${buildSection('Fn2')}\n`;
+                if (!out['Fn2']) out['Fn2'] = {};
+                flatButtons.forEach(id => {
+                    out['Fn2'][id] = getLayerVal(id, 'Fn2');
+                });
+            } else {
+                delete out['Fn2'];
             }
 
-            const iniContent = `[Info]
-Name=${getSet('GameName')}
-Ver=1.4.0
+            // BUILD THE OUTPUT STRING
+            let iniContent = "";
+            let currentSection = null;
 
-[API]
-InputMethod=${getSet('InputMethod')}
+            if (originalINILines && originalINILines.length > 0) {
+                // Patch existing file line-by-line
+                for (let i = 0; i < originalINILines.length; i++) {
+                    let line = originalINILines[i];
+                    let trimmedLine = line.trim();
 
-[Hooks]
-GetCursorposHook=${getSet('GetCursorposHook')}
-SetCursorposHook=${getSet('SetCursorposHook')}
-ClipCursorHook=${getSet('ClipCursorHook')}
+                    // Check for Section
+                    let secMatch = trimmedLine.match(/^\s*\[\s*([^\]]*)\s*\]\s*$/);
+                    if (secMatch) {
+                        // Dump remaining new keys from the PREVIOUS section before starting the new one
+                        if (currentSection && out[currentSection]) {
+                            Object.keys(out[currentSection]).forEach(key => {
+                                iniContent += `${key}=${out[currentSection][key]}\n`;
+                            });
+                            delete out[currentSection];
+                        }
 
-GetKeystateHook=${getSet('GetKeystateHook')}
-GetAsynckeystateHook=${getSet('GetAsynckeystateHook')}
-GetKeyboardstateHook=${getSet('GetKeyboardstateHook')}
+                        currentSection = secMatch[1];
 
-[MessageFilter]
-RawInputFilter=${getSet('RawInputFilter')}
-MouseMoveFilter=${getSet('MouseMoveFilter')}
-MouseActivateFilter=${getSet('MouseActivateFilter')}
-WindowActivateFilter=${getSet('WindowActivateFilter')}
-WindowActivateAppFilter=${getSet('WindowActivateAppFilter')}
-MouseWheelFilter=${getSet('MouseWheelFilter')}
-MouseButtonFilter=${getSet('MouseButtonFilter')}
-KeyboardButtonFilter=${getSet('KeyboardButtonFilter')}
+                        // Skip deleted Fn layers (e.g., if user cleared all Fn1 binds)
+                        if ((currentSection === 'Fn1' && !hasFn1) || (currentSection === 'Fn2' && !hasFn2)) {
+                            while (i + 1 < originalINILines.length && !originalINILines[i + 1].trim().match(/^\s*\[/)) {
+                                i++;
+                            }
+                            currentSection = null;
+                            continue;
+                        }
 
-[Settings]
-Controllerid=0
-DrawProtoFakeCursor=${getSet('DrawProtoFakeCursor')}
-StartUpDelay=0
+                        iniContent += line + "\n";
+                        continue;
+                    }
 
-[StickToMouse]
-ThumbStickToMouse=${getSet('ThumbstickToMouse')}
+                    // Check for Parameter (ignore comments)
+                    let paramMatch = trimmedLine.match(/^\s*([^=]+?)\s*=\s*(.*?)\s*$/);
+                    let isComment = trimmedLine.startsWith(';') || trimmedLine.startsWith('#');
 
-Sensitivity=${getSet('Sensitivity')}
-Sensitivity_Multiplier=${getSet('Sensitivity_Multiplier')}
-Horizontal_Sensitivity=${getSet('Horizontal_Sensitivity')}
-Vertical_Sensitivity=${getSet('Vertical_Sensitivity')}
-Max_Threshold=${getSet('Max_Threshold')}
+                    if (currentSection && paramMatch && !isComment) {
+                        let key = paramMatch[1].trim();
 
-Radial_Deadzone=${getSet('Radial_Deadzone')}
-Axial_Deadzone=${getSet('Axial_Deadzone')}
+                        if (out[currentSection] && out[currentSection][key] !== undefined) {
+                            // Update with new UI value
+                            iniContent += `${key}=${out[currentSection][key]}\n`;
+                            delete out[currentSection][key]; // Remove so we don't duplicate
+                        } else {
+                            // Preserve unknown parameter exactly as is
+                            iniContent += line + "\n";
+                        }
+                    } else {
+                        // Preserve comments and empty lines
+                        if (currentSection !== null || isComment || trimmedLine === "") {
+                            iniContent += line + "\n";
+                        }
+                    }
+                }
 
-Look_Accel_Multiplier=${getSet('Look_Accel_Multiplier')}
-Curve_Slope=${getSet('Curve_Slope')}
-Curve_Exponent=${getSet('Curve_Exponent')}
+                // Dump remaining keys for the VERY LAST section processed
+                if (currentSection && out[currentSection]) {
+                    Object.keys(out[currentSection]).forEach(key => {
+                        iniContent += `${key}=${out[currentSection][key]}\n`;
+                    });
+                    delete out[currentSection];
+                }
+            }
 
-[KeyMapping]
-EnableMouseDoubleClick=0
-StickAsButtonDeadzone=${getSet('StickAsButtonDeadzone')}
-TriggerThreshold=${getSet('TriggerThreshold')}
+            // Append any completely NEW sections that weren't in the original file
+            const orderedSections = [...defaultSections, 'Fn1', 'Fn2'];
+            Object.keys(out).forEach(s => {
+                if (!orderedSections.includes(s)) orderedSections.push(s);
+            });
 
-${buildSection('Basic')}
-${extraLayers}`;
+            orderedSections.forEach(section => {
+                if (out[section] && Object.keys(out[section]).length > 0) {
+                    iniContent += `\n[${section}]\n`;
 
+                    if (section === 'KeyMapping' || section === 'Fn1' || section === 'Fn2') {
+                        Object.keys(out[section]).forEach(key => {
+                            if (!flatButtons.includes(key)) {
+                                iniContent += `${key}=${out[section][key]}\n`;
+                                delete out[section][key];
+                            }
+                        });
+                        iniContent += "\n";
+
+                        buttonGroups.forEach(group => {
+                            let groupHasItems = false;
+                            group.forEach(id => {
+                                if (out[section][id] !== undefined) {
+                                    iniContent += `${id}=${out[section][id]}\n`;
+                                    delete out[section][id];
+                                    groupHasItems = true;
+                                }
+                            });
+                            if (groupHasItems) iniContent += "\n";
+                        });
+                    }
+
+                    // Catch-all for remaining keys in this section
+                    Object.keys(out[section]).forEach(key => {
+                        iniContent += `${key}=${out[section][key]}\n`;
+                    });
+                }
+            });
+
+            // Cleanup trailing lines to prevent massive gaps at the end of the file
+            iniContent = iniContent.replace(/\n{3,}/g, '\n\n').trim() + "\n";
+
+            // Export Trigger
             const blob = new Blob([iniContent], { type: 'text/plain' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
