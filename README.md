@@ -1,30 +1,30 @@
 # GtoMnK
-is a simple tool that lets you use your Xbox controller to play games that don't have controller support.
-It works by making your controller pretend to be a mouse and keyboard. All you need to do is inject or load the DLL into your game.
-
-### Usage:
-GtoMnK reads its configuration settings from the [`GtoMnK.ini`](https://github.com/SAM1430B/GtoMnK/blob/master/GtoMnK_DLL/INI/GtoMnK.ini) file and maps controller buttons using [key codes](https://github.com/SAM1430B/GtoMnK/blob/master/GtoMnK_DLL/Documents/GtoMnK_Keys.txt).
-So you need to copy `GtoMnK32.dll`, `GtoMnK.ini` and one of the `Loader.x32` files to the game executable. And do same process for x64 version.
-
+is a simple tool that lets you use your gamepad to play games without native controller support.
+It works by making your gamepad act like a mouse and keyboard. All you need to do is load the DLL into your game.
 > [!WARNING]
 > Games that have Anti-Cheat are more likely to detect the DLL as a cheat tool.
 
-#### Profile version:
-This version is intended for configuring and testing your setup. You can create configurations using the `GtoMnK_Config.html` file in the `Config` folder.
-It also includes a `GtoMnK_Log.txt` file for diagnosing problems and provides advanced overlay settings.
+### Features:
+- **Per Game Emulation:** Emulates mouse and keyboard inputs exclusively inside your target game without affecting or interfering with your overall Windows OS.
+  
+- **Custom Button & Trigger Mapping:** Easily assign gamepad buttons, triggers, and D-Pad directions to any keyboard key or mouse action.
+  
+- **Optional Virtual Cursor:** Can render and control a custom in-game mouse cursor using your gamepad's thumbstick, it's an ideal option for navigating menus in games that do not draw their own cursor.
+  
+- **Real Time In-Game Tuning:** Press `Back` + `Dpad Down` while playing to open the built-in overlay and adjust thumbstick deadzones and sensitivity on the fly.
+  
+- **Different Backend Gamepad Support Versions:** Light version supports XInput only (Xbox controllers) or SDL2/SDL3 version (a wide variety of PC gamepads).
 
-#### Release version:
-This version is for use after you have finalized your configuration. It is a streamlined version of the [Profile version](https://github.com/SAM1430B/GtoMnK#release-version), containing only essential overlay settings.
-
-#### Overlay settings:
-Press `Back` + `Dpad Down` to open the Overlay. You can change the Deadzones for the thumbsticks and change the sensitivity in real time.
-
-Profile version has addition settings for tuning the sensititvity curve such as Curve_Slope and Curve_Exponent.
+### How it works?
+Read the [wiki](https://github.com/SAM1430B/GtoMnK/wiki) for more details.
 
 ### Credits:
 
 - Messenils the original auther of [screenshot-input](https://github.com/Messenils/screenshot-input).
 - Ilyaki [ProtoInput](https://github.com/Ilyaki/ProtoInput).
 - Nemirtingas [OpenXinput](https://github.com/Nemirtingas/OpenXinput).
+- [EasyHook](https://github.com/easyhook/easyhook)
+- [SDL](https://github.com/libsdl-org/SDL)
 - elishacloud [DirectX-Wrappers](https://github.com/elishacloud/DirectX-Wrappers).
 - hauzer [dinput8_nojoy](https://github.com/hauzer/dinput8_nojoy)
+
