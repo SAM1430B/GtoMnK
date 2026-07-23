@@ -355,6 +355,7 @@ void LoadEarlySettings() {
     }
 }
 
+// Used for reloading the INI settings at runtime in the overlay
 void ReloadIniSettings()
 {
     if (g_iniPath.empty()) return;
@@ -451,6 +452,7 @@ void ReloadIniSettings()
     LOG("INI Settings successfully reloaded from: %s", getShortenedPath_Manual(dllIniPath).c_str());
 }
 
+// Used for saving the INI settings at runtime in the overlay
 void SaveIniSettings()
 {
     if (g_iniPath.empty()) return;
@@ -469,9 +471,9 @@ void SaveIniSettings()
         return strcmp(checkBuf, "MissingOption") != 0;
         };
 
-    // Helper lambdas to format and save data
-    auto SaveFloat = [&](const char* section, const char* key, float val, int precision) {
-        if (!KeyExists(section, key)) return;
+    auto SaveFloat = [&](const char* section, const char* key, float val, float defVal, int precision) {
+        // If it's NOT in the INI, and the value is still the default, skip it
+        if (!KeyExists(section, key) && std::abs(val - defVal) < 0.0001f) return;
 
         if (precision == 4) sprintf_s(buffer, "%.4f", val);
         else if (precision == 3) sprintf_s(buffer, "%.3f", val);
@@ -480,39 +482,40 @@ void SaveIniSettings()
         WritePrivateProfileStringA(section, key, buffer, g_iniPath.c_str());
         };
 
-    auto SaveInt = [&](const char* section, const char* key, int val) {
-        if (!KeyExists(section, key)) return;
+    auto SaveInt = [&](const char* section, const char* key, int val, int defVal) {
+        // If it's NOT in the INI, and the value is still the default, skip it
+        if (!KeyExists(section, key) && val == defVal) return;
 
         sprintf_s(buffer, "%d", val);
         WritePrivateProfileStringA(section, key, buffer, g_iniPath.c_str());
         };
 
     // [Settings]
-    SaveInt("Settings", "EnableDev", enableDev ? 1 : 0);
+    SaveInt("Settings", "EnableDev", enableDev ? 1 : 0, 0);
 
     // [StickToMouse]
-    SaveFloat("StickToMouse", "Sensitivity", sensitivity, 2);
-    SaveFloat("StickToMouse", "Sensitivity_Multiplier", sensitivity_multiplier, 2);
-    SaveFloat("StickToMouse", "Horizontal_Sensitivity", horizontal_sensitivity, 2);
-    SaveFloat("StickToMouse", "Vertical_Sensitivity", vertical_sensitivity, 2);
-    SaveFloat("StickToMouse", "Max_Threshold", max_threshold, 3);
-    SaveFloat("StickToMouse", "Radial_Deadzone", radial_deadzone, 2);
-    SaveFloat("StickToMouse", "Axial_Deadzone", axial_deadzone, 2);
-    SaveFloat("StickToMouse", "Look_Accel_Multiplier", look_accel_multiplier, 3);
-    SaveFloat("StickToMouse", "Curve_Slope", curve_slope, 3);
-    SaveFloat("StickToMouse", "Curve_Exponent", curve_exponent, 3);
+    SaveFloat("StickToMouse", "Sensitivity", sensitivity, 2.60f, 2);
+    SaveFloat("StickToMouse", "Sensitivity_Multiplier", sensitivity_multiplier, 2.40f, 2);
+    SaveFloat("StickToMouse", "Horizontal_Sensitivity", horizontal_sensitivity, 0.00f, 2);
+    SaveFloat("StickToMouse", "Vertical_Sensitivity", vertical_sensitivity, 0.00f, 2);
+    SaveFloat("StickToMouse", "Max_Threshold", max_threshold, 0.150f, 3);
+    SaveFloat("StickToMouse", "Radial_Deadzone", radial_deadzone, 0.10f, 2);
+    SaveFloat("StickToMouse", "Axial_Deadzone", axial_deadzone, 0.00f, 2);
+    SaveFloat("StickToMouse", "Look_Accel_Multiplier", look_accel_multiplier, 1.380f, 3);
+    SaveFloat("StickToMouse", "Curve_Slope", curve_slope, 0.145f, 3);
+    SaveFloat("StickToMouse", "Curve_Exponent", curve_exponent, 1.660f, 3);
 
     // [KeyMapping]
-    SaveFloat("KeyMapping", "TriggerThreshold", g_TriggerThreshold, 0);
-    SaveFloat("KeyMapping", "StickAsButtonDeadzone", stick_as_button_deadzone, 2);
-    SaveFloat("KeyMapping", "StickAsButtonAxialDeadzone", stick_as_button_axial_deadzone, 2);
+    SaveFloat("KeyMapping", "TriggerThreshold", g_TriggerThreshold, 40.0f, 0);
+    SaveFloat("KeyMapping", "StickAsButtonDeadzone", stick_as_button_deadzone, 0.25f, 2);
+    SaveFloat("KeyMapping", "StickAsButtonAxialDeadzone", stick_as_button_axial_deadzone, 0.00f, 2);
 
     // [TouchToMouse]
-    SaveFloat("TouchToMouse", "Sensitivity", touchpad_sensitivity, 2);
-    SaveFloat("TouchToMouse", "Horizontal_Sensitivity", touchpad_horizontal_sensitivity, 2);
-    SaveFloat("TouchToMouse", "Vertical_Sensitivity", touchpad_vertical_sensitivity, 2);
-    SaveFloat("TouchToMouse", "Deadzone", touchpad_deadzone, 4);
-    SaveFloat("TouchToMouse", "Smoothing", touchpad_smoothing, 2);
+    SaveFloat("TouchToMouse", "Sensitivity", touchpad_sensitivity, 1500.00f, 2);
+    SaveFloat("TouchToMouse", "Horizontal_Sensitivity", touchpad_horizontal_sensitivity, 0.00f, 2);
+    SaveFloat("TouchToMouse", "Vertical_Sensitivity", touchpad_vertical_sensitivity, 0.00f, 2);
+    SaveFloat("TouchToMouse", "Deadzone", touchpad_deadzone, 0.0015f, 4);
+    SaveFloat("TouchToMouse", "Smoothing", touchpad_smoothing, 0.65f, 2);
 
     LOG("INI Settings successfully overwritten at: %s", getShortenedPath_Manual(dllIniPath).c_str());
 }
